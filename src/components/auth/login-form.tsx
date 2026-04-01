@@ -12,6 +12,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [multipleUsers, setMultipleUsers] = useState<{ id: string; phone: string }[] | null>(null);
 
   const handleSubmit = async (e: React.FormEvent, selectedUserId?: string) => {
@@ -20,7 +21,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await login(churchName, name, password, selectedUserId);
+      const result = await login(churchName, name, password, selectedUserId, rememberMe);
       if (result.error) {
         setError(result.error);
       }
@@ -64,6 +65,16 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span className="text-sm text-gray-600">로그인 유지</span>
+        </label>
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3">{error}</div>

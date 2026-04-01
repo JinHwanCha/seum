@@ -16,7 +16,7 @@ export async function PATCH(
   const supabase = createClient();
 
   if (action === 'approve') {
-    if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember)) {
+    if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -30,7 +30,7 @@ export async function PATCH(
   }
 
   if (action === 'reject') {
-    if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember)) {
+    if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

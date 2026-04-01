@@ -6,7 +6,7 @@ import { canApproveMembers } from '@/lib/permissions';
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember)) {
+  if (!canApproveMembers(session.role as any, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

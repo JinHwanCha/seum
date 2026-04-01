@@ -80,6 +80,7 @@ CREATE TABLE users (
   village_id UUID REFERENCES villages(id) ON DELETE SET NULL,
   cell_id UUID REFERENCES cells(id) ON DELETE SET NULL,
   is_approved BOOLEAN DEFAULT false,
+  is_admin BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

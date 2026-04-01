@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!canManageCategories(session.role as any, session.isBureauLeader || session.isBureauMember)) {
+  if (!canManageCategories(session.role as any, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

@@ -18,7 +18,8 @@ interface AuthContextType {
     churchName: string,
     name: string,
     password: string,
-    selectedUserId?: string
+    selectedUserId?: string,
+    rememberMe?: boolean
   ) => Promise<{ error?: string; multipleMatches?: boolean; users?: { id: string; phone: string }[] }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -55,12 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     churchName: string,
     name: string,
     password: string,
-    selectedUserId?: string
+    selectedUserId?: string,
+    rememberMe?: boolean
   ) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ churchName, name, password, selectedUserId }),
+      body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe }),
     });
     const data = await res.json();
 

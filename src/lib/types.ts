@@ -155,6 +155,7 @@ export interface SessionPayload {
   cellId: string | null;
   isBureauLeader: boolean;
   isBureauMember: boolean;
+  isAdmin: boolean;
 }
 
 // ─── API Response ───

@@ -7,7 +7,7 @@ import type { SessionPayload } from '@/lib/types';
 
 export async function POST(request: Request) {
   try {
-    const { churchName, name, password, selectedUserId } = await request.json();
+    const { churchName, name, password, selectedUserId, rememberMe } = await request.json();
 
     if (!churchName || !name || !password) {
       return NextResponse.json({ error: '모든 필드를 입력해주세요.' }, { status: 400 });
@@ -16,11 +16,13 @@ export async function POST(request: Request) {
     const supabase = createClient();
 
     // Find church
-    const { data: church } = await supabase
+    const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, slug')
       .eq('name', churchName)
       .single();
+
+    console.log('[LOGIN] churchName:', churchName, 'church:', church, 'error:', churchError);
 
     if (!church) {
       return NextResponse.json({ error: '교회를 찾을 수 없습니다.' }, { status: 401 });
@@ -95,9 +97,12 @@ export async function POST(request: Request) {
       cellId: user.cell_id,
       isBureauLeader: bureauMembership?.is_leader ?? false,
       isBureauMember: !!bureauMembership,
+      isAdmin: user.is_admin ?? false,
     };
 
-    const token = await createToken(payload);
+    const tokenExpiry = rememberMe ? '30d' : '7d';
+    const cookieMaxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7;
+    const token = await createToken(payload, tokenExpiry);
 
     const response = NextResponse.json({
       success: true,
@@ -109,7 +114,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: cookieMaxAge,
       path: '/',
     });
 

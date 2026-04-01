@@ -70,26 +70,32 @@ export function canEditPrayer(
 
 // ─── Admin Permissions ───
 
-export function canAccessAdmin(role: Role, isBureau: boolean): boolean {
+export function canAccessAdmin(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return isMinister(role) || isBureau;
 }
 
-export function canApproveMembers(role: Role, isBureau: boolean): boolean {
+export function canApproveMembers(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return isMinister(role) || isBureau;
 }
 
-export function canManageVillages(role: Role): boolean {
+export function canManageVillages(role: Role, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return isMinister(role);
 }
 
-export function canManageCategories(role: Role, isBureau: boolean): boolean {
+export function canManageCategories(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return isMinister(role) || isBureau;
 }
 
-export function canChangeRoleLabels(ministerRank: MinisterRank | null): boolean {
+export function canChangeRoleLabels(ministerRank: MinisterRank | null, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return ministerRank === 'pastor';
 }
 
-export function canMoveMembers(role: Role): boolean {
+export function canMoveMembers(role: Role, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
   return isMinister(role) || role === 'village_leader';
 }

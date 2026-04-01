@@ -30,7 +30,7 @@ export function Sidebar() {
   const { user } = useAuth();
 
   const basePath = `/${params.church}/${params.department}`;
-  const isAdmin = user ? canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember) : false;
+  const isAdmin = user ? canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember, user.isAdmin) : false;
 
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-[calc(100vh-3.5rem)]">

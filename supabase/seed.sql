@@ -49,3 +49,18 @@ INSERT INTO board_categories (department_id, board_type, name, sort_order) VALUE
   ('22222222-2222-2222-2222-222222222222', 'sharing', '새벽기도', 2),
   ('22222222-2222-2222-2222-222222222222', 'sharing', '말씀묵상', 3),
   ('22222222-2222-2222-2222-222222222222', 'sharing', '센터워십', 4);
+
+-- ─── 초기 사용자 ─────────────────────────────────────────────
+-- 관리자 (차진환) - is_admin=true, role=cell_member (다른 사람에게 일반 유저로 보임)
+INSERT INTO users (church_id, department_id, name, phone, password_hash, role, is_approved, is_admin) VALUES
+  ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
+   '차진환', '010-0000-0000',
+   '$2a$12$1WZzlZKExDlQmb/Wij4umecC8xTIFyw4LnxRfdp0xNpCtY9faIPk2',
+   'cell_member', true, true);
+
+-- 청년부 목사 (이정우)
+INSERT INTO users (church_id, department_id, name, phone, password_hash, role, minister_rank, is_approved) VALUES
+  ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
+   '이정우', '010-0000-0001',
+   '$2a$12$OS9uVIc7mnQd0Yv9dp0iW.LZX6/ZKrv.InRIcb2UP49bfVKdpRrG.',
+   'minister', 'associate_pastor', true);

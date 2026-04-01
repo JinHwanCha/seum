@@ -20,7 +20,7 @@ export default function AdminPage() {
   const params = useParams();
   const basePath = `/${params.church}/${params.department}`;
 
-  if (!user || !canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember)) {
+  if (!user || !canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember, user.isAdmin)) {
     return (
       <div className="text-center py-12 text-gray-400 text-sm">
         접근 권한이 없습니다.

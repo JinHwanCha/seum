@@ -4,10 +4,10 @@ import bcrypt from 'bcryptjs';
 import { JWT_SECRET_KEY, COOKIE_NAME } from './constants';
 import type { SessionPayload } from './types';
 
-export async function createToken(payload: SessionPayload): Promise<string> {
+export async function createToken(payload: SessionPayload, expiresIn: string = '7d'): Promise<string> {
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('7d')
+    .setExpirationTime(expiresIn)
     .setIssuedAt()
     .sign(JWT_SECRET_KEY);
 }
