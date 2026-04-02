@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, HandHeart, Megaphone, MessageSquare, Heart } from 'lucide-react';
+import { Home, UsersRound, Megaphone, MessageSquare, Heart } from 'lucide-react';
 
 const MOBILE_NAV_ITEMS = [
   { href: '', label: '홈', icon: Home },
-  { href: '/prayer', label: '기도제목', icon: HandHeart },
+  { href: '/prayer', label: '소그룹', icon: UsersRound },
   { href: '/boards/notice', label: '공지', icon: Megaphone },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare },
   { href: '/boards/intercession', label: '중보', icon: Heart },

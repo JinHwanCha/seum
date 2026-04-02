@@ -16,6 +16,8 @@ export default function ProfilePage() {
   const params = useParams();
   const basePath = `/${params.church}/${params.department}`;
 
+  const [villageName, setVillageName] = useState<string | null>(null);
+  const [cellName, setCellName] = useState<string | null>(null);
   const [form, setForm] = useState({
     birthDate: '',
     phone: '',
@@ -34,6 +36,8 @@ export default function ProfilePage() {
         const res = await fetch('/api/auth/profile');
         if (res.ok) {
           const data = await res.json();
+          setVillageName(data.user.village_name || null);
+          setCellName(data.user.cell_name || null);
           setForm((prev) => ({
             ...prev,
             birthDate: data.user.birth_date || '',
@@ -112,7 +116,7 @@ export default function ProfilePage() {
       </div>
 
       <Card>
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3">
           <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-lg font-bold">
             {user.name.charAt(0)}
           </div>
@@ -121,6 +125,27 @@ export default function ProfilePage() {
             <Badge variant="primary">{roleLabel}</Badge>
           </div>
         </div>
+        {(villageName || cellName) && (
+          <div className="border-t border-gray-100 pt-3 space-y-1">
+            {villageName && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">마을</span>
+                <span className="font-medium text-gray-900">{villageName}</span>
+              </div>
+            )}
+            {cellName && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">소그룹</span>
+                <span className="font-medium text-gray-900">{cellName}</span>
+              </div>
+            )}
+          </div>
+        )}
+        {!villageName && !cellName && !loading && (
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs text-gray-400">마을/소그룹이 아직 배정되지 않았습니다.</p>
+          </div>
+        )}
       </Card>
 
       {loading ? (

@@ -4,28 +4,64 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { PrayerForm } from '@/components/prayer/prayer-form';
-import { PrayerList } from '@/components/prayer/prayer-list';
+import { PrayerCard } from '@/components/prayer/prayer-card';
 import { Card, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
+import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
+import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
 import type { PrayerRequest } from '@/lib/types';
 
-export default function PrayerPage() {
+interface CellMember {
+  id: string;
+  name: string;
+  role: string;
+}
+
+interface CellInfo {
+  id: string;
+  name: string | null;
+  sort_order: number;
+  leader_name: string | null;
+  members: CellMember[];
+  prayers: PrayerRequest[];
+}
+
+interface VillageGroup {
+  id: string;
+  name: string;
+  sort_order?: number;
+  cells: CellInfo[];
+}
+
+export default function SmallGroupPage() {
   const { user } = useAuth();
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(null);
+  const [cellName, setCellName] = useState<string | null>(null);
+  const [villageName, setVillageName] = useState<string | null>(null);
+  const [leader, setLeader] = useState<{ id: string; name: string } | null>(null);
+  const [members, setMembers] = useState<CellMember[]>([]);
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [villageCells, setVillageCells] = useState<VillageGroup[]>([]);
+  const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 
   const weekStart = formatWeekDate(currentSunday);
 
-  const fetchPrayers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/prayer-requests?weekStart=${weekStart}`);
+      const res = await fetch(`/api/small-group?weekStart=${weekStart}`);
       if (res.ok) {
         const data = await res.json();
+        setCellName(data.cell?.name || null);
+        setVillageName(data.villageName || null);
+        setLeader(data.leader || null);
+        setMembers(data.members || []);
         setPrayers(data.prayers || []);
         setMyPrayer(data.myPrayer || null);
+        setVillageCells(data.villageCells || []);
       }
     } catch {
       // ignore
@@ -35,42 +71,253 @@ export default function PrayerPage() {
   }, [weekStart]);
 
   useEffect(() => {
-    fetchPrayers();
-  }, [fetchPrayers]);
+    fetchData();
+  }, [fetchData]);
+
+  const toggleCell = (cellId: string) => {
+    setExpandedCells((prev) => {
+      const next = new Set(prev);
+      if (next.has(cellId)) next.delete(cellId);
+      else next.add(cellId);
+      return next;
+    });
+  };
 
   if (!user) return null;
 
+  const isMinister = user.role === 'minister';
+  const isVillageLeader = user.role === 'village_leader';
+  const hasOversight = isMinister || isVillageLeader;
+  const hasCell = !!user.cellId;
+
+  // Build member prayer map for own cell
+  const prayerByUser: Record<string, PrayerRequest> = {};
+  prayers.forEach((p) => {
+    prayerByUser[p.user_id] = p;
+  });
+
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">기도제목</h1>
+      <h1 className="text-lg font-bold text-gray-900">소그룹</h1>
 
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
 
-      {/* My prayer request */}
+      {/* My Prayer Request */}
       <Card>
         <CardTitle className="text-base">나의 기도제목</CardTitle>
         <PrayerForm
           weekStart={weekStart}
           existingContent={myPrayer?.content}
           existingId={myPrayer?.id}
-          onSaved={fetchPrayers}
+          onSaved={fetchData}
         />
       </Card>
 
-      {/* Others' prayer requests */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-500 mb-3 px-1">공동체 기도제목</h2>
-        {loading ? (
-          <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
-        ) : (
-          <PrayerList
-            prayers={prayers.filter((p) => p.user_id !== user.userId)}
-            session={user}
-            weekStart={weekStart}
-            onUpdated={fetchPrayers}
-          />
-        )}
-      </div>
+      {loading ? (
+        <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+      ) : (
+        <>
+          {/* === Cell Member / Cell Leader View === */}
+          {hasCell && !hasOversight && (
+            <div className="space-y-3">
+              {/* Cell Info Header */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={18} className="text-primary-600" />
+                  <h2 className="font-semibold text-gray-900">
+                    {cellName || '소그룹'}
+                  </h2>
+                  {villageName && (
+                    <Badge variant="default">{villageName}</Badge>
+                  )}
+                </div>
+
+                {/* Leader */}
+                {leader && (
+                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+                    <Crown size={14} className="text-amber-500" />
+                    <span className="text-sm font-medium text-gray-900">{leader.name}</span>
+                    <Badge variant="success">목자</Badge>
+                  </div>
+                )}
+
+                {/* Members List */}
+                <div className="space-y-1.5">
+                  {members
+                    .filter((m) => m.role !== 'cell_leader')
+                    .map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 text-sm">
+                        <User size={14} className="text-gray-400" />
+                        <span className="text-gray-700">{m.name}</span>
+                        {m.id === user.userId && (
+                          <span className="text-xs text-primary-500">(나)</span>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Cell Prayers */}
+              <h2 className="text-sm font-semibold text-gray-500 px-1">소그룹 기도제목</h2>
+
+              {members.length === 0 ? (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  소그룹이 배정되지 않았습니다.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {members.map((m) => {
+                    const prayer = prayerByUser[m.id];
+                    if (!prayer) {
+                      return (
+                        <div
+                          key={m.id}
+                          className="bg-white rounded-xl border border-gray-100 p-4 opacity-60"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-900 text-sm">{m.name}</span>
+                            <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
+                              {ROLE_LABELS_DEFAULT[m.role]}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-400 italic">아직 기도제목을 작성하지 않았습니다.</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <PrayerCard
+                        key={prayer.id}
+                        prayer={prayer}
+                        session={user}
+                        weekStart={weekStart}
+                        onUpdated={fetchData}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === No Cell Assigned === */}
+          {!hasCell && !hasOversight && (
+            <div className="text-center py-12 text-gray-400">
+              <Users size={40} className="mx-auto mb-3 opacity-40" />
+              <p className="text-sm font-medium">소그룹이 아직 배정되지 않았습니다.</p>
+              <p className="text-xs mt-1">관리자에게 소그룹 배정을 요청해주세요.</p>
+            </div>
+          )}
+
+          {/* === Minister / Village Leader Oversight View === */}
+          {hasOversight && villageCells.length > 0 && (
+            <div className="space-y-4">
+              {villageCells.map((village) => (
+                <div key={village.id}>
+                  {isMinister && (
+                    <h2 className="text-sm font-semibold text-gray-700 mb-2 px-1">
+                      {village.name} 마을
+                    </h2>
+                  )}
+                  <div className="space-y-2">
+                    {village.cells.map((cell) => {
+                      const isExpanded = expandedCells.has(cell.id);
+                      const prayerCount = cell.prayers.length;
+                      const memberCount = cell.members.length;
+
+                      return (
+                        <div
+                          key={cell.id}
+                          className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                        >
+                          {/* Cell Header - Clickable */}
+                          <button
+                            onClick={() => toggleCell(cell.id)}
+                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown size={16} className="text-gray-400" />
+                              ) : (
+                                <ChevronRight size={16} className="text-gray-400" />
+                              )}
+                              <span className="font-medium text-gray-900 text-sm">
+                                {cell.name || '소그룹'}
+                              </span>
+                              {cell.leader_name && (
+                                <span className="text-xs text-gray-500">
+                                  목자: {cell.leader_name}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default">
+                                {memberCount}명
+                              </Badge>
+                              <Badge variant={prayerCount === memberCount ? 'success' : 'warning'}>
+                                기도 {prayerCount}/{memberCount}
+                              </Badge>
+                            </div>
+                          </button>
+
+                          {/* Expanded Content */}
+                          {isExpanded && (
+                            <div className="border-t border-gray-100 p-4 space-y-3">
+                              {/* Members + their prayers */}
+                              {cell.members.map((m) => {
+                                const prayer = cell.prayers.find(
+                                  (p) => p.user_id === m.id
+                                );
+                                return (
+                                  <div key={m.id} className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      {m.role === 'cell_leader' ? (
+                                        <Crown size={14} className="text-amber-500" />
+                                      ) : (
+                                        <User size={14} className="text-gray-400" />
+                                      )}
+                                      <span className="text-sm font-medium text-gray-900">
+                                        {m.name}
+                                      </span>
+                                      <Badge
+                                        variant={
+                                          m.role === 'cell_leader' ? 'success' : 'default'
+                                        }
+                                      >
+                                        {ROLE_LABELS_DEFAULT[m.role]}
+                                      </Badge>
+                                    </div>
+                                    {prayer ? (
+                                      <div className="ml-6 bg-gray-50 rounded-lg p-3">
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                          {prayer.content}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <p className="ml-6 text-xs text-gray-400 italic">
+                                        기도제목 미작성
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hasOversight && villageCells.length === 0 && (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              소그룹 데이터가 없습니다.
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

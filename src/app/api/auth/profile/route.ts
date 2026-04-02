@@ -15,7 +15,28 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  return NextResponse.json({ user });
+  // Fetch village and cell names
+  let villageName: string | null = null;
+  let cellName: string | null = null;
+
+  if (user.village_id) {
+    const { data: v } = await supabase
+      .from('villages')
+      .select('name')
+      .eq('id', user.village_id)
+      .single();
+    villageName = v?.name || null;
+  }
+  if (user.cell_id) {
+    const { data: c } = await supabase
+      .from('cells')
+      .select('name')
+      .eq('id', user.cell_id)
+      .single();
+    cellName = c?.name || null;
+  }
+
+  return NextResponse.json({ user: { ...user, village_name: villageName, cell_name: cellName } });
 }
 
 export async function PATCH(request: Request) {

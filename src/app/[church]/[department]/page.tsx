@@ -4,12 +4,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { HandHeart, Megaphone, MessageSquare, Users, Heart } from 'lucide-react';
+import { UsersRound, Megaphone, MessageSquare, Users, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 const QUICK_LINKS = [
-  { href: '/prayer', label: '기도제목', icon: HandHeart, color: 'bg-indigo-50 text-indigo-600' },
+  { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-indigo-50 text-indigo-600' },
   { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-amber-50 text-amber-600' },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-green-50 text-green-600' },
   { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-blue-50 text-blue-600' },
