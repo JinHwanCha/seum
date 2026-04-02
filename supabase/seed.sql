@@ -125,7 +125,8 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO users (id, church_id, department_id, name, phone, password_hash, role, village_id, is_approved) VALUES
   ('a0000002-0000-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
    '정다은', '010-1111-0006', '$2a$12$1WZzlZKExDlQmb/Wij4umecC8xTIFyw4LnxRfdp0xNpCtY9faIPk2',
-   'village_leader', 'a0000001-0000-0000-0000-000000000001', true);
+   'village_leader', 'a0000001-0000-0000-0000-000000000001', true)
+ON CONFLICT (id) DO NOTHING;
 -- 내일 마을 - 목자 한수빈
 INSERT INTO users (id, church_id, department_id, name, phone, password_hash, role, village_id, cell_id, is_approved) VALUES
   ('a0000002-0000-0000-0000-000000000007', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',

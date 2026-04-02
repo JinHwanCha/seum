@@ -25,10 +25,25 @@ export async function GET() {
     .eq('group_year_id', groupYear.id)
     .order('sort_order', { ascending: true });
 
-  // Sort cells within each village
+  // Get cell leaders (users with role=cell_leader who have a cell_id)
+  const { data: cellLeaders } = await supabase
+    .from('users')
+    .select('id, name, cell_id')
+    .eq('department_id', session.departmentId)
+    .eq('role', 'cell_leader')
+    .eq('is_approved', true);
+
+  const leaderByCell: Record<string, string> = {};
+  (cellLeaders || []).forEach((u: any) => {
+    if (u.cell_id) leaderByCell[u.cell_id] = u.name;
+  });
+
+  // Sort cells within each village + attach leader name
   const sorted = (villages || []).map((v: any) => ({
     ...v,
-    cells: (v.cells || []).sort((a: any, b: any) => a.sort_order - b.sort_order),
+    cells: (v.cells || [])
+      .sort((a: any, b: any) => a.sort_order - b.sort_order)
+      .map((c: any) => ({ ...c, leader_name: leaderByCell[c.id] || null })),
   }));
 
   return NextResponse.json({ villages: sorted });

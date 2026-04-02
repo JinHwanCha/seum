@@ -6,8 +6,16 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { Check, X, UserCog } from 'lucide-react';
+import { Check, X, UserCog, AlertCircle } from 'lucide-react';
 import type { User, Village, Cell } from '@/lib/types';
+
+interface CellWithLeader extends Cell {
+  leader_name?: string | null;
+}
+
+interface VillageWithCells extends Village {
+  cells: CellWithLeader[];
+}
 
 interface MemberListProps {
   showPending?: boolean;
@@ -15,8 +23,8 @@ interface MemberListProps {
 
 export function MemberList({ showPending = false }: MemberListProps) {
   const [members, setMembers] = useState<User[]>([]);
-  const [villages, setVillages] = useState<Village[]>([]);
-  const [cells, setCells] = useState<Cell[]>([]);
+  const [villages, setVillages] = useState<VillageWithCells[]>([]);
+  const [cells, setCells] = useState<CellWithLeader[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingMember, setEditingMember] = useState<User | null>(null);
   const [editRole, setEditRole] = useState('');
@@ -39,8 +47,8 @@ export function MemberList({ showPending = false }: MemberListProps) {
       if (villagesRes.ok) {
         const data = await villagesRes.json();
         setVillages(data.villages || []);
-        // Flatten cells
-        const allCells: Cell[] = [];
+        // Flatten cells with leader info
+        const allCells: CellWithLeader[] = [];
         (data.villages || []).forEach((v: any) => {
           (v.cells || []).forEach((c: any) => allCells.push({ ...c, village_id: v.id }));
         });
@@ -103,6 +111,24 @@ export function MemberList({ showPending = false }: MemberListProps) {
 
   const filteredCells = cells.filter((c) => c.village_id === editVillageId);
 
+  // Helper: find village/cell name for a member
+  const getVillageName = (villageId: string | null) => {
+    if (!villageId) return null;
+    return villages.find((v) => v.id === villageId)?.name || null;
+  };
+  const getCellName = (cellId: string | null) => {
+    if (!cellId) return null;
+    const cell = cells.find((c) => c.id === cellId);
+    if (!cell) return null;
+    return cell.leader_name
+      ? `${cell.name || '소그룹'} (${cell.leader_name})`
+      : cell.name || '소그룹';
+  };
+
+  // Separate unassigned vs assigned members
+  const unassigned = members.filter((m) => !m.village_id && !m.cell_id);
+  const assigned = members.filter((m) => m.village_id || m.cell_id);
+
   const roleOptions = [
     { value: 'cell_member', label: '목원' },
     { value: 'cell_leader', label: '목자' },
@@ -121,6 +147,59 @@ export function MemberList({ showPending = false }: MemberListProps) {
     return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
   }
 
+  const renderMemberCard = (member: User) => (
+    <div
+      key={member.id}
+      className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-gray-900">{member.name}</span>
+          {member.is_approved ? (
+            <Badge variant={member.role === 'minister' ? 'primary' : 'default'}>
+              {member.minister_rank
+                ? MINISTER_RANK_LABELS[member.minister_rank]
+                : ROLE_LABELS_DEFAULT[member.role]}
+            </Badge>
+          ) : (
+            <Badge variant="warning">승인 대기</Badge>
+          )}
+          {!member.village_id && !member.cell_id && member.is_approved && (
+            <Badge variant="warning">미배정</Badge>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          {member.phone} {member.birth_date ? `· ${member.birth_date}` : ''}
+        </p>
+        {(member.village_id || member.cell_id) && (
+          <p className="text-xs text-primary-600 mt-0.5">
+            {getVillageName(member.village_id)}
+            {member.cell_id ? ` · ${getCellName(member.cell_id)}` : ''}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1 ml-2">
+        {showPending && !member.is_approved ? (
+          <>
+            <Button size="sm" onClick={() => handleApprove(member.id)}>
+              <Check size={14} className="mr-1" /> 수락
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => handleReject(member.id)}>
+              <X size={14} className="mr-1" /> 거절
+            </Button>
+          </>
+        ) : (
+          <button
+            onClick={() => openEdit(member)}
+            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+          >
+            <UserCog size={16} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       {members.length === 0 ? (
@@ -128,50 +207,44 @@ export function MemberList({ showPending = false }: MemberListProps) {
           {showPending ? '대기 중인 회원이 없습니다.' : '회원이 없습니다.'}
         </div>
       ) : (
-        <div className="space-y-2">
-          {members.map((member) => (
-            <div
-              key={member.id}
-              className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{member.name}</span>
-                  {member.is_approved ? (
-                    <Badge variant={member.role === 'minister' ? 'primary' : 'default'}>
-                      {member.minister_rank
-                        ? MINISTER_RANK_LABELS[member.minister_rank]
-                        : ROLE_LABELS_DEFAULT[member.role]}
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning">승인 대기</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {member.phone} {member.birth_date ? `· ${member.birth_date}` : ''}
-                </p>
+        <div className="space-y-3">
+          {/* 미배정 회원 */}
+          {!showPending && unassigned.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <AlertCircle size={14} className="text-amber-500" />
+                <span className="text-sm font-semibold text-amber-700">
+                  미배정 ({unassigned.length}명)
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                {showPending && !member.is_approved ? (
-                  <>
-                    <Button size="sm" onClick={() => handleApprove(member.id)}>
-                      <Check size={14} className="mr-1" /> 수락
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleReject(member.id)}>
-                      <X size={14} className="mr-1" /> 거절
-                    </Button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => openEdit(member)}
-                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                  >
-                    <UserCog size={16} />
-                  </button>
-                )}
+              <div className="space-y-2">
+                {unassigned.map(renderMemberCard)}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* 배정된 회원 (마을별 그룹) */}
+          {!showPending && assigned.length > 0 && (
+            <div>
+              {unassigned.length > 0 && (
+                <div className="flex items-center gap-2 mb-2 px-1 mt-4">
+                  <span className="text-sm font-semibold text-gray-700">
+                    배정 완료 ({assigned.length}명)
+                  </span>
+                </div>
+              )}
+              <div className="space-y-2">
+                {assigned.map(renderMemberCard)}
+              </div>
+            </div>
+          )}
+
+          {/* 승인 대기 탭 - 단순 리스트 */}
+          {showPending && (
+            <div className="space-y-2">
+              {members.map(renderMemberCard)}
+            </div>
+          )}
         </div>
       )}
 
@@ -218,7 +291,9 @@ export function MemberList({ showPending = false }: MemberListProps) {
                 { value: '', label: '미배정' },
                 ...filteredCells.map((c) => ({
                   value: c.id,
-                  label: c.name || `소그룹 ${c.sort_order}`,
+                  label: c.leader_name
+                    ? `${c.name || `소그룹 ${c.sort_order}`} (목자: ${c.leader_name})`
+                    : c.name || `소그룹 ${c.sort_order}`,
                 })),
               ]}
               value={editCellId}
