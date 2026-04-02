@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
@@ -24,6 +24,10 @@ export function PrayerForm({
   const [content, setContent] = useState(existingContent || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setContent(existingContent || '');
+  }, [existingContent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

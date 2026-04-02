@@ -20,7 +20,55 @@ export async function GET(request: Request) {
     .eq('week_start', weekStart)
     .order('created_at', { ascending: true });
 
-  if (!allPrayers) return NextResponse.json({ prayers: [], myPrayer: null });
+  if (!allPrayers) return NextResponse.json({ prayers: [], myPrayer: null, villages: [], cells: [] });
+
+  // Fetch villages and cells for grouping
+  const { data: groupYear } = await supabase
+    .from('group_years')
+    .select('id')
+    .eq('department_id', session.departmentId)
+    .eq('is_active', true)
+    .single();
+
+  let villages: { id: string; name: string; sort_order: number }[] = [];
+  let cells: { id: string; village_id: string; name: string | null; sort_order: number; leader?: { id: string; name: string } }[] = [];
+
+  if (groupYear) {
+    const { data: v } = await supabase
+      .from('villages')
+      .select('id, name, sort_order')
+      .eq('group_year_id', groupYear.id)
+      .order('sort_order');
+    villages = v || [];
+
+    const villageIds = villages.map((vi) => vi.id);
+    if (villageIds.length > 0) {
+      const { data: c } = await supabase
+        .from('cells')
+        .select('id, village_id, name, sort_order')
+        .in('village_id', villageIds)
+        .order('sort_order');
+      
+      // Find cell leaders
+      const cellIds = (c || []).map((cl) => cl.id);
+      let cellLeaders: Record<string, { id: string; name: string }> = {};
+      if (cellIds.length > 0) {
+        const { data: leaders } = await supabase
+          .from('users')
+          .select('id, name, cell_id')
+          .in('cell_id', cellIds)
+          .eq('role', 'cell_leader');
+        (leaders || []).forEach((l) => {
+          if (l.cell_id) cellLeaders[l.cell_id] = { id: l.id, name: l.name };
+        });
+      }
+
+      cells = (c || []).map((cl) => ({
+        ...cl,
+        leader: cellLeaders[cl.id] || undefined,
+      }));
+    }
+  }
 
   // My prayer
   const myPrayer = allPrayers.find((p) => p.user_id === session.userId) || null;
@@ -68,7 +116,7 @@ export async function GET(request: Request) {
 
   const prayers = allPrayers.filter((p) => visibleIds.has(p.user_id));
 
-  return NextResponse.json({ prayers, myPrayer });
+  return NextResponse.json({ prayers, myPrayer, villages, cells });
 }
 
 export async function POST(request: Request) {

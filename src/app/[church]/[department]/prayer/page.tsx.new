@@ -1,0 +1,297 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { WeekSelector } from '@/components/prayer/week-selector';
+import { PrayerForm } from '@/components/prayer/prayer-form';
+import { PrayerCard } from '@/components/prayer/prayer-card';
+import { Card, CardTitle } from '@/components/ui/card';
+import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
+import { cn } from '@/lib/utils';
+import type { PrayerRequest } from '@/lib/types';
+
+interface VillageInfo {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
+interface CellInfo {
+  id: string;
+  village_id: string;
+  name: string | null;
+  sort_order: number;
+  leader?: { id: string; name: string };
+}
+
+export default function PrayerPage() {
+  const { user } = useAuth();
+  const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(null);
+  const [villages, setVillages] = useState<VillageInfo[]>([]);
+  const [cells, setCells] = useState<CellInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'my' | 'village'>('my');
+  const [selectedVillage, setSelectedVillage] = useState<string | null>(null);
+  const [selectedCell, setSelectedCell] = useState<string | null>(null);
+
+  const weekStart = formatWeekDate(currentSunday);
+
+  const isMinisterOrAdmin =
+    user?.role === 'minister' || user?.isAdmin || user?.isBureauLeader;
+
+  const fetchPrayers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/prayer-requests?weekStart=${weekStart}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPrayers(data.prayers || []);
+        setMyPrayer(data.myPrayer || null);
+        setVillages(data.villages || []);
+        setCells(data.cells || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, [weekStart]);
+
+  useEffect(() => {
+    fetchPrayers();
+  }, [fetchPrayers]);
+
+  // Auto-select first village
+  useEffect(() => {
+    if (villages.length > 0 && !selectedVillage) {
+      setSelectedVillage(villages[0].id);
+    }
+  }, [villages, selectedVillage]);
+
+  if (!user) return null;
+
+  const villageCells = cells.filter((c) => c.village_id === selectedVillage);
+
+  // Group prayers by cell
+  const getPrayersByCell = (cellId: string) =>
+    prayers.filter((p) => p.user?.cell_id === cellId && p.user_id !== user.userId);
+
+  // Prayers with no cell assignment in selected village
+  const getVillagePrayersNoCell = () =>
+    prayers.filter(
+      (p) =>
+        p.user?.village_id === selectedVillage &&
+        !p.user?.cell_id &&
+        p.user_id !== user.userId
+    );
+
+  // All prayers for selected village (for overview)
+  const getVillagePrayers = () =>
+    prayers.filter(
+      (p) => p.user?.village_id === selectedVillage && p.user_id !== user.userId
+    );
+
+  // Prayers for a specific cell
+  const selectedCellPrayers = selectedCell
+    ? getPrayersByCell(selectedCell)
+    : [];
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-lg font-bold text-gray-900">기도제목</h1>
+
+      <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
+
+      {/* Tab selector */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('my')}
+          className={cn(
+            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+            activeTab === 'my'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+          )}
+        >
+          나의 기도제목
+        </button>
+        <button
+          onClick={() => setActiveTab('village')}
+          className={cn(
+            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+            activeTab === 'village'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+          )}
+        >
+          공동체 기도제목
+        </button>
+      </div>
+
+      {/* My Prayer Tab */}
+      {activeTab === 'my' && (
+        <div className="space-y-4">
+          <Card>
+            <CardTitle className="text-base">나의 기도제목</CardTitle>
+            <PrayerForm
+              weekStart={weekStart}
+              existingContent={myPrayer?.content}
+              existingId={myPrayer?.id}
+              onSaved={fetchPrayers}
+            />
+          </Card>
+
+          {myPrayer && (
+            <Card>
+              <CardTitle className="text-base text-gray-500">이번 주 작성한 기도제목</CardTitle>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mt-2">
+                {myPrayer.content}
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Village/Cell Tab */}
+      {activeTab === 'village' && (
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+          ) : (
+            <>
+              {/* Village tabs */}
+              {villages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  {villages.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setSelectedVillage(v.id);
+                        setSelectedCell(null);
+                      }}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                        selectedVillage === v.id
+                          ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                          : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                      )}
+                    >
+                      {v.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Cell tabs within village */}
+              {selectedVillage && villageCells.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  <button
+                    onClick={() => setSelectedCell(null)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                      selectedCell === null
+                        ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                        : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                    )}
+                  >
+                    전체
+                  </button>
+                  {villageCells.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCell(c.id)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                        selectedCell === c.id
+                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                          : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                      )}
+                    >
+                      {c.leader ? `${c.leader.name} 목자` : c.name || `소그룹 ${c.sort_order}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Prayer list */}
+              {selectedCell === null ? (
+                // Show all prayers in village, grouped by cell
+                <div className="space-y-4">
+                  {villageCells.map((c) => {
+                    const cellPrayers = getPrayersByCell(c.id);
+                    if (cellPrayers.length === 0) return null;
+                    return (
+                      <div key={c.id}>
+                        <h3 className="text-sm font-semibold text-gray-500 mb-2 px-1">
+                          {c.leader
+                            ? `${c.leader.name} 목자`
+                            : c.name || `소그룹 ${c.sort_order}`}
+                        </h3>
+                        <div className="space-y-2">
+                          {cellPrayers.map((prayer) => (
+                            <PrayerCard
+                              key={prayer.id}
+                              prayer={prayer}
+                              session={user}
+                              weekStart={weekStart}
+                              onUpdated={fetchPrayers}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* No cell assigned */}
+                  {getVillagePrayersNoCell().length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-400 mb-2 px-1">
+                        소그룹 미배정
+                      </h3>
+                      <div className="space-y-2">
+                        {getVillagePrayersNoCell().map((prayer) => (
+                          <PrayerCard
+                            key={prayer.id}
+                            prayer={prayer}
+                            session={user}
+                            weekStart={weekStart}
+                            onUpdated={fetchPrayers}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {getVillagePrayers().length === 0 && (
+                    <div className="text-center py-12 text-gray-400">
+                      <p className="text-sm">이번 주 기도제목이 없습니다.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Show prayers for selected cell
+                <div className="space-y-2">
+                  {selectedCellPrayers.length > 0 ? (
+                    selectedCellPrayers.map((prayer) => (
+                      <PrayerCard
+                        key={prayer.id}
+                        prayer={prayer}
+                        session={user}
+                        weekStart={weekStart}
+                        onUpdated={fetchPrayers}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-gray-400">
+                      <p className="text-sm">이번 주 기도제목이 없습니다.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

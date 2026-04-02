@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 
 export function Header() {
@@ -22,7 +22,19 @@ export function Header() {
           세움
         </Link>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 hidden sm:block">{user.name}</span>
+          <Link
+            href={`/${params.church}/${params.department}/profile`}
+            className="text-sm text-gray-600 hidden sm:block hover:text-primary-600 transition-colors"
+          >
+            {user.name}
+          </Link>
+          <Link
+            href={`/${params.church}/${params.department}/profile`}
+            className="sm:hidden p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-gray-100 transition-colors"
+            title="내 정보"
+          >
+            <UserCircle size={18} />
+          </Link>
           <button
             onClick={logout}
             className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
