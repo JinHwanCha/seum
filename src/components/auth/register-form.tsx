@@ -26,11 +26,13 @@ export function RegisterForm() {
 
   // Validate church when name + pastor entered
   useEffect(() => {
-    if (form.churchName.length >= 2 && form.pastorName.length >= 2) {
+    const cleanChurch = form.churchName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
+    const cleanPastor = form.pastorName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
+    if (cleanChurch.length >= 2 && cleanPastor.length >= 2) {
       const timer = setTimeout(async () => {
         try {
           const res = await fetch(
-            `/api/auth/register?action=validateChurch&churchName=${encodeURIComponent(form.churchName)}&pastorName=${encodeURIComponent(form.pastorName)}`
+            `/api/auth/register?action=validateChurch&churchName=${encodeURIComponent(cleanChurch)}&pastorName=${encodeURIComponent(cleanPastor)}`
           );
           const data = await res.json();
           setChurchValid(data.valid);
@@ -77,8 +79,8 @@ export function RegisterForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          churchName: form.churchName,
-          pastorName: form.pastorName,
+          churchName: form.churchName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, ''),
+          pastorName: form.pastorName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, ''),
           name: form.name,
           birthDate: form.birthDate || null,
           phone: form.phone,

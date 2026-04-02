@@ -7,8 +7,8 @@ export async function GET(request: Request) {
   const action = searchParams.get('action');
 
   if (action === 'validateChurch') {
-    const churchName = searchParams.get('churchName');
-    const pastorName = searchParams.get('pastorName');
+    const churchName = searchParams.get('churchName')?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
+    const pastorName = searchParams.get('pastorName')?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
 
     if (!churchName || !pastorName) {
       return NextResponse.json({ valid: false });
@@ -43,7 +43,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { churchName, pastorName, name, birthDate, phone, departmentId, password } = body;
+    const { name, birthDate, phone, departmentId, password } = body;
+    const churchName = body.churchName?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
+    const pastorName = body.pastorName?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
 
     if (!churchName || !pastorName || !name || !phone || !departmentId || !password) {
       return NextResponse.json({ error: '필수 항목을 모두 입력해주세요.' }, { status: 400 });
