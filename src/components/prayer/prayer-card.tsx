@@ -12,7 +12,7 @@ interface PrayerCardProps {
   prayer: PrayerRequest;
   session: SessionPayload;
   weekStart: string;
-  onUpdated: () => void;
+  onUpdated: (content: string) => void;
 }
 
 export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCardProps) {
@@ -45,9 +45,9 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
           existingId={prayer.id}
           targetUserName={isOwn ? undefined : user.name}
           targetUserId={isOwn ? undefined : user.id}
-          onSaved={() => {
+          onSaved={(content) => {
             setEditing(false);
-            onUpdated();
+            onUpdated(content);
           }}
         />
       </div>

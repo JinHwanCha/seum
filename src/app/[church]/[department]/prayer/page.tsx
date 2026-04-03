@@ -163,7 +163,26 @@ export default function SmallGroupPage() {
               weekStart={weekStart}
               existingContent={myPrayer?.content}
               existingId={myPrayer?.id}
-              onSaved={fetchData}
+              onSaved={(content) => {
+                setMyPrayer((prev) =>
+                  prev
+                    ? { ...prev, content }
+                    : ({
+                        id: `temp-${Date.now()}`,
+                        user_id: user.userId,
+                        department_id: '',
+                        week_start: weekStart,
+                        content,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      } as any)
+                );
+                setPrayers((prev) =>
+                  prev.map((p) =>
+                    p.user_id === user.userId ? { ...p, content } : p
+                  )
+                );
+              }}
             />
           </Card>
 
@@ -244,7 +263,18 @@ export default function SmallGroupPage() {
                             prayer={prayer}
                             session={user}
                             weekStart={weekStart}
-                            onUpdated={fetchData}
+                            onUpdated={(content) => {
+                              setPrayers((prev) =>
+                                prev.map((p) =>
+                                  p.id === prayer.id ? { ...p, content } : p
+                                )
+                              );
+                              if (prayer.user_id === user.userId) {
+                                setMyPrayer((prev) =>
+                                  prev ? { ...prev, content } : prev
+                                );
+                              }
+                            }}
                           />
                         );
                       })}

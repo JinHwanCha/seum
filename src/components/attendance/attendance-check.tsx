@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Crown, User, Check, X, Church, Users, UsersRound, BookOpen, Heart, Sun, Minus, Plus } from 'lucide-react';
+import { Crown, User, Check, X, Church, Users, UsersRound, Heart, Sun, Minus, Plus } from 'lucide-react';
 import type { Attendance, SessionPayload } from '@/lib/types';
 import { canCheckAttendance } from '@/lib/permissions';
 import type { Role } from '@/lib/types';
@@ -37,6 +37,15 @@ const birthYearLabel = (birthDate?: string | null) => {
   return ` (${birthDate.substring(2, 4)})`;
 };
 
+// Fire-and-forget API call — no await needed
+function saveField(userId: string, weekStart: string, field: string, value: unknown) {
+  fetch('/api/attendance', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, weekStart, field, value }),
+  }).catch(() => {});
+}
+
 export function AttendanceCheck({
   members,
   attendance,
@@ -46,7 +55,7 @@ export function AttendanceCheck({
   cellVillageId,
   onAttendanceChange,
 }: AttendanceCheckProps) {
-  const [updating, setUpdating] = useState<string | null>(null);
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const canEdit = canCheckAttendance(
     session.role as Role,
@@ -57,21 +66,27 @@ export function AttendanceCheck({
     session.isAdmin
   );
 
+  // Instant toggle — UI updates immediately, fire-and-forget API
   const handleToggle = useCallback(
-    async (userId: string, field: string, value: unknown) => {
+    (userId: string, field: string, value: unknown) => {
       if (!canEdit) return;
-      // Optimistic update immediately
       onAttendanceChange(userId, field, value);
-      setUpdating(`${userId}-${field}`);
-      try {
-        await fetch('/api/attendance', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, weekStart, field, value }),
-        });
-      } finally {
-        setUpdating(null);
-      }
+      saveField(userId, weekStart, field, value);
+    },
+    [canEdit, weekStart, onAttendanceChange]
+  );
+
+  // Debounced counter — UI instant, API debounced 400ms
+  const handleCounter = useCallback(
+    (userId: string, field: string, value: number) => {
+      if (!canEdit) return;
+      onAttendanceChange(userId, field, value);
+      const key = `${userId}-${field}`;
+      if (debounceTimers.current[key]) clearTimeout(debounceTimers.current[key]);
+      debounceTimers.current[key] = setTimeout(() => {
+        saveField(userId, weekStart, field, value);
+        delete debounceTimers.current[key];
+      }, 400);
     },
     [canEdit, weekStart, onAttendanceChange]
   );
@@ -142,24 +157,22 @@ export function AttendanceCheck({
                       opt.value === null
                         ? !att?.worship_service
                         : att?.worship_service === opt.value;
-                    const isLoading = updating === `${member.id}-worship_service`;
 
                     return (
                       <button
                         key={opt.label}
-                        disabled={!canEdit || isLoading}
+                        disabled={!canEdit}
                         onClick={() =>
                           handleToggle(member.id, 'worship_service', opt.value)
                         }
                         className={cn(
-                          'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                          'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                           isActive
                             ? opt.value === null
                               ? 'bg-stone-200 text-stone-600'
                               : 'bg-primary-500 text-white shadow-sm'
                             : 'bg-stone-100 text-stone-400 hover:bg-stone-200',
-                          !canEdit && 'opacity-60 cursor-default',
-                          isLoading && 'animate-pulse'
+                          !canEdit && 'opacity-60 cursor-default'
                         )}
                       >
                         {opt.label}
@@ -171,64 +184,47 @@ export function AttendanceCheck({
 
               {/* Department Meeting & Small Group - inline toggles */}
               <div className="flex gap-3 flex-wrap">
-                <ToggleButton
+                <ToggleChip
                   label="부서집회"
                   checked={att?.department_meeting ?? false}
                   disabled={!canEdit}
-                  loading={updating === `${member.id}-department_meeting`}
                   onToggle={() =>
-                    handleToggle(
-                      member.id,
-                      'department_meeting',
-                      !(att?.department_meeting ?? false)
-                    )
+                    handleToggle(member.id, 'department_meeting', !(att?.department_meeting ?? false))
                   }
                 />
-                <ToggleButton
+                <ToggleChip
                   label="소그룹"
                   checked={att?.small_group ?? false}
                   disabled={!canEdit}
-                  loading={updating === `${member.id}-small_group`}
                   onToggle={() =>
-                    handleToggle(
-                      member.id,
-                      'small_group',
-                      !(att?.small_group ?? false)
-                    )
+                    handleToggle(member.id, 'small_group', !(att?.small_group ?? false))
                   }
                 />
-                <ToggleButton
+                <ToggleChip
                   label="성경통독"
                   checked={att?.bible_reading ?? false}
                   disabled={!canEdit}
-                  loading={updating === `${member.id}-bible_reading`}
                   onToggle={() =>
-                    handleToggle(
-                      member.id,
-                      'bible_reading',
-                      !(att?.bible_reading ?? false)
-                    )
+                    handleToggle(member.id, 'bible_reading', !(att?.bible_reading ?? false))
                   }
                 />
               </div>
 
               {/* Prayer & QT Counters */}
               <div className="flex gap-4">
-                <CounterButton
+                <Counter
                   label="기도"
                   icon={<Heart size={12} />}
                   value={att?.prayer_count ?? 0}
                   disabled={!canEdit}
-                  loading={updating === `${member.id}-prayer_count`}
-                  onChange={(v) => handleToggle(member.id, 'prayer_count', v)}
+                  onChange={(v) => handleCounter(member.id, 'prayer_count', v)}
                 />
-                <CounterButton
+                <Counter
                   label="QT"
                   icon={<Sun size={12} />}
                   value={att?.qt_count ?? 0}
                   disabled={!canEdit}
-                  loading={updating === `${member.id}-qt_count`}
-                  onChange={(v) => handleToggle(member.id, 'qt_count', v)}
+                  onChange={(v) => handleCounter(member.id, 'qt_count', v)}
                 />
               </div>
             </div>
@@ -239,32 +235,29 @@ export function AttendanceCheck({
   );
 }
 
-function ToggleButton({
+function ToggleChip({
   label,
   checked,
   disabled,
-  loading,
   onToggle,
 }: {
   label: string;
   checked: boolean;
   disabled: boolean;
-  loading: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
-      disabled={disabled || loading}
+      disabled={disabled}
       onClick={onToggle}
       className={cn(
-        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
         checked
           ? 'bg-green-100 text-green-700 border border-green-200'
           : 'bg-stone-100 text-stone-400 border border-stone-200',
         !disabled && !checked && 'hover:bg-red-50 hover:text-red-400 hover:border-red-200',
         !disabled && checked && 'hover:bg-green-50',
-        disabled && 'opacity-60 cursor-default',
-        loading && 'animate-pulse'
+        disabled && 'opacity-60 cursor-default'
       )}
     >
       {checked ? <Check size={12} /> : <X size={12} />}
@@ -273,21 +266,27 @@ function ToggleButton({
   );
 }
 
-function CounterButton({
+function Counter({
   label,
   icon,
   value,
   disabled,
-  loading,
   onChange,
 }: {
   label: string;
   icon: React.ReactNode;
   value: number;
   disabled: boolean;
-  loading: boolean;
   onChange: (v: number) => void;
 }) {
+  const handleDirectInput = () => {
+    if (disabled) return;
+    const input = prompt(`${label} 횟수를 입력하세요 (0~7)`, String(value));
+    if (input === null) return;
+    const n = parseInt(input, 10);
+    if (!isNaN(n) && n >= 0 && n <= 7) onChange(n);
+  };
+
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
@@ -296,11 +295,10 @@ function CounterButton({
       </span>
       <div className={cn(
         'flex items-center rounded-lg border overflow-hidden',
-        value > 0 ? 'border-primary-200 bg-primary-50' : 'border-stone-200 bg-stone-50',
-        loading && 'animate-pulse'
+        value > 0 ? 'border-primary-200 bg-primary-50' : 'border-stone-200 bg-stone-50'
       )}>
         <button
-          disabled={disabled || loading || value <= 0}
+          disabled={disabled || value <= 0}
           onClick={() => onChange(Math.max(0, value - 1))}
           className={cn(
             'px-1.5 py-1 text-xs transition-colors',
@@ -310,14 +308,19 @@ function CounterButton({
         >
           <Minus size={12} />
         </button>
-        <span className={cn(
-          'px-2 py-1 text-xs font-bold min-w-[24px] text-center',
-          value > 0 ? 'text-primary-700' : 'text-stone-400'
-        )}>
-          {value}
-        </span>
         <button
-          disabled={disabled || loading || value >= 7}
+          disabled={disabled}
+          onClick={handleDirectInput}
+          className={cn(
+            'px-2 py-1 text-xs font-bold min-w-[24px] text-center cursor-pointer hover:bg-stone-100',
+            value > 0 ? 'text-primary-700' : 'text-stone-400',
+            disabled && 'cursor-default'
+          )}
+        >
+          {value}
+        </button>
+        <button
+          disabled={disabled || value >= 7}
           onClick={() => onChange(Math.min(7, value + 1))}
           className={cn(
             'px-1.5 py-1 text-xs transition-colors',

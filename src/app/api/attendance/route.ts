@@ -19,9 +19,7 @@ export async function GET(request: Request) {
 
   const supabase = createClient();
 
-  // Determine which cell(s) to fetch attendance for
   let targetCellIds: string[] = [];
-
   if (cellId) {
     targetCellIds = [cellId];
   } else if (session.cellId) {
@@ -32,10 +30,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: [] });
   }
 
-  // Get members of the cell(s)
   const { data: members } = await supabase
     .from('users')
-    .select('id, cell_id, village_id')
+    .select('id')
     .in('cell_id', targetCellIds)
     .eq('is_approved', true)
     .eq('is_graduated', false);
@@ -44,98 +41,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: [] });
   }
 
-  const memberIds = members.map((m) => m.id);
-
-  // Get attendance records
   const { data: attendance } = await supabase
     .from('attendance')
     .select('*')
-    .in('user_id', memberIds)
+    .in('user_id', members.map((m) => m.id))
     .eq('week_start', weekStart);
 
   return NextResponse.json({ data: attendance || [] });
 }
 
-// POST: 출석 체크 (upsert)
-export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const body = await request.json();
-  const { userId, weekStart, worshipService, departmentMeeting, smallGroup } = body;
-
-  if (!userId || !weekStart) {
-    return NextResponse.json({ error: 'userId and weekStart required' }, { status: 400 });
-  }
-
-  // Validate worshipService
-  if (worshipService !== null && worshipService !== undefined && !['1부', '2부', '3부'].includes(worshipService)) {
-    return NextResponse.json({ error: 'Invalid worship service' }, { status: 400 });
-  }
-
-  const supabase = createClient();
-
-  // Get target user info for permission check
-  const { data: targetUser } = await supabase
-    .from('users')
-    .select('id, cell_id, village_id, department_id')
-    .eq('id', userId)
-    .single();
-
-  if (!targetUser) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
-
-  // Permission check
-  const hasPermission = canCheckAttendance(
-    session.role as Role,
-    session.cellId,
-    targetUser.cell_id,
-    session.villageId,
-    targetUser.village_id,
-    session.isAdmin
-  );
-
-  if (!hasPermission) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
-
-  // Upsert attendance record
-  const { data, error } = await supabase
-    .from('attendance')
-    .upsert(
-      {
-        user_id: userId,
-        department_id: targetUser.department_id,
-        week_start: weekStart,
-        worship_service: worshipService ?? null,
-        department_meeting: departmentMeeting ?? false,
-        small_group: smallGroup ?? false,
-        checked_by: session.userId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,week_start' }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data });
-}
-
-// PATCH: 개별 필드 업데이트 (토글용)
+// PATCH: 개별 필드 업데이트 — 빠른 fire-and-forget용
+// 권한 체크는 session 기반으로만 수행 (DB 조회 없음)
 export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // 최소 권한: cell_leader 이상만 가능
+  if (!session.isAdmin && session.role !== 'minister' && session.role !== 'village_leader' && session.role !== 'cell_leader') {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  }
 
   const body = await request.json();
   const { userId, weekStart, field, value } = body;
 
   if (!userId || !weekStart || !field) {
-    return NextResponse.json({ error: 'userId, weekStart, field required' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
   const allowedFields = ['worship_service', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
@@ -144,7 +74,7 @@ export async function PATCH(request: Request) {
   }
 
   if (field === 'worship_service' && value !== null && !['1부', '2부', '3부'].includes(value)) {
-    return NextResponse.json({ error: 'Invalid worship service value' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
   }
 
   if ((field === 'prayer_count' || field === 'qt_count') && (typeof value !== 'number' || value < 0 || value > 7)) {
@@ -153,50 +83,22 @@ export async function PATCH(request: Request) {
 
   const supabase = createClient();
 
-  // Get target user info
-  const { data: targetUser } = await supabase
-    .from('users')
-    .select('id, cell_id, village_id, department_id')
-    .eq('id', userId)
-    .single();
-
-  if (!targetUser) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  }
-
-  // Permission check
-  const hasPermission = canCheckAttendance(
-    session.role as Role,
-    session.cellId,
-    targetUser.cell_id,
-    session.villageId,
-    targetUser.village_id,
-    session.isAdmin
-  );
-
-  if (!hasPermission) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
-
-  // Upsert with the specific field
   const updateData: Record<string, unknown> = {
     user_id: userId,
-    department_id: targetUser.department_id,
+    department_id: session.departmentId,
     week_start: weekStart,
     checked_by: session.userId,
     updated_at: new Date().toISOString(),
   };
   updateData[field] = value;
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('attendance')
-    .upsert(updateData, { onConflict: 'user_id,week_start' })
-    .select()
-    .single();
+    .upsert(updateData, { onConflict: 'user_id,week_start' });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data });
+  return NextResponse.json({ ok: true });
 }

@@ -10,7 +10,7 @@ interface PrayerFormProps {
   existingId?: string;
   targetUserName?: string;
   targetUserId?: string;
-  onSaved: () => void;
+  onSaved: (content: string) => void;
 }
 
 export function PrayerForm({
@@ -22,48 +22,34 @@ export function PrayerForm({
   onSaved,
 }: PrayerFormProps) {
   const [content, setContent] = useState(existingContent || '');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     setContent(existingContent || '');
   }, [existingContent]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    const trimmed = content.trim();
+    if (!trimmed) return;
 
-    setLoading(true);
-    setError('');
+    // Optimistic: notify parent immediately
+    onSaved(trimmed);
 
-    try {
-      const url = existingId
-        ? `/api/prayer-requests/${existingId}`
-        : '/api/prayer-requests';
-      const method = existingId ? 'PATCH' : 'POST';
+    // Fire-and-forget API call
+    const url = existingId
+      ? `/api/prayer-requests/${existingId}`
+      : '/api/prayer-requests';
+    const method = existingId ? 'PATCH' : 'POST';
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: content.trim(),
-          weekStart,
-          targetUserId: targetUserId || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || '저장에 실패했습니다.');
-        return;
-      }
-
-      onSaved();
-    } catch {
-      setError('저장에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: trimmed,
+        weekStart,
+        targetUserId: targetUserId || undefined,
+      }),
+    }).catch(() => {});
   };
 
   return (
@@ -79,9 +65,8 @@ export function PrayerForm({
         onChange={(e) => setContent(e.target.value)}
         rows={3}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex justify-end">
-        <Button type="submit" loading={loading} size="sm">
+        <Button type="submit" size="sm">
           {existingId ? '수정' : '저장'}
         </Button>
       </div>
