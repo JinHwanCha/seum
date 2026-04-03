@@ -13,7 +13,7 @@ const QUICK_LINKS = [
   { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
   { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
-  { href: '/boards/intercession', label: '중보기도', icon: Heart, color: 'bg-rose-50 text-rose-600' },
+  { href: '/boards/intercession', label: '기도제목', icon: Heart, color: 'bg-rose-50 text-rose-600' },
 ];
 
 export default function DashboardPage() {

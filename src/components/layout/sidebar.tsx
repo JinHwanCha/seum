@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { href: '/boards/notice', label: '공지', icon: Megaphone },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare },
   { href: '/boards/gathering', label: '모임', icon: Users },
-  { href: '/boards/intercession', label: '중보기도', icon: Heart },
+  { href: '/boards/intercession', label: '기도제목', icon: Heart },
 ];
 
 export function Sidebar() {

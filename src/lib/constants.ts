@@ -23,7 +23,7 @@ export const BOARD_TYPE_LABELS: Record<string, string> = {
   notice: '공지',
   sharing: '나눔',
   gathering: '모임',
-  intercession: '중보기도',
+  intercession: '기도제목',
 };
 
 export const ROLE_LABELS_DEFAULT: Record<string, string> = {

@@ -10,7 +10,7 @@ const MOBILE_NAV_ITEMS = [
   { href: '/prayer', label: '소그룹', icon: UsersRound },
   { href: '/boards/notice', label: '공지', icon: Megaphone },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare },
-  { href: '/boards/intercession', label: '중보', icon: Heart },
+  { href: '/boards/intercession', label: '기도', icon: Heart },
 ];
 
 export function MobileNav() {
