@@ -189,3 +189,17 @@ CREATE INDEX idx_bureau_members_user ON bureau_members(user_id);
 CREATE INDEX idx_bureau_members_bureau_type ON bureau_members(bureau_type_id);
 CREATE INDEX idx_board_categories_dept ON board_categories(department_id, board_type);
 CREATE INDEX idx_group_years_dept_active ON group_years(department_id, is_active);
+
+-- ─── Password Reset Requests (비밀번호 초기화 요청) ──────────
+CREATE TABLE password_reset_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  church_id UUID NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  resolved_by UUID REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_password_reset_church_status ON password_reset_requests(church_id, status);
