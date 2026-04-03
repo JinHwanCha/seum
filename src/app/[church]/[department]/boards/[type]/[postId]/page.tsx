@@ -60,11 +60,11 @@ export default function PostDetailPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
+    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
   if (!post || !user) {
-    return <div className="text-center py-8 text-gray-400 text-sm">게시글을 찾을 수 없습니다.</div>;
+    return <div className="text-center py-8 text-stone-400 text-sm">게시글을 찾을 수 없습니다.</div>;
   }
 
   const isAuthor = post.author_id === user.userId;
@@ -75,7 +75,7 @@ export default function PostDetailPage() {
     <div className="max-w-2xl mx-auto space-y-4">
       <button
         onClick={() => router.push(`${basePath}/boards/${boardType}`)}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors"
       >
         <ArrowLeft size={16} />
         {BOARD_TYPE_LABELS[boardType]} 목록
@@ -89,9 +89,9 @@ export default function PostDetailPage() {
               {post.category && <Badge>{post.category.name}</Badge>}
               {post.gathering_type && <Badge variant="primary">{post.gathering_type}</Badge>}
             </div>
-            <h1 className="text-xl font-bold text-gray-900">{post.title}</h1>
-            <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-              <span className="font-medium text-gray-700">{post.author?.name}</span>
+            <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
+            <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">
+              <span className="font-medium text-stone-700">{post.author?.name}</span>
               <span>{formatDateTime(post.created_at)}</span>
               {post.updated_at !== post.created_at && <span>(수정됨)</span>}
             </div>
@@ -100,7 +100,7 @@ export default function PostDetailPage() {
             {canEdit && (
               <button
                 onClick={() => router.push(`${basePath}/boards/${boardType}/${postId}/edit`)}
-                className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                className="p-2 text-stone-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
               >
                 <Edit3 size={16} />
               </button>
@@ -108,7 +108,7 @@ export default function PostDetailPage() {
             {canDelete && (
               <button
                 onClick={handleDelete}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <Trash2 size={16} />
               </button>
@@ -117,11 +117,11 @@ export default function PostDetailPage() {
         </div>
 
         <div className="prose prose-sm max-w-none mb-6">
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+          <p className="text-stone-700 whitespace-pre-wrap leading-relaxed">{post.content}</p>
         </div>
 
         {/* Reactions */}
-        <div className="border-t border-gray-100 pt-4 mb-4">
+        <div className="border-t border-stone-100 pt-4 mb-4">
           <ReactionBar
             postId={postId}
             reactions={reactions}
@@ -131,7 +131,7 @@ export default function PostDetailPage() {
         </div>
 
         {/* Comments */}
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-stone-100 pt-4">
           <CommentSection
             postId={postId}
             comments={comments}

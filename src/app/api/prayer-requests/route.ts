@@ -12,23 +12,26 @@ export async function GET(request: Request) {
 
   const supabase = createClient();
 
-  // Fetch all prayer requests for this department/week
-  const { data: allPrayers } = await supabase
-    .from('prayer_requests')
-    .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
-    .eq('department_id', session.departmentId)
-    .eq('week_start', weekStart)
-    .order('created_at', { ascending: true });
+  // Parallel: fetch prayers + group year at the same time
+  const [prayersResult, groupYearResult] = await Promise.all([
+    supabase
+      .from('prayer_requests')
+      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+      .eq('department_id', session.departmentId)
+      .eq('week_start', weekStart)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('group_years')
+      .select('id')
+      .eq('department_id', session.departmentId)
+      .eq('is_active', true)
+      .single(),
+  ]);
 
+  const allPrayers = prayersResult.data;
   if (!allPrayers) return NextResponse.json({ prayers: [], myPrayer: null, villages: [], cells: [] });
 
-  // Fetch villages and cells for grouping
-  const { data: groupYear } = await supabase
-    .from('group_years')
-    .select('id')
-    .eq('department_id', session.departmentId)
-    .eq('is_active', true)
-    .single();
+  const groupYear = groupYearResult.data;
 
   let villages: { id: string; name: string; sort_order: number }[] = [];
   let cells: { id: string; village_id: string; name: string | null; sort_order: number; leader?: { id: string; name: string } }[] = [];

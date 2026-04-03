@@ -108,11 +108,11 @@ export default function ProfilePage() {
       <div className="flex items-center gap-2">
         <Link
           href={basePath}
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
         >
           <ArrowLeft size={18} />
         </Link>
-        <h1 className="text-lg font-bold text-gray-900">내 정보</h1>
+        <h1 className="text-lg font-bold text-stone-900">내 정보</h1>
       </div>
 
       <Card>
@@ -121,35 +121,35 @@ export default function ProfilePage() {
             {user.name.charAt(0)}
           </div>
           <div>
-            <div className="font-semibold text-gray-900">{user.name}</div>
+            <div className="font-semibold text-stone-900">{user.name}</div>
             <Badge variant="primary">{roleLabel}</Badge>
           </div>
         </div>
         {(villageName || cellName) && (
-          <div className="border-t border-gray-100 pt-3 space-y-1">
+          <div className="border-t border-stone-100 pt-3 space-y-1">
             {villageName && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">마을</span>
-                <span className="font-medium text-gray-900">{villageName}</span>
+                <span className="text-stone-500">마을</span>
+                <span className="font-medium text-stone-900">{villageName}</span>
               </div>
             )}
             {cellName && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">소그룹</span>
-                <span className="font-medium text-gray-900">{cellName}</span>
+                <span className="text-stone-500">소그룹</span>
+                <span className="font-medium text-stone-900">{cellName}</span>
               </div>
             )}
           </div>
         )}
         {!villageName && !cellName && !loading && (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-400">마을/소그룹이 아직 배정되지 않았습니다.</p>
+          <div className="border-t border-stone-100 pt-3">
+            <p className="text-xs text-stone-400">마을/소그룹이 아직 배정되지 않았습니다.</p>
           </div>
         )}
       </Card>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+        <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Card>

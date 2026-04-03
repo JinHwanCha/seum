@@ -33,7 +33,7 @@ export function Sidebar() {
   const isAdmin = user ? canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember, user.isAdmin) : false;
 
   return (
-    <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 min-h-[calc(100vh-3.5rem)]">
+    <aside className="hidden md:flex flex-col w-60 warm-surface border-r border-stone-200/80 min-h-[calc(100vh-3.5rem)]">
       <nav className="flex-1 p-3 space-y-0.5">
         {NAV_ITEMS.map((item) => {
           const href = `${basePath}${item.href}`;
@@ -51,7 +51,7 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
                 isActive
                   ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-stone-600 hover:bg-primary-50/50 hover:text-stone-900'
               )}
             >
               <Icon size={18} />
@@ -62,14 +62,14 @@ export function Sidebar() {
 
         {isAdmin && (
           <>
-            <div className="border-t border-gray-200 my-3" />
+            <div className="border-t border-stone-200/80 my-3" />
             <Link
               href={`${basePath}/admin`}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
                 pathname.startsWith(`${basePath}/admin`)
                   ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-stone-600 hover:bg-primary-50/50 hover:text-stone-900'
               )}
             >
               <Settings size={18} />

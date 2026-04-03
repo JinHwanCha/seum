@@ -15,26 +15,18 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  // Fetch village and cell names
-  let villageName: string | null = null;
-  let cellName: string | null = null;
+  // Fetch village and cell names in parallel
+  const [villageResult, cellResult] = await Promise.all([
+    user.village_id
+      ? supabase.from('villages').select('name').eq('id', user.village_id).single()
+      : Promise.resolve({ data: null }),
+    user.cell_id
+      ? supabase.from('cells').select('name').eq('id', user.cell_id).single()
+      : Promise.resolve({ data: null }),
+  ]);
 
-  if (user.village_id) {
-    const { data: v } = await supabase
-      .from('villages')
-      .select('name')
-      .eq('id', user.village_id)
-      .single();
-    villageName = v?.name || null;
-  }
-  if (user.cell_id) {
-    const { data: c } = await supabase
-      .from('cells')
-      .select('name')
-      .eq('id', user.cell_id)
-      .single();
-    cellName = c?.name || null;
-  }
+  const villageName = villageResult.data?.name || null;
+  const cellName = cellResult.data?.name || null;
 
   return NextResponse.json({ user: { ...user, village_name: villageName, cell_name: cellName } });
 }

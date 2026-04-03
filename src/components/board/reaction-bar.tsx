@@ -48,7 +48,7 @@ export function ReactionBar({ postId, reactions, session, onRefresh }: ReactionB
             'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-colors',
             hasReacted
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+              : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
           )}
         >
           <span>{emoji}</span>
@@ -59,17 +59,17 @@ export function ReactionBar({ postId, reactions, session, onRefresh }: ReactionB
       <div className="relative">
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-sm"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-stone-50 border border-stone-200 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors text-sm"
         >
           +
         </button>
         {showPicker && (
-          <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-lg border border-gray-200 p-2 flex gap-1 z-10">
+          <div className="absolute bottom-full left-0 mb-2 warm-surface rounded-xl shadow-lg border border-stone-200 p-2 flex gap-1 z-10">
             {EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => toggleReaction(emoji)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-lg"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-50 transition-colors text-lg"
               >
                 {emoji}
               </button>

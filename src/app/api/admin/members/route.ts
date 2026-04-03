@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('users')
-    .select('*')
+    .select('id, name, birth_date, phone, role, minister_rank, village_id, cell_id, is_approved, is_admin, created_at')
     .eq('department_id', session.departmentId)
     .order('created_at', { ascending: false });
 

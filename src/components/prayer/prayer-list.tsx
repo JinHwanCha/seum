@@ -14,7 +14,7 @@ interface PrayerListProps {
 export function PrayerList({ prayers, session, weekStart, onUpdated, groupByVillage }: PrayerListProps) {
   if (prayers.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-stone-400">
         <p className="text-sm">이번 주 기도제목이 없습니다.</p>
       </div>
     );

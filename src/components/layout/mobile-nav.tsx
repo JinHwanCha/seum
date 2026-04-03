@@ -19,7 +19,7 @@ export function MobileNav() {
   const basePath = `/${params.church}/${params.department}`;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 warm-surface border-t border-stone-200/80 z-40 safe-bottom">
       <div className="flex items-center justify-around h-16">
         {MOBILE_NAV_ITEMS.map((item) => {
           const href = `${basePath}${item.href}`;
@@ -35,7 +35,7 @@ export function MobileNav() {
               href={href}
               className={cn(
                 'flex flex-col items-center gap-1 px-3 py-1 min-w-[56px] transition-colors',
-                isActive ? 'text-primary-600' : 'text-gray-400'
+                isActive ? 'text-primary-600' : 'text-stone-400'
               )}
             >
               <Icon size={20} />

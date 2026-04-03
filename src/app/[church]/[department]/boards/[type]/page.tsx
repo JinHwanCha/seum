@@ -50,7 +50,7 @@ export default function BoardListPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900">
+        <h1 className="text-lg font-bold text-stone-900">
           {BOARD_TYPE_LABELS[boardType] || boardType}
         </h1>
         {canWrite && (
@@ -65,7 +65,7 @@ export default function BoardListPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+        <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
       ) : (
         <PostList posts={posts} boardType={boardType} />
       )}

@@ -24,8 +24,8 @@ export default function EditPostPage() {
       .catch(() => setLoading(false));
   }, [postId]);
 
-  if (loading) return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
-  if (!post) return <div className="text-center py-8 text-gray-400 text-sm">게시글을 찾을 수 없습니다.</div>;
+  if (loading) return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
+  if (!post) return <div className="text-center py-8 text-stone-400 text-sm">게시글을 찾을 수 없습니다.</div>;
 
   return (
     <div className="max-w-2xl mx-auto">

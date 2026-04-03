@@ -26,19 +26,32 @@ export async function GET(request: Request) {
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
-  // Get counts
-  const postsWithCounts = await Promise.all(
-    (posts || []).map(async (post) => {
-      const [{ count: commentCount }, { count: reactionCount }] = await Promise.all([
-        supabase.from('comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
-        supabase.from('reactions').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
-      ]);
-      return {
-        ...post,
-        _count: { comments: commentCount || 0, reactions: reactionCount || 0 },
-      };
-    })
-  );
+  const postIds = (posts || []).map((p) => p.id);
+
+  // Batch: get all comment & reaction counts in 2 queries instead of 2N
+  let commentCounts: Record<string, number> = {};
+  let reactionCounts: Record<string, number> = {};
+
+  if (postIds.length > 0) {
+    const [{ data: comments }, { data: reactions }] = await Promise.all([
+      supabase.from('comments').select('post_id').in('post_id', postIds),
+      supabase.from('reactions').select('post_id').in('post_id', postIds),
+    ]);
+    (comments || []).forEach((c) => {
+      commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1;
+    });
+    (reactions || []).forEach((r) => {
+      reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1;
+    });
+  }
+
+  const postsWithCounts = (posts || []).map((post) => ({
+    ...post,
+    _count: {
+      comments: commentCounts[post.id] || 0,
+      reactions: reactionCounts[post.id] || 0,
+    },
+  }));
 
   return NextResponse.json({ posts: postsWithCounts });
 }

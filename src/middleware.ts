@@ -24,8 +24,13 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, JWT_SECRET_KEY);
-    return NextResponse.next();
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    // Pass decoded payload via request headers to avoid re-verifying JWT in route handlers
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-session-payload', JSON.stringify(payload));
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   } catch {
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete(COOKIE_NAME);

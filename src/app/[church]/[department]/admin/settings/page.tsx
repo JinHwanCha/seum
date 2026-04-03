@@ -50,14 +50,14 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
+    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
   const isPastor = user?.ministerRank === 'pastor';
 
   return (
     <div className="space-y-6 max-w-lg">
-      <h1 className="text-lg font-bold text-gray-900">설정</h1>
+      <h1 className="text-lg font-bold text-stone-900">설정</h1>
 
       {/* Church info */}
       {settings && (
@@ -65,15 +65,15 @@ export default function SettingsPage() {
           <CardTitle>교회 정보</CardTitle>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">교회 이름</span>
+              <span className="text-stone-500">교회 이름</span>
               <span className="font-medium">{settings.church_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">담임 목사</span>
+              <span className="text-stone-500">담임 목사</span>
               <span className="font-medium">{settings.pastor_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">부서</span>
+              <span className="text-stone-500">부서</span>
               <span className="font-medium">{settings.department_name}</span>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function SettingsPage() {
       {isPastor && (
         <Card>
           <CardTitle>직급 명칭 설정</CardTitle>
-          <p className="text-xs text-gray-500 mb-4">목사님만 수정 가능합니다.</p>
+          <p className="text-xs text-stone-500 mb-4">목사님만 수정 가능합니다.</p>
           <div className="space-y-3">
             {Object.entries(ROLE_LABELS_DEFAULT).map(([key, defaultLabel]) => {
               if (key === 'pending') return null;

@@ -35,19 +35,16 @@ export async function PATCH(request: Request) {
   const { roleLabels } = await request.json();
   const supabase = createClient();
 
-  // Upsert role labels
-  for (const [roleKey, label] of Object.entries(roleLabels)) {
-    await supabase
-      .from('role_labels')
-      .upsert(
-        {
-          department_id: session.departmentId,
-          role_key: roleKey,
-          label: label as string,
-        },
-        { onConflict: 'department_id,role_key' }
-      );
-  }
+  // Batch upsert role labels
+  const upsertData = Object.entries(roleLabels).map(([roleKey, label]) => ({
+    department_id: session.departmentId,
+    role_key: roleKey,
+    label: label as string,
+  }));
+
+  await supabase
+    .from('role_labels')
+    .upsert(upsertData, { onConflict: 'department_id,role_key' });
 
   return NextResponse.json({ success: true });
 }

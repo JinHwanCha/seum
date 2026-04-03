@@ -98,7 +98,7 @@ export default function SmallGroupPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">소그룹</h1>
+      <h1 className="text-lg font-bold text-stone-900">소그룹</h1>
 
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
 
@@ -114,17 +114,17 @@ export default function SmallGroupPage() {
       </Card>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+        <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
       ) : (
         <>
           {/* === Cell Member / Cell Leader View === */}
           {hasCell && !hasOversight && (
             <div className="space-y-3">
               {/* Cell Info Header */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="warm-surface rounded-xl border border-stone-200/80 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Users size={18} className="text-primary-600" />
-                  <h2 className="font-semibold text-gray-900">
+                  <h2 className="font-semibold text-stone-900">
                     {cellName || '소그룹'}
                   </h2>
                   {villageName && (
@@ -134,9 +134,9 @@ export default function SmallGroupPage() {
 
                 {/* Leader */}
                 {leader && (
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-stone-100">
                     <Crown size={14} className="text-amber-500" />
-                    <span className="text-sm font-medium text-gray-900">{leader.name}</span>
+                    <span className="text-sm font-medium text-stone-900">{leader.name}</span>
                     <Badge variant="success">목자</Badge>
                   </div>
                 )}
@@ -147,8 +147,8 @@ export default function SmallGroupPage() {
                     .filter((m) => m.role !== 'cell_leader')
                     .map((m) => (
                       <div key={m.id} className="flex items-center gap-2 text-sm">
-                        <User size={14} className="text-gray-400" />
-                        <span className="text-gray-700">{m.name}</span>
+                        <User size={14} className="text-stone-400" />
+                        <span className="text-stone-700">{m.name}</span>
                         {m.id === user.userId && (
                           <span className="text-xs text-primary-500">(나)</span>
                         )}
@@ -158,10 +158,10 @@ export default function SmallGroupPage() {
               </div>
 
               {/* Cell Prayers */}
-              <h2 className="text-sm font-semibold text-gray-500 px-1">소그룹 기도제목</h2>
+              <h2 className="text-sm font-semibold text-stone-500 px-1">소그룹 기도제목</h2>
 
               {members.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
+                <div className="text-center py-8 text-stone-400 text-sm">
                   소그룹이 배정되지 않았습니다.
                 </div>
               ) : (
@@ -172,15 +172,15 @@ export default function SmallGroupPage() {
                       return (
                         <div
                           key={m.id}
-                          className="bg-white rounded-xl border border-gray-100 p-4 opacity-60"
+                          className="warm-surface rounded-xl border border-stone-100 p-4 opacity-60"
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-gray-900 text-sm">{m.name}</span>
+                            <span className="font-medium text-stone-900 text-sm">{m.name}</span>
                             <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
                               {ROLE_LABELS_DEFAULT[m.role]}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-400 italic">아직 기도제목을 작성하지 않았습니다.</p>
+                          <p className="text-sm text-stone-400 italic">아직 기도제목을 작성하지 않았습니다.</p>
                         </div>
                       );
                     }
@@ -201,7 +201,7 @@ export default function SmallGroupPage() {
 
           {/* === No Cell Assigned === */}
           {!hasCell && !hasOversight && (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-stone-400">
               <Users size={40} className="mx-auto mb-3 opacity-40" />
               <p className="text-sm font-medium">소그룹이 아직 배정되지 않았습니다.</p>
               <p className="text-xs mt-1">관리자에게 소그룹 배정을 요청해주세요.</p>
@@ -214,7 +214,7 @@ export default function SmallGroupPage() {
               {villageCells.map((village) => (
                 <div key={village.id}>
                   {isMinister && (
-                    <h2 className="text-sm font-semibold text-gray-700 mb-2 px-1">
+                    <h2 className="text-sm font-semibold text-stone-700 mb-2 px-1">
                       {village.name} 마을
                     </h2>
                   )}
@@ -227,24 +227,24 @@ export default function SmallGroupPage() {
                       return (
                         <div
                           key={cell.id}
-                          className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                          className="warm-surface rounded-xl border border-stone-200/80 overflow-hidden"
                         >
                           {/* Cell Header - Clickable */}
                           <button
                             onClick={() => toggleCell(cell.id)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
+                            className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
                           >
                             <div className="flex items-center gap-2">
                               {isExpanded ? (
-                                <ChevronDown size={16} className="text-gray-400" />
+                                <ChevronDown size={16} className="text-stone-400" />
                               ) : (
-                                <ChevronRight size={16} className="text-gray-400" />
+                                <ChevronRight size={16} className="text-stone-400" />
                               )}
-                              <span className="font-medium text-gray-900 text-sm">
+                              <span className="font-medium text-stone-900 text-sm">
                                 {cell.name || '소그룹'}
                               </span>
                               {cell.leader_name && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-stone-500">
                                   목자: {cell.leader_name}
                                 </span>
                               )}
@@ -261,7 +261,7 @@ export default function SmallGroupPage() {
 
                           {/* Expanded Content */}
                           {isExpanded && (
-                            <div className="border-t border-gray-100 p-4 space-y-3">
+                            <div className="border-t border-stone-100 p-4 space-y-3">
                               {/* Members + their prayers */}
                               {cell.members.map((m) => {
                                 const prayer = cell.prayers.find(
@@ -273,9 +273,9 @@ export default function SmallGroupPage() {
                                       {m.role === 'cell_leader' ? (
                                         <Crown size={14} className="text-amber-500" />
                                       ) : (
-                                        <User size={14} className="text-gray-400" />
+                                        <User size={14} className="text-stone-400" />
                                       )}
-                                      <span className="text-sm font-medium text-gray-900">
+                                      <span className="text-sm font-medium text-stone-900">
                                         {m.name}
                                       </span>
                                       <Badge
@@ -287,13 +287,13 @@ export default function SmallGroupPage() {
                                       </Badge>
                                     </div>
                                     {prayer ? (
-                                      <div className="ml-6 bg-gray-50 rounded-lg p-3">
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                      <div className="ml-6 bg-primary-50/30 rounded-lg p-3">
+                                        <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
                                           {prayer.content}
                                         </p>
                                       </div>
                                     ) : (
-                                      <p className="ml-6 text-xs text-gray-400 italic">
+                                      <p className="ml-6 text-xs text-stone-400 italic">
                                         기도제목 미작성
                                       </p>
                                     )}
@@ -312,7 +312,7 @@ export default function SmallGroupPage() {
           )}
 
           {hasOversight && villageCells.length === 0 && (
-            <div className="text-center py-8 text-gray-400 text-sm">
+            <div className="text-center py-8 text-stone-400 text-sm">
               소그룹 데이터가 없습니다.
             </div>
           )}

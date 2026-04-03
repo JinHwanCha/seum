@@ -38,8 +38,8 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-primary-600 mb-2">세움</h1>
-        <p className="text-gray-500 text-sm">교회 공동체 나눔 플랫폼</p>
+        <h1 className="text-3xl font-bold text-primary-700 mb-2">세움</h1>
+        <p className="text-stone-500 text-sm">교회 공동체 나눔 플랫폼</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,9 +71,9 @@ export function LoginForm() {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            className="w-4 h-4 rounded border-stone-300 text-primary-600 focus:ring-primary-500"
           />
-          <span className="text-sm text-gray-600">로그인 유지</span>
+          <span className="text-sm text-stone-600">로그인 유지</span>
         </label>
 
         {error && (
@@ -104,7 +104,7 @@ export function LoginForm() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-gray-500 mt-6">
+      <p className="text-center text-sm text-stone-500 mt-6">
         계정이 없으신가요?{' '}
         <a href="/register" className="text-primary-600 font-medium hover:underline">
           회원가입

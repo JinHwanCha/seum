@@ -55,23 +55,23 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+    <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-medium text-gray-900 text-sm">{user.name}</span>
+          <span className="font-medium text-stone-900 text-sm">{user.name}</span>
           <Badge variant={roleBadgeVariant()}>{getRoleDisplay()}</Badge>
         </div>
         {canEdit && (
           <button
             onClick={() => setEditing(true)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            className="p-1.5 rounded-lg text-stone-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="수정"
           >
             <Edit3 size={14} />
           </button>
         )}
       </div>
-      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+      <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
         {prayer.content}
       </p>
     </div>

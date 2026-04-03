@@ -89,14 +89,14 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
 
     return (
       <div key={comment.id} className={isReply ? 'ml-8 mt-2' : 'mt-3'}>
-        <div className="bg-gray-50 rounded-lg p-3">
+        <div className="bg-primary-50/30 rounded-lg p-3">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              {isReply && <CornerDownRight size={12} className="text-gray-400" />}
-              <span className="text-sm font-medium text-gray-900">
+              {isReply && <CornerDownRight size={12} className="text-stone-400" />}
+              <span className="text-sm font-medium text-stone-900">
                 {comment.author?.name}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-stone-400">
                 {formatDateTime(comment.created_at)}
               </span>
             </div>
@@ -107,7 +107,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
                     setEditingId(comment.id);
                     setEditContent(comment.content);
                   }}
-                  className="p-1 text-gray-400 hover:text-gray-600"
+                  className="p-1 text-stone-400 hover:text-stone-600"
                 >
                   <Edit3 size={12} />
                 </button>
@@ -115,7 +115,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
               {canDelete && (
                 <button
                   onClick={() => deleteComment(comment.id)}
-                  className="p-1 text-gray-400 hover:text-red-600"
+                  className="p-1 text-stone-400 hover:text-red-600"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -141,7 +141,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+              <p className="text-sm text-stone-700 whitespace-pre-wrap">{comment.content}</p>
               {!isReply && (
                 <button
                   onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
@@ -186,7 +186,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+      <h3 className="text-sm font-semibold text-stone-700 mb-2">
         댓글 {comments.length}개
       </h3>
 
@@ -210,7 +210,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
       </div>
 
       {/* Comments list */}
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-stone-100">
         {topLevelComments.map((comment) => renderComment(comment))}
       </div>
     </div>

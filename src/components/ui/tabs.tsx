@@ -17,7 +17,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeKey, onChange, className }: TabsProps) {
   return (
-    <div className={cn('border-b border-gray-200', className)}>
+    <div className={cn('border-b border-stone-200', className)}>
       <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Tabs">
         {tabs.map((tab) => (
           <button
@@ -27,7 +27,7 @@ export function Tabs({ tabs, activeKey, onChange, className }: TabsProps) {
               'whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
               activeKey === tab.key
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
             )}
           >
             {tab.label}
@@ -37,7 +37,7 @@ export function Tabs({ tabs, activeKey, onChange, className }: TabsProps) {
                   'ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs',
                   activeKey === tab.key
                     ? 'bg-primary-100 text-primary-600'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-stone-100 text-stone-600'
                 )}
               >
                 {tab.count}

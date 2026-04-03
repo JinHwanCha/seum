@@ -49,11 +49,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify password against all matching users
-    const matchedUsers = [];
-    for (const user of users) {
+    // Verify password - parallelize bcrypt checks
+    const matchedUsers: typeof users = [];
+    if (selectedUserId) {
+      // Single user selected - just verify that one
+      const user = users[0];
       const valid = await verifyPassword(password, user.password_hash);
       if (valid) matchedUsers.push(user);
+    } else {
+      // Check all matching users in parallel
+      const results = await Promise.all(
+        users.map(async (user) => ({
+          user,
+          valid: await verifyPassword(password, user.password_hash),
+        }))
+      );
+      results.forEach(({ user, valid }) => {
+        if (valid) matchedUsers.push(user);
+      });
     }
 
     if (matchedUsers.length === 0) {

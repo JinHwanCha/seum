@@ -5,7 +5,7 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variants = {
-  default: 'bg-gray-100 text-gray-700',
+  default: 'bg-stone-100 text-stone-700',
   primary: 'bg-primary-100 text-primary-700',
   success: 'bg-green-100 text-green-700',
   warning: 'bg-amber-100 text-amber-700',

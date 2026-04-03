@@ -6,9 +6,10 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { SessionPayload } from '@/lib/types';
 
 interface AuthContextType {
@@ -31,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  const didInitRef = useRef(false);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -49,8 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // 로그인/회원가입 페이지에서는 세션 체크 불필요 (401 콘솔 에러 방지)
+    if (pathname === '/login' || pathname === '/register') {
+      setLoading(false);
+      return;
+    }
+    // StrictMode 중복 호출 방지
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     refreshUser();
-  }, [refreshUser]);
+  }, [pathname, refreshUser]);
 
   const login = async (
     churchName: string,

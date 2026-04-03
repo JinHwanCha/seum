@@ -17,7 +17,7 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">회원 관리</h1>
+      <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
       <Tabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
       <MemberList showPending={activeTab === 'pending'} />
     </div>

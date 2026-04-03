@@ -144,17 +144,17 @@ export function MemberList({ showPending = false }: MemberListProps) {
   ];
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
+    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
   const renderMemberCard = (member: User) => (
     <div
       key={member.id}
-      className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between"
+      className="warm-surface rounded-xl border border-stone-200/80 p-4 flex items-center justify-between"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-gray-900">{member.name}</span>
+          <span className="font-medium text-stone-900">{member.name}</span>
           {member.is_approved ? (
             <Badge variant={member.role === 'minister' ? 'primary' : 'default'}>
               {member.minister_rank
@@ -168,7 +168,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
             <Badge variant="warning">미배정</Badge>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-stone-500 mt-1">
           {member.phone} {member.birth_date ? `· ${member.birth_date}` : ''}
         </p>
         {(member.village_id || member.cell_id) && (
@@ -191,7 +191,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
         ) : (
           <button
             onClick={() => openEdit(member)}
-            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            className="p-2 text-stone-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
           >
             <UserCog size={16} />
           </button>
@@ -203,7 +203,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
   return (
     <div>
       {members.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 text-sm">
+        <div className="text-center py-8 text-stone-400 text-sm">
           {showPending ? '대기 중인 회원이 없습니다.' : '회원이 없습니다.'}
         </div>
       ) : (
@@ -228,7 +228,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
             <div>
               {unassigned.length > 0 && (
                 <div className="flex items-center gap-2 mb-2 px-1 mt-4">
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-stone-700">
                     배정 완료 ({assigned.length}명)
                   </span>
                 </div>

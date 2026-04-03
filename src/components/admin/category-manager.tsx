@@ -83,30 +83,30 @@ export function CategoryManager() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>
+        <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
       ) : categories.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 text-sm">카테고리가 없습니다.</div>
+        <div className="text-center py-8 text-stone-400 text-sm">카테고리가 없습니다.</div>
       ) : (
         <div className="space-y-2">
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="bg-white rounded-xl border border-gray-200 p-3 flex items-center justify-between"
+              className="warm-surface rounded-xl border border-stone-200/80 p-3 flex items-center justify-between"
             >
-              <span className="text-sm text-gray-700">{cat.name}</span>
+              <span className="text-sm text-stone-700">{cat.name}</span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => {
                     setEditingCat(cat);
                     setEditName(cat.name);
                   }}
-                  className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors"
+                  className="p-1.5 text-stone-400 hover:text-primary-600 transition-colors"
                 >
                   <Edit3 size={14} />
                 </button>
                 <button
                   onClick={() => deleteCategory(cat.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                  className="p-1.5 text-stone-400 hover:text-red-600 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>

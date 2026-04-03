@@ -123,8 +123,8 @@ export function RegisterForm() {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-primary-600 mb-2">세움</h1>
-        <p className="text-gray-500 text-sm">회원가입</p>
+        <h1 className="text-3xl font-bold text-primary-700 mb-2">세움</h1>
+        <p className="text-stone-500 text-sm">회원가입</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -218,7 +218,7 @@ export function RegisterForm() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-gray-500 mt-6">
+      <p className="text-center text-sm text-stone-500 mt-6">
         이미 계정이 있으신가요?{' '}
         <a href="/login" className="text-primary-600 font-medium hover:underline">
           로그인

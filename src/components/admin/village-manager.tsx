@@ -100,7 +100,7 @@ export function VillageManager() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400 text-sm">불러오는 중...</div>;
+    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
   return (
@@ -112,11 +112,11 @@ export function VillageManager() {
       </div>
 
       {villages.map((village) => (
-        <div key={village.id} className="bg-white rounded-xl border border-gray-200">
+        <div key={village.id} className="warm-surface rounded-xl border border-stone-200/80">
           <div className="flex items-center justify-between p-4">
             <button
               onClick={() => toggleExpand(village.id)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-900"
+              className="flex items-center gap-2 text-sm font-medium text-stone-900"
             >
               {expanded.has(village.id) ? (
                 <ChevronDown size={16} />
@@ -125,9 +125,9 @@ export function VillageManager() {
               )}
               {village.name}
               {village.is_new_member_team && (
-                <span className="text-xs text-gray-400">(새가족)</span>
+                <span className="text-xs text-stone-400">(새가족)</span>
               )}
-              <span className="text-xs text-gray-400 ml-1">
+              <span className="text-xs text-stone-400 ml-1">
                 소그룹 {village.cells?.length || 0}개
               </span>
             </button>
@@ -137,13 +137,13 @@ export function VillageManager() {
                   setEditingVillage(village);
                   setEditVillageName(village.name);
                 }}
-                className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors"
+                className="p-1.5 text-stone-400 hover:text-primary-600 transition-colors"
               >
                 <Edit3 size={14} />
               </button>
               <button
                 onClick={() => deleteVillage(village.id)}
-                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                className="p-1.5 text-stone-400 hover:text-red-600 transition-colors"
               >
                 <Trash2 size={14} />
               </button>
@@ -151,18 +151,18 @@ export function VillageManager() {
           </div>
 
           {expanded.has(village.id) && (
-            <div className="border-t border-gray-100 p-4 space-y-2">
+            <div className="border-t border-stone-100 p-4 space-y-2">
               {village.cells?.map((cell, idx) => (
                 <div
                   key={cell.id}
-                  className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                  className="flex items-center justify-between bg-primary-50/30 rounded-lg px-3 py-2"
                 >
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-stone-700">
                     {cell.name || `소그룹 ${idx + 1}`}
                   </span>
                   <button
                     onClick={() => deleteCell(cell.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    className="p-1 text-stone-400 hover:text-red-600 transition-colors"
                   >
                     <Trash2 size={12} />
                   </button>

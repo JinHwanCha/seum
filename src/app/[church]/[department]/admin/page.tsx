@@ -12,7 +12,7 @@ const ADMIN_ITEMS = [
   { href: '/admin/members', label: '회원 관리', desc: '역할 및 소속 편성', icon: Users, color: 'bg-blue-50 text-blue-600' },
   { href: '/admin/organization', label: '조직 관리', desc: '마을/소그룹 생성 및 관리', icon: Map, color: 'bg-purple-50 text-purple-600' },
   { href: '/admin/categories', label: '카테고리 관리', desc: '게시판 카테고리 추가/수정', icon: Tag, color: 'bg-amber-50 text-amber-600' },
-  { href: '/admin/settings', label: '설정', desc: '교회/부서 정보 및 명칭 설정', icon: Settings, color: 'bg-gray-100 text-gray-600' },
+  { href: '/admin/settings', label: '설정', desc: '교회/부서 정보 및 명칭 설정', icon: Settings, color: 'bg-stone-100 text-stone-600' },
 ];
 
 export default function AdminPage() {
@@ -22,7 +22,7 @@ export default function AdminPage() {
 
   if (!user || !canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember, user.isAdmin)) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm">
+      <div className="text-center py-12 text-stone-400 text-sm">
         접근 권한이 없습니다.
       </div>
     );
@@ -30,7 +30,7 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-gray-900">관리</h1>
+      <h1 className="text-lg font-bold text-stone-900">관리</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ADMIN_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -42,8 +42,8 @@ export default function AdminPage() {
                     <Icon size={20} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 text-sm">{item.label}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                    <h3 className="font-medium text-stone-900 text-sm">{item.label}</h3>
+                    <p className="text-xs text-stone-500 mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               </Card>

@@ -14,52 +14,28 @@ export async function GET(request: Request) {
   const cellId = session.cellId;
   const villageId = session.villageId;
 
-  // --- 1. Find the user's cell info ---
-  let cell: { id: string; name: string | null; village_id: string } | null = null;
-  let villageName: string | null = null;
+  // --- 1. Parallel: cell info + village name + cell members ---
+  const [cellResult, villageResult, cellMembersResult] = await Promise.all([
+    cellId
+      ? supabase.from('cells').select('id, name, village_id').eq('id', cellId).single()
+      : Promise.resolve({ data: null }),
+    villageId
+      ? supabase.from('villages').select('name').eq('id', villageId).single()
+      : Promise.resolve({ data: null }),
+    cellId
+      ? supabase.from('users').select('id, name, role, minister_rank, phone').eq('cell_id', cellId).eq('is_approved', true).order('role', { ascending: true })
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  if (cellId) {
-    const { data: c } = await supabase
-      .from('cells')
-      .select('id, name, village_id')
-      .eq('id', cellId)
-      .single();
-    cell = c;
-  }
+  const cell = cellResult.data;
+  const villageName = villageResult.data?.name || null;
+  const members = cellMembersResult.data || [];
+  const leader = members.find((m: any) => m.role === 'cell_leader');
+  const leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
 
-  if (villageId) {
-    const { data: v } = await supabase
-      .from('villages')
-      .select('name')
-      .eq('id', villageId)
-      .single();
-    villageName = v?.name || null;
-  }
-
-  // --- 2. Get all members in the same cell ---
-  let members: { id: string; name: string; role: string; minister_rank: string | null; phone: string | null }[] = [];
-  let leader: { id: string; name: string } | null = null;
-
-  if (cellId) {
-    const { data: cellMembers } = await supabase
-      .from('users')
-      .select('id, name, role, minister_rank, phone')
-      .eq('cell_id', cellId)
-      .eq('is_approved', true)
-      .order('role', { ascending: true });
-
-    members = cellMembers || [];
-
-    // Find leader
-    const leaderUser = members.find((m) => m.role === 'cell_leader');
-    if (leaderUser) {
-      leader = { id: leaderUser.id, name: leaderUser.name };
-    }
-  }
-
-  // --- 3. Get prayer requests for cell members this week ---
+  // --- 2. Get prayer requests for cell members this week ---
+  const memberIds = members.map((m: any) => m.id);
   let prayers: any[] = [];
-  const memberIds = members.map((m) => m.id);
 
   if (memberIds.length > 0) {
     const { data: p } = await supabase
@@ -71,8 +47,7 @@ export async function GET(request: Request) {
     prayers = p || [];
   }
 
-  // --- 4. Get my prayer ---
-  const myPrayer = prayers.find((p) => p.user_id === session.userId) || null;
+  const myPrayer = prayers.find((p: any) => p.user_id === session.userId) || null;
 
   // --- 5. For ministers / village leaders: get all cells in their village ---
   let villageCells: any[] = [];
@@ -102,46 +77,38 @@ export async function GET(request: Request) {
           .in('village_id', vIds)
           .order('sort_order');
 
-        // Get all cell leaders
         const cIds = (allCells || []).map((c) => c.id);
-        let leaderMap: Record<string, string> = {};
-        if (cIds.length > 0) {
-          const { data: leaders } = await supabase
-            .from('users')
-            .select('name, cell_id')
-            .in('cell_id', cIds)
-            .eq('role', 'cell_leader');
-          (leaders || []).forEach((l) => {
-            if (l.cell_id) leaderMap[l.cell_id] = l.name;
-          });
-        }
 
-        // Get all members per cell
-        let cellMembersMap: Record<string, any[]> = {};
-        if (cIds.length > 0) {
-          const { data: allMembers } = await supabase
-            .from('users')
-            .select('id, name, role, cell_id')
-            .in('cell_id', cIds)
-            .eq('is_approved', true);
-          (allMembers || []).forEach((m) => {
-            if (m.cell_id) {
-              if (!cellMembersMap[m.cell_id]) cellMembersMap[m.cell_id] = [];
-              cellMembersMap[m.cell_id].push(m);
-            }
-          });
-        }
+        // Parallel: leaders + members + prayers
+        const [leadersResult, allMembersResult, deptPrayersResult] = await Promise.all([
+          cIds.length > 0
+            ? supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader')
+            : Promise.resolve({ data: [] }),
+          cIds.length > 0
+            ? supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true)
+            : Promise.resolve({ data: [] }),
+          supabase.from('prayer_requests')
+            .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+            .eq('department_id', session.departmentId)
+            .eq('week_start', weekStart)
+            .order('created_at', { ascending: true }),
+        ]);
 
-        // Get all prayers for this week in department
-        const { data: deptPrayers } = await supabase
-          .from('prayer_requests')
-          .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
-          .eq('department_id', session.departmentId)
-          .eq('week_start', weekStart)
-          .order('created_at', { ascending: true });
+        const leaderMap: Record<string, string> = {};
+        (leadersResult.data || []).forEach((l: any) => {
+          if (l.cell_id) leaderMap[l.cell_id] = l.name;
+        });
+
+        const cellMembersMap: Record<string, any[]> = {};
+        (allMembersResult.data || []).forEach((m: any) => {
+          if (m.cell_id) {
+            if (!cellMembersMap[m.cell_id]) cellMembersMap[m.cell_id] = [];
+            cellMembersMap[m.cell_id].push(m);
+          }
+        });
 
         const prayerByCellUser: Record<string, any> = {};
-        (deptPrayers || []).forEach((p) => {
+        (deptPrayersResult.data || []).forEach((p: any) => {
           if (p.user?.cell_id) {
             prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
           }
@@ -177,28 +144,24 @@ export async function GET(request: Request) {
     let cellMembersMap: Record<string, any[]> = {};
 
     if (cIds.length > 0) {
-      const { data: leaders } = await supabase
-        .from('users')
-        .select('name, cell_id')
-        .in('cell_id', cIds)
-        .eq('role', 'cell_leader');
-      (leaders || []).forEach((l) => {
+      // Parallel: leaders + members
+      const [leadersResult, allMembersResult] = await Promise.all([
+        supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader'),
+        supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true),
+      ]);
+
+      (leadersResult.data || []).forEach((l: any) => {
         if (l.cell_id) leaderMap[l.cell_id] = l.name;
       });
 
-      const { data: allMembers } = await supabase
-        .from('users')
-        .select('id, name, role, cell_id')
-        .in('cell_id', cIds)
-        .eq('is_approved', true);
-      (allMembers || []).forEach((m) => {
+      (allMembersResult.data || []).forEach((m: any) => {
         if (m.cell_id) {
           if (!cellMembersMap[m.cell_id]) cellMembersMap[m.cell_id] = [];
           cellMembersMap[m.cell_id].push(m);
         }
       });
 
-      const memberIds = (allMembers || []).map((m) => m.id);
+      const memberIds = (allMembersResult.data || []).map((m: any) => m.id);
       const { data: vPrayers } = await supabase
         .from('prayer_requests')
         .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
@@ -233,7 +196,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     cell,
     villageName,
-    leader,
+    leader: leaderInfo,
     members,
     prayers,
     myPrayer,

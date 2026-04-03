@@ -10,7 +10,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#faf8f3]">
         <div className="animate-pulse text-primary-600 text-lg font-medium">세움</div>
       </div>
     );
@@ -19,7 +19,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#faf8f3]">
       <Header />
       <div className="flex">
         <Sidebar />

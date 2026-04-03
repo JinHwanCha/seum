@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET_KEY, COOKIE_NAME } from './constants';
 import type { SessionPayload } from './types';
@@ -18,6 +18,17 @@ export async function verifyToken(token: string): Promise<SessionPayload> {
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
+  // Fast path: use pre-verified payload from middleware
+  try {
+    const headerStore = headers();
+    const payloadHeader = headerStore.get('x-session-payload');
+    if (payloadHeader) {
+      return JSON.parse(payloadHeader) as SessionPayload;
+    }
+  } catch {
+    // Fall through to cookie-based verification
+  }
+
   const cookieStore = cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;

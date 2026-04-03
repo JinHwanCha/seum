@@ -11,7 +11,7 @@ interface PostListProps {
 export function PostList({ posts, boardType }: PostListProps) {
   if (posts.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-stone-400">
         <p className="text-sm">게시글이 없습니다.</p>
       </div>
     );

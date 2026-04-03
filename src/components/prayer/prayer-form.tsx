@@ -69,8 +69,8 @@ export function PrayerForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {targetUserName && (
-        <p className="text-sm text-gray-500">
-          <span className="font-medium text-gray-700">{targetUserName}</span>님의 기도제목
+        <p className="text-sm text-stone-500">
+          <span className="font-medium text-stone-700">{targetUserName}</span>님의 기도제목
         </p>
       )}
       <Textarea
