@@ -191,22 +191,22 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
       </h3>
 
       {/* New comment form */}
-      <div className="flex gap-2">
+      <div className="space-y-2">
         <Textarea
           placeholder="댓글을 입력하세요..."
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           rows={2}
-          className="flex-1"
         />
-        <Button
-          size="sm"
-          onClick={() => submitComment(newComment)}
-          loading={loading}
-          className="self-end"
-        >
-          작성
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={() => submitComment(newComment)}
+            loading={loading}
+          >
+            작성
+          </Button>
+        </div>
       </div>
 
       {/* Comments list */}
