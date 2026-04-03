@@ -60,7 +60,8 @@ export async function GET(request: Request) {
           .from('users')
           .select('id, name, cell_id')
           .in('cell_id', cellIds)
-          .eq('role', 'cell_leader');
+          .eq('role', 'cell_leader')
+          .eq('is_graduated', false);
         (leaders || []).forEach((l) => {
           if (l.cell_id) cellLeaders[l.cell_id] = { id: l.id, name: l.name };
         });

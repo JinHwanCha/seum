@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { Check, X, UserCog, AlertCircle } from 'lucide-react';
+import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw } from 'lucide-react';
 import type { User, Village, Cell } from '@/lib/types';
 
 interface CellWithLeader extends Cell {
@@ -19,9 +19,10 @@ interface VillageWithCells extends Village {
 
 interface MemberListProps {
   showPending?: boolean;
+  showGraduated?: boolean;
 }
 
-export function MemberList({ showPending = false }: MemberListProps) {
+export function MemberList({ showPending = false, showGraduated = false }: MemberListProps) {
   const [members, setMembers] = useState<User[]>([]);
   const [villages, setVillages] = useState<VillageWithCells[]>([]);
   const [cells, setCells] = useState<CellWithLeader[]>([]);
@@ -31,11 +32,14 @@ export function MemberList({ showPending = false }: MemberListProps) {
   const [editMinisterRank, setEditMinisterRank] = useState('');
   const [editVillageId, setEditVillageId] = useState('');
   const [editCellId, setEditCellId] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
+    setSelectedIds(new Set());
     try {
-      const query = showPending ? '?status=pending' : '';
+      const query = showPending ? '?status=pending' : showGraduated ? '?status=graduated' : '';
       const [membersRes, villagesRes] = await Promise.all([
         fetch(`/api/admin/members${query}`),
         fetch('/api/admin/villages'),
@@ -59,7 +63,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
     } finally {
       setLoading(false);
     }
-  }, [showPending]);
+  }, [showPending, showGraduated]);
 
   useEffect(() => {
     fetchMembers();
@@ -109,6 +113,55 @@ export function MemberList({ showPending = false }: MemberListProps) {
     fetchMembers();
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === members.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(members.map((m) => m.id)));
+    }
+  };
+
+  const handleBatchGraduate = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`${selectedIds.size}명을 졸업 처리하시겠습니까? 소속 마을/소그룹이 해제됩니다.`)) return;
+    setBatchLoading(true);
+    try {
+      await fetch('/api/admin/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'graduate', userIds: Array.from(selectedIds) }),
+      });
+      fetchMembers();
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchRestore = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`${selectedIds.size}명을 복원하시겠습니까?`)) return;
+    setBatchLoading(true);
+    try {
+      await fetch('/api/admin/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restore', userIds: Array.from(selectedIds) }),
+      });
+      fetchMembers();
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
   const filteredCells = cells.filter((c) => c.village_id === editVillageId);
 
   // Helper: find village/cell name for a member
@@ -147,36 +200,53 @@ export function MemberList({ showPending = false }: MemberListProps) {
     return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
+  const showCheckboxes = !showPending;
+
   const renderMemberCard = (member: User) => (
     <div
       key={member.id}
       className="warm-surface rounded-xl border border-stone-200/80 p-4 flex items-center justify-between"
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-stone-900">{member.name}</span>
-          {member.is_approved ? (
-            <Badge variant={member.role === 'minister' ? 'primary' : 'default'}>
-              {member.minister_rank
-                ? MINISTER_RANK_LABELS[member.minister_rank]
-                : ROLE_LABELS_DEFAULT[member.role]}
-            </Badge>
-          ) : (
-            <Badge variant="warning">승인 대기</Badge>
-          )}
-          {!member.village_id && !member.cell_id && member.is_approved && (
-            <Badge variant="warning">미배정</Badge>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {showCheckboxes && (
+          <input
+            type="checkbox"
+            checked={selectedIds.has(member.id)}
+            onChange={() => toggleSelect(member.id)}
+            className="w-4 h-4 rounded border-stone-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-stone-900">{member.name}</span>
+            {member.is_approved ? (
+              <Badge variant={member.role === 'minister' ? 'primary' : 'default'}>
+                {member.minister_rank
+                  ? MINISTER_RANK_LABELS[member.minister_rank]
+                  : ROLE_LABELS_DEFAULT[member.role]}
+              </Badge>
+            ) : (
+              <Badge variant="warning">승인 대기</Badge>
+            )}
+            {showGraduated && (member as any).graduated_at && (
+              <Badge variant="default">
+                {new Date((member as any).graduated_at).getFullYear()}년 졸업
+              </Badge>
+            )}
+            {!showGraduated && !member.village_id && !member.cell_id && member.is_approved && (
+              <Badge variant="warning">미배정</Badge>
+            )}
+          </div>
+          <p className="text-xs text-stone-500 mt-1">
+            {member.phone} {member.birth_date ? `· ${member.birth_date}` : ''}
+          </p>
+          {!showGraduated && (member.village_id || member.cell_id) && (
+            <p className="text-xs text-primary-600 mt-0.5">
+              {getVillageName(member.village_id)}
+              {member.cell_id ? ` · ${getCellName(member.cell_id)}` : ''}
+            </p>
           )}
         </div>
-        <p className="text-xs text-stone-500 mt-1">
-          {member.phone} {member.birth_date ? `· ${member.birth_date}` : ''}
-        </p>
-        {(member.village_id || member.cell_id) && (
-          <p className="text-xs text-primary-600 mt-0.5">
-            {getVillageName(member.village_id)}
-            {member.cell_id ? ` · ${getCellName(member.cell_id)}` : ''}
-          </p>
-        )}
       </div>
       <div className="flex items-center gap-1 ml-2">
         {showPending && !member.is_approved ? (
@@ -188,7 +258,7 @@ export function MemberList({ showPending = false }: MemberListProps) {
               <X size={14} className="mr-1" /> 거절
             </Button>
           </>
-        ) : (
+        ) : showGraduated ? null : (
           <button
             onClick={() => openEdit(member)}
             className="p-2 text-stone-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
@@ -204,10 +274,48 @@ export function MemberList({ showPending = false }: MemberListProps) {
     <div>
       {members.length === 0 ? (
         <div className="text-center py-8 text-stone-400 text-sm">
-          {showPending ? '대기 중인 회원이 없습니다.' : '회원이 없습니다.'}
+          {showPending ? '대기 중인 회원이 없습니다.' : showGraduated ? '졸업한 회원이 없습니다.' : '회원이 없습니다.'}
         </div>
       ) : (
         <div className="space-y-3">
+          {/* 배치 액션 바 */}
+          {showCheckboxes && members.length > 0 && (
+            <div className="flex items-center justify-between bg-stone-50 rounded-xl border border-stone-200/80 px-4 py-3">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === members.length && members.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-stone-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-stone-600">
+                  전체 선택 {selectedIds.size > 0 && `(${selectedIds.size}명)`}
+                </span>
+              </label>
+              <div className="flex gap-2">
+                {showGraduated ? (
+                  <Button
+                    size="sm"
+                    onClick={handleBatchRestore}
+                    disabled={selectedIds.size === 0}
+                    loading={batchLoading}
+                  >
+                    <RotateCcw size={14} className="mr-1" /> 복원
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={handleBatchGraduate}
+                    disabled={selectedIds.size === 0}
+                    loading={batchLoading}
+                  >
+                    <GraduationCap size={14} className="mr-1" /> 졸업
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           {/* 미배정 회원 */}
           {!showPending && unassigned.length > 0 && (
             <div>

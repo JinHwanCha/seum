@@ -59,7 +59,8 @@ export async function PATCH(
           session.role as Role,
           session.ministerRank as MinisterRank | null,
           target.role as Role,
-          target.minister_rank as MinisterRank | null
+          target.minister_rank as MinisterRank | null,
+          session.isAdmin
         )) {
           return NextResponse.json({ error: '이 사용자의 역할을 변경할 권한이 없습니다.' }, { status: 403 });
         }

@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       cellId: user.cell_id,
       isBureauLeader: bureauMembership?.is_leader ?? false,
       isBureauMember: !!bureauMembership,
-      isAdmin: user.is_admin ?? false,
+      isAdmin: user.is_admin || user.minister_rank === 'pastor',
     };
 
     const tokenExpiry = rememberMe ? '30d' : '7d';

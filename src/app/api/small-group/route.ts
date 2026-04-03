@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       ? supabase.from('villages').select('name').eq('id', villageId).single()
       : Promise.resolve({ data: null }),
     cellId
-      ? supabase.from('users').select('id, name, role, minister_rank, phone').eq('cell_id', cellId).eq('is_approved', true).order('role', { ascending: true })
+      ? supabase.from('users').select('id, name, role, minister_rank, phone').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -82,10 +82,10 @@ export async function GET(request: Request) {
         // Parallel: leaders + members + prayers
         const [leadersResult, allMembersResult, deptPrayersResult] = await Promise.all([
           cIds.length > 0
-            ? supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader')
+            ? supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader').eq('is_graduated', false)
             : Promise.resolve({ data: [] }),
           cIds.length > 0
-            ? supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true)
+            ? supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true).eq('is_graduated', false)
             : Promise.resolve({ data: [] }),
           supabase.from('prayer_requests')
             .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
@@ -146,8 +146,8 @@ export async function GET(request: Request) {
     if (cIds.length > 0) {
       // Parallel: leaders + members
       const [leadersResult, allMembersResult] = await Promise.all([
-        supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader'),
-        supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true),
+        supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader').eq('is_graduated', false),
+        supabase.from('users').select('id, name, role, cell_id').in('cell_id', cIds).eq('is_approved', true).eq('is_graduated', false),
       ]);
 
       (leadersResult.data || []).forEach((l: any) => {

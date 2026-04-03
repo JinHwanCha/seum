@@ -81,6 +81,8 @@ CREATE TABLE users (
   cell_id UUID REFERENCES cells(id) ON DELETE SET NULL,
   is_approved BOOLEAN DEFAULT false,
   is_admin BOOLEAN DEFAULT false,
+  is_graduated BOOLEAN DEFAULT false,
+  graduated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

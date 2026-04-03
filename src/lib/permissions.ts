@@ -13,8 +13,10 @@ export function canModifyUserRole(
   actorRole: Role,
   actorMinisterRank: MinisterRank | null,
   targetRole: Role,
-  targetMinisterRank: MinisterRank | null
+  targetMinisterRank: MinisterRank | null,
+  isAdmin?: boolean
 ): boolean {
+  if (isAdmin) return true;
   if (!isMinister(actorRole)) return false;
   if (!isMinister(targetRole)) return true;
   if (!actorMinisterRank || !targetMinisterRank) return false;
