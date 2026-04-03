@@ -152,6 +152,9 @@ export interface Attendance {
   worship_service: WorshipService | null;
   department_meeting: boolean;
   small_group: boolean;
+  prayer_count: number;
+  qt_count: number;
+  bible_reading: boolean;
   checked_by: string | null;
   created_at: string;
   updated_at: string;

@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card } from '@/components/ui/card';
 import { canAccessAdmin } from '@/lib/permissions';
-import { Users, Map, Tag, Settings, UserCheck } from 'lucide-react';
+import { Users, Map, Tag, Settings, UserCheck, AlertTriangle } from 'lucide-react';
 
 const ADMIN_ITEMS = [
   { href: '/admin/members?tab=pending', label: '가입 승인', desc: '대기 중인 회원 승인/거절', icon: UserCheck, color: 'bg-green-50 text-green-600' },
   { href: '/admin/members', label: '회원 관리', desc: '역할 및 소속 편성', icon: Users, color: 'bg-blue-50 text-blue-600' },
+  { href: '/admin/absent', label: '장기미출석', desc: '4주 이상 출석 기록 없는 멤버', icon: AlertTriangle, color: 'bg-red-50 text-red-600' },
   { href: '/admin/organization', label: '조직 관리', desc: '마을/소그룹 생성 및 관리', icon: Map, color: 'bg-purple-50 text-purple-600' },
   { href: '/admin/categories', label: '카테고리 관리', desc: '게시판 카테고리 추가/수정', icon: Tag, color: 'bg-amber-50 text-amber-600' },
   { href: '/admin/settings', label: '설정', desc: '교회/부서 정보 및 명칭 설정', icon: Settings, color: 'bg-stone-100 text-stone-600' },

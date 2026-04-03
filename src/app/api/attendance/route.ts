@@ -138,13 +138,17 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'userId, weekStart, field required' }, { status: 400 });
   }
 
-  const allowedFields = ['worship_service', 'department_meeting', 'small_group'];
+  const allowedFields = ['worship_service', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
   if (!allowedFields.includes(field)) {
     return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
   }
 
   if (field === 'worship_service' && value !== null && !['1부', '2부', '3부'].includes(value)) {
     return NextResponse.json({ error: 'Invalid worship service value' }, { status: 400 });
+  }
+
+  if ((field === 'prayer_count' || field === 'qt_count') && (typeof value !== 'number' || value < 0 || value > 7)) {
+    return NextResponse.json({ error: 'Count must be 0-7' }, { status: 400 });
   }
 
   const supabase = createClient();

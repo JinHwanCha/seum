@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Crown, User, Check, X, Church, Users, UsersRound } from 'lucide-react';
+import { Crown, User, Check, X, Church, Users, UsersRound, BookOpen, Heart, Sun, Minus, Plus } from 'lucide-react';
 import type { Attendance, SessionPayload } from '@/lib/types';
 import { canCheckAttendance } from '@/lib/permissions';
 import type { Role } from '@/lib/types';
@@ -22,7 +22,7 @@ interface AttendanceCheckProps {
   session: SessionPayload;
   cellId?: string | null;
   cellVillageId?: string | null;
-  onUpdate: () => void;
+  onAttendanceChange: (userId: string, field: string, value: unknown) => void;
 }
 
 const WORSHIP_OPTIONS = [
@@ -44,7 +44,7 @@ export function AttendanceCheck({
   session,
   cellId,
   cellVillageId,
-  onUpdate,
+  onAttendanceChange,
 }: AttendanceCheckProps) {
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -60,6 +60,8 @@ export function AttendanceCheck({
   const handleToggle = useCallback(
     async (userId: string, field: string, value: unknown) => {
       if (!canEdit) return;
+      // Optimistic update immediately
+      onAttendanceChange(userId, field, value);
       setUpdating(`${userId}-${field}`);
       try {
         await fetch('/api/attendance', {
@@ -67,12 +69,11 @@ export function AttendanceCheck({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, weekStart, field, value }),
         });
-        onUpdate();
       } finally {
         setUpdating(null);
       }
     },
-    [canEdit, weekStart, onUpdate]
+    [canEdit, weekStart, onAttendanceChange]
   );
 
   // Sort: leader first
@@ -169,7 +170,7 @@ export function AttendanceCheck({
               </div>
 
               {/* Department Meeting & Small Group - inline toggles */}
-              <div className="flex gap-4">
+              <div className="flex gap-3 flex-wrap">
                 <ToggleButton
                   label="부서집회"
                   checked={att?.department_meeting ?? false}
@@ -195,6 +196,39 @@ export function AttendanceCheck({
                       !(att?.small_group ?? false)
                     )
                   }
+                />
+                <ToggleButton
+                  label="성경통독"
+                  checked={att?.bible_reading ?? false}
+                  disabled={!canEdit}
+                  loading={updating === `${member.id}-bible_reading`}
+                  onToggle={() =>
+                    handleToggle(
+                      member.id,
+                      'bible_reading',
+                      !(att?.bible_reading ?? false)
+                    )
+                  }
+                />
+              </div>
+
+              {/* Prayer & QT Counters */}
+              <div className="flex gap-4">
+                <CounterButton
+                  label="기도"
+                  icon={<Heart size={12} />}
+                  value={att?.prayer_count ?? 0}
+                  disabled={!canEdit}
+                  loading={updating === `${member.id}-prayer_count`}
+                  onChange={(v) => handleToggle(member.id, 'prayer_count', v)}
+                />
+                <CounterButton
+                  label="QT"
+                  icon={<Sun size={12} />}
+                  value={att?.qt_count ?? 0}
+                  disabled={!canEdit}
+                  loading={updating === `${member.id}-qt_count`}
+                  onChange={(v) => handleToggle(member.id, 'qt_count', v)}
                 />
               </div>
             </div>
@@ -236,5 +270,64 @@ function ToggleButton({
       {checked ? <Check size={12} /> : <X size={12} />}
       {label}
     </button>
+  );
+}
+
+function CounterButton({
+  label,
+  icon,
+  value,
+  disabled,
+  loading,
+  onChange,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  value: number;
+  disabled: boolean;
+  loading: boolean;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
+        {icon}
+        {label}
+      </span>
+      <div className={cn(
+        'flex items-center rounded-lg border overflow-hidden',
+        value > 0 ? 'border-primary-200 bg-primary-50' : 'border-stone-200 bg-stone-50',
+        loading && 'animate-pulse'
+      )}>
+        <button
+          disabled={disabled || loading || value <= 0}
+          onClick={() => onChange(Math.max(0, value - 1))}
+          className={cn(
+            'px-1.5 py-1 text-xs transition-colors',
+            value > 0 ? 'text-primary-500 hover:bg-primary-100' : 'text-stone-300',
+            (disabled || value <= 0) && 'opacity-50 cursor-default'
+          )}
+        >
+          <Minus size={12} />
+        </button>
+        <span className={cn(
+          'px-2 py-1 text-xs font-bold min-w-[24px] text-center',
+          value > 0 ? 'text-primary-700' : 'text-stone-400'
+        )}>
+          {value}
+        </span>
+        <button
+          disabled={disabled || loading || value >= 7}
+          onClick={() => onChange(Math.min(7, value + 1))}
+          className={cn(
+            'px-1.5 py-1 text-xs transition-colors',
+            'text-primary-500 hover:bg-primary-100',
+            (disabled || value >= 7) && 'opacity-50 cursor-default'
+          )}
+        >
+          <Plus size={12} />
+        </button>
+      </div>
+    </div>
   );
 }

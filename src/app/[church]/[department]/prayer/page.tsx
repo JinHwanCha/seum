@@ -94,6 +94,34 @@ export default function SmallGroupPage() {
     });
   };
 
+  // Optimistic attendance update (no refetch)
+  const handleAttendanceChange = useCallback(
+    (userId: string, field: string, value: unknown) => {
+      setAttendanceMap((prev) => {
+        const existing = prev[userId] || {
+          id: '',
+          user_id: userId,
+          department_id: '',
+          week_start: weekStart,
+          worship_service: null,
+          department_meeting: false,
+          small_group: false,
+          prayer_count: 0,
+          qt_count: 0,
+          bible_reading: false,
+          checked_by: null,
+          created_at: '',
+          updated_at: '',
+        };
+        return {
+          ...prev,
+          [userId]: { ...existing, [field]: value },
+        };
+      });
+    },
+    [weekStart]
+  );
+
   if (!user) return null;
 
   const isMinister = user.role === 'minister';
@@ -368,7 +396,7 @@ export default function SmallGroupPage() {
                     session={user}
                     cellId={user.cellId}
                     cellVillageId={user.villageId}
-                    onUpdate={fetchData}
+                    onAttendanceChange={handleAttendanceChange}
                   />
                 </div>
               )}
@@ -438,7 +466,7 @@ export default function SmallGroupPage() {
                                     session={user}
                                     cellId={cell.id}
                                     cellVillageId={village.id}
-                                    onUpdate={fetchData}
+                                    onAttendanceChange={handleAttendanceChange}
                                   />
                                 </div>
                               )}
