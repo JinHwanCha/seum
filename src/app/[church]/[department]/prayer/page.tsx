@@ -134,7 +134,7 @@ export default function SmallGroupPage() {
 
   const TABS = [
     { key: 'prayer', label: '기도제목' },
-    ...(canCheckAtt ? [{ key: 'attendance', label: '출석체크' }] : []),
+    ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
   ];
 
   // Build member prayer map for own cell
