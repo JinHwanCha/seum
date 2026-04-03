@@ -12,10 +12,16 @@ import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
 import type { PrayerRequest } from '@/lib/types';
 
+const birthYearLabel = (birthDate?: string | null) => {
+  if (!birthDate) return '';
+  return ` (${birthDate.substring(2, 4)})`;
+};
+
 interface CellMember {
   id: string;
   name: string;
   role: string;
+  birth_date?: string | null;
 }
 
 interface CellInfo {
@@ -136,7 +142,7 @@ export default function SmallGroupPage() {
                 {leader && (
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-stone-100">
                     <Crown size={14} className="text-amber-500" />
-                    <span className="text-sm font-medium text-stone-900">{leader.name}</span>
+                    <span className="text-sm font-medium text-stone-900">{leader.name}{birthYearLabel((members.find(m => m.role === 'cell_leader') || {} as any).birth_date)}</span>
                     <Badge variant="success">목자</Badge>
                   </div>
                 )}
@@ -148,7 +154,7 @@ export default function SmallGroupPage() {
                     .map((m) => (
                       <div key={m.id} className="flex items-center gap-2 text-sm">
                         <User size={14} className="text-stone-400" />
-                        <span className="text-stone-700">{m.name}</span>
+                        <span className="text-stone-700">{m.name}{birthYearLabel(m.birth_date)}</span>
                         {m.id === user.userId && (
                           <span className="text-xs text-primary-500">(나)</span>
                         )}
@@ -175,7 +181,7 @@ export default function SmallGroupPage() {
                           className="warm-surface rounded-xl border border-stone-100 p-4 opacity-60"
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-stone-900 text-sm">{m.name}</span>
+                            <span className="font-medium text-stone-900 text-sm">{m.name}{birthYearLabel(m.birth_date)}</span>
                             <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
                               {ROLE_LABELS_DEFAULT[m.role]}
                             </Badge>
@@ -276,7 +282,7 @@ export default function SmallGroupPage() {
                                         <User size={14} className="text-stone-400" />
                                       )}
                                       <span className="text-sm font-medium text-stone-900">
-                                        {m.name}
+                                        {m.name}{birthYearLabel(m.birth_date)}
                                       </span>
                                       <Badge
                                         variant={
