@@ -205,3 +205,22 @@ CREATE TABLE password_reset_requests (
 );
 
 CREATE INDEX idx_password_reset_church_status ON password_reset_requests(church_id, status);
+
+-- ─── Attendance (출석체크) ────────────────────────────────────
+CREATE TABLE attendance (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  week_start DATE NOT NULL,
+  worship_service TEXT CHECK (worship_service IS NULL OR worship_service IN ('1부', '2부', '3부')),
+  department_meeting BOOLEAN DEFAULT false,
+  small_group BOOLEAN DEFAULT false,
+  checked_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, week_start)
+);
+
+CREATE INDEX idx_attendance_dept_week ON attendance(department_id, week_start);
+CREATE INDEX idx_attendance_user ON attendance(user_id);
+CREATE INDEX idx_attendance_user_week ON attendance(user_id, week_start);

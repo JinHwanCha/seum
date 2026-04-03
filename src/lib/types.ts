@@ -141,6 +141,22 @@ export interface Reaction {
   created_at: string;
 }
 
+// ─── Attendance ───
+export type WorshipService = '1부' | '2부' | '3부';
+
+export interface Attendance {
+  id: string;
+  user_id: string;
+  department_id: string;
+  week_start: string;
+  worship_service: WorshipService | null;
+  department_meeting: boolean;
+  small_group: boolean;
+  checked_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Session / Auth ───
 export interface SessionPayload {
   userId: string;

@@ -97,6 +97,23 @@ export function canChangeRoleLabels(ministerRank: MinisterRank | null, isAdmin?:
   return ministerRank === 'pastor';
 }
 
+// ─── Attendance Permissions ───
+
+export function canCheckAttendance(
+  actorRole: Role,
+  actorCellId: string | null,
+  targetCellId: string | null,
+  actorVillageId: string | null,
+  targetVillageId: string | null,
+  isAdmin?: boolean
+): boolean {
+  if (isAdmin) return true;
+  if (isMinister(actorRole)) return true;
+  if (actorRole === 'village_leader' && actorVillageId && actorVillageId === targetVillageId) return true;
+  if (actorRole === 'cell_leader' && actorCellId && actorCellId === targetCellId) return true;
+  return false;
+}
+
 export function canMoveMembers(role: Role, isAdmin?: boolean): boolean {
   if (isAdmin) return true;
   return isMinister(role) || role === 'village_leader';

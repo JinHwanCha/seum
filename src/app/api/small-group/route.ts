@@ -193,6 +193,29 @@ export async function GET(request: Request) {
     }
   }
 
+  // --- Fetch attendance data for all relevant members ---
+  const allMemberIds: string[] = [...memberIds];
+  villageCells.forEach((v: any) => {
+    v.cells.forEach((c: any) => {
+      c.members.forEach((m: any) => {
+        if (!allMemberIds.includes(m.id)) allMemberIds.push(m.id);
+      });
+    });
+  });
+
+  let attendanceMap: Record<string, any> = {};
+  if (allMemberIds.length > 0) {
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('*')
+      .in('user_id', allMemberIds)
+      .eq('week_start', weekStart);
+
+    (attData || []).forEach((a: any) => {
+      attendanceMap[a.user_id] = a;
+    });
+  }
+
   return NextResponse.json({
     cell,
     villageName,
@@ -201,5 +224,6 @@ export async function GET(request: Request) {
     prayers,
     myPrayer,
     villageCells,
+    attendanceMap,
   });
 }
