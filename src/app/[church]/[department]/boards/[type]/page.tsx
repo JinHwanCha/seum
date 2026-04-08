@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { PostList } from '@/components/board/post-list';
@@ -8,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
 import { canWritePost } from '@/lib/permissions';
 import { Plus } from 'lucide-react';
-import type { Post, BoardType } from '@/lib/types';
+import useSWR from 'swr';
+import type { BoardType } from '@/lib/types';
 
 export default function BoardListPage() {
   const { user } = useAuth();
@@ -17,27 +17,8 @@ export default function BoardListPage() {
   const boardType = params.type as string;
   const basePath = `/${params.church}/${params.department}`;
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/posts?boardType=${boardType}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPosts(data.posts || []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [boardType]);
-
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+  const { data, isLoading } = useSWR(`/api/posts?boardType=${boardType}`);
+  const posts = data?.posts || [];
 
   if (!user) return null;
 
@@ -64,7 +45,7 @@ export default function BoardListPage() {
         )}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
       ) : (
         <PostList posts={posts} boardType={boardType} />

@@ -3,13 +3,11 @@
 import {
   createContext,
   useContext,
-  useEffect,
-  useState,
   useCallback,
-  useRef,
   type ReactNode,
 } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import useSWR from 'swr';
 import type { SessionPayload } from '@/lib/types';
 
 interface AuthContextType {
@@ -28,42 +26,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const authFetcher = (url: string) =>
+  fetch(url).then((res) => {
+    if (!res.ok) throw new Error('Not authenticated');
+    return res.json();
+  });
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SessionPayload | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const didInitRef = useRef(false);
+
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+
+  const { data, isLoading, mutate } = useSWR(
+    isAuthPage ? null : '/api/auth/me',
+    authFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 10000 }
+  );
+
+  const user = data?.user ?? null;
+  const loading = isAuthPage ? false : isLoading;
 
   const refreshUser = useCallback(async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await mutate();
+  }, [mutate]);
 
-  useEffect(() => {
-    // 로그인/회원가입 페이지에서는 세션 체크 불필요 (401 콘솔 에러 방지)
-    if (pathname === '/login' || pathname === '/register') {
-      setLoading(false);
-      return;
-    }
-    // StrictMode 중복 호출 방지
-    if (didInitRef.current) return;
-    didInitRef.current = true;
-    refreshUser();
-  }, [pathname, refreshUser]);
-
-  const login = async (
+  const login = useCallback(async (
     churchName: string,
     name: string,
     password: string,
@@ -75,20 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe }),
     });
-    const data = await res.json();
+    const resData = await res.json();
 
-    if (res.ok && !data.multipleMatches) {
-      await refreshUser();
-      router.push(`/${data.churchSlug}/${data.departmentSlug}`);
+    if (res.ok && !resData.multipleMatches) {
+      await mutate();
+      router.push(`/${resData.churchSlug}/${resData.departmentSlug}`);
     }
-    return data;
-  };
+    return resData;
+  }, [mutate, router]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
+    await mutate(null, false);
     router.push('/login');
-  };
+  }, [mutate, router]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
+import useSWR from 'swr';
 import type { PrayerRequest, Attendance } from '@/lib/types';
 
 const birthYearLabel = (birthDate?: string | null) => {
@@ -45,45 +46,33 @@ interface VillageGroup {
 export default function SmallGroupPage() {
   const { user } = useAuth();
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
-  const [loading, setLoading] = useState(true);
-  const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(null);
-  const [cellName, setCellName] = useState<string | null>(null);
-  const [villageName, setVillageName] = useState<string | null>(null);
-  const [leader, setLeader] = useState<{ id: string; name: string } | null>(null);
-  const [members, setMembers] = useState<CellMember[]>([]);
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [villageCells, setVillageCells] = useState<VillageGroup[]>([]);
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('prayer');
+
+  // Optimistic local state (updated by callbacks, synced from SWR)
+  const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(null);
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, Attendance>>({});
 
   const weekStart = formatWeekDate(currentSunday);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/small-group?weekStart=${weekStart}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCellName(data.cell?.name || null);
-        setVillageName(data.villageName || null);
-        setLeader(data.leader || null);
-        setMembers(data.members || []);
-        setPrayers(data.prayers || []);
-        setMyPrayer(data.myPrayer || null);
-        setVillageCells(data.villageCells || []);
-        setAttendanceMap(data.attendanceMap || {});
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [weekStart]);
+  const { data: swrData, isLoading } = useSWR(`/api/small-group?weekStart=${weekStart}`);
 
+  // Derive stable values from SWR cache
+  const cellName = swrData?.cell?.name || null;
+  const villageName = swrData?.villageName || null;
+  const leader = swrData?.leader || null;
+  const members: CellMember[] = swrData?.members || [];
+  const villageCells: VillageGroup[] = swrData?.villageCells || [];
+
+  // Sync optimistic state from SWR data
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (swrData) {
+      setMyPrayer(swrData.myPrayer || null);
+      setPrayers(swrData.prayers || []);
+      setAttendanceMap(swrData.attendanceMap || {});
+    }
+  }, [swrData]);
 
   const toggleCell = (cellId: string) => {
     setExpandedCells((prev) => {
@@ -186,7 +175,7 @@ export default function SmallGroupPage() {
             />
           </Card>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>
@@ -408,7 +397,7 @@ export default function SmallGroupPage() {
       {/* ===== ATTENDANCE TAB ===== */}
       {activeTab === 'attendance' && (
         <>
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>

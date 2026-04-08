@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Card } from '@/components/ui/card';
@@ -12,7 +12,8 @@ import { canEditPost, canDeletePost } from '@/lib/permissions';
 import { formatDateTime } from '@/lib/date-utils';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
 import { ArrowLeft, Edit3, Trash2 } from 'lucide-react';
-import type { Post, Comment, Reaction, BoardType } from '@/lib/types';
+import useSWR from 'swr';
+import type { BoardType } from '@/lib/types';
 
 export default function PostDetailPage() {
   const { user } = useAuth();
@@ -22,30 +23,14 @@ export default function PostDetailPage() {
   const boardType = params.type as string;
   const basePath = `/${params.church}/${params.department}`;
 
-  const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [reactions, setReactions] = useState<Reaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, mutate } = useSWR(`/api/posts/${postId}`);
+  const post = data?.post ?? null;
+  const comments = data?.comments || [];
+  const reactions = data?.reactions || [];
 
   const fetchPost = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/posts/${postId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPost(data.post);
-        setComments(data.comments || []);
-        setReactions(data.reactions || []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [postId]);
-
-  useEffect(() => {
-    fetchPost();
-  }, [fetchPost]);
+    await mutate();
+  }, [mutate]);
 
   const handleDelete = async () => {
     if (!confirm('게시글을 삭제하시겠습니까?')) return;
@@ -59,7 +44,7 @@ export default function PostDetailPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
   }
 
