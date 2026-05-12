@@ -1,0 +1,167 @@
+import { createClient } from '@/lib/supabase';
+import type { SessionPayload } from '@/lib/types';
+
+export async function getSmallGroupData(session: SessionPayload, weekStart: string) {
+  const supabase = createClient();
+  const { cellId, villageId } = session;
+
+  // 모든 기본 데이터 단일 병렬 배치
+  const [cellResult, villageResult, cellMembersResult, deptPrayersResult, deptAttendanceResult] = await Promise.all([
+    cellId
+      ? supabase.from('cells').select('id, name, village_id').eq('id', cellId).single()
+      : Promise.resolve({ data: null }),
+    villageId
+      ? supabase.from('villages').select('name').eq('id', villageId).single()
+      : Promise.resolve({ data: null }),
+    cellId
+      ? supabase.from('users').select('id, name, role, minister_rank, phone, birth_date').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from('prayer_requests')
+      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+      .eq('department_id', session.departmentId)
+      .eq('week_start', weekStart)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('attendance')
+      .select('*')
+      .eq('department_id', session.departmentId)
+      .eq('week_start', weekStart),
+  ]);
+
+  const cell = cellResult.data;
+  const villageName = villageResult.data?.name || null;
+  const members = (cellMembersResult.data || []) as any[];
+  const leader = members.find((m: any) => m.role === 'cell_leader');
+  const leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
+
+  const allDeptPrayers = (deptPrayersResult.data || []) as any[];
+  const allDeptAttendance = (deptAttendanceResult.data || []) as any[];
+
+  const memberIdSet = new Set(members.map((m: any) => m.id));
+  const prayers = allDeptPrayers.filter((p: any) => memberIdSet.has(p.user_id));
+  const myPrayer = prayers.find((p: any) => p.user_id === session.userId) || null;
+
+  const attendanceMap: Record<string, any> = {};
+  allDeptAttendance.forEach((a: any) => { attendanceMap[a.user_id] = a; });
+
+  let villageCells: any[] = [];
+
+  if (session.role === 'minister') {
+    const [groupYearResult, deptMembersResult] = await Promise.all([
+      supabase
+        .from('group_years')
+        .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
+        .eq('department_id', session.departmentId)
+        .eq('is_active', true)
+        .single(),
+      supabase
+        .from('users')
+        .select('id, name, role, cell_id, village_id, birth_date')
+        .eq('department_id', session.departmentId)
+        .eq('is_approved', true)
+        .eq('is_graduated', false),
+    ]);
+
+    const groupYear = groupYearResult.data as any;
+    const villages = (groupYear?.villages || []) as any[];
+    const allDeptMembers = (deptMembersResult.data || []) as any[];
+
+    const leaderMap: Record<string, string> = {};
+    allDeptMembers
+      .filter((u: any) => u.role === 'cell_leader')
+      .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
+
+    const cellMembersMap: Record<string, any[]> = {};
+    allDeptMembers.forEach((m: any) => {
+      if (m.cell_id) {
+        if (!cellMembersMap[m.cell_id]) cellMembersMap[m.cell_id] = [];
+        cellMembersMap[m.cell_id].push(m);
+      }
+    });
+
+    const prayerByCellUser: Record<string, any> = {};
+    allDeptPrayers.forEach((p: any) => {
+      if (p.user?.cell_id) prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
+    });
+
+    villageCells = villages
+      .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        sort_order: v.sort_order,
+        cells: ((v.cells || []) as any[])
+          .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+          .map((c: any) => ({
+            ...c,
+            leader_name: leaderMap[c.id] || null,
+            members: (cellMembersMap[c.id] || []).sort((a: any, b: any) => {
+              if (a.role === 'cell_leader') return -1;
+              if (b.role === 'cell_leader') return 1;
+              return 0;
+            }),
+            prayers: (cellMembersMap[c.id] || [])
+              .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
+              .filter(Boolean),
+          })),
+      }));
+  } else if (session.role === 'village_leader' && villageId) {
+    const [vCellsResult, villageMembersResult] = await Promise.all([
+      supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
+      supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
+    ]);
+
+    const vCells = (vCellsResult.data || []) as any[];
+    const allVillageMembers = (villageMembersResult.data || []) as any[];
+
+    const leaderMap: Record<string, string> = {};
+    allVillageMembers
+      .filter((u: any) => u.role === 'cell_leader')
+      .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
+
+    const cellMembersMap: Record<string, any[]> = {};
+    allVillageMembers.forEach((m: any) => {
+      if (m.cell_id) {
+        if (!cellMembersMap[m.cell_id]) cellMembersMap[m.cell_id] = [];
+        cellMembersMap[m.cell_id].push(m);
+      }
+    });
+
+    const cellIdSet = new Set(vCells.map((c: any) => c.id));
+    const prayerByCellUser: Record<string, any> = {};
+    allDeptPrayers.forEach((p: any) => {
+      if (p.user?.cell_id && cellIdSet.has(p.user.cell_id)) {
+        prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
+      }
+    });
+
+    villageCells = [{
+      id: villageId,
+      name: villageName,
+      cells: vCells.map((c: any) => ({
+        ...c,
+        leader_name: leaderMap[c.id] || null,
+        members: (cellMembersMap[c.id] || []).sort((a: any, b: any) => {
+          if (a.role === 'cell_leader') return -1;
+          if (b.role === 'cell_leader') return 1;
+          return 0;
+        }),
+        prayers: (cellMembersMap[c.id] || [])
+          .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
+          .filter(Boolean),
+      })),
+    }];
+  }
+
+  return {
+    cell,
+    villageName,
+    leader: leaderInfo,
+    members,
+    myPrayer,
+    prayers,
+    villageCells,
+    attendanceMap,
+  };
+}
