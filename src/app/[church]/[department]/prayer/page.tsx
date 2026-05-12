@@ -56,7 +56,10 @@ export default function SmallGroupPage() {
 
   const weekStart = formatWeekDate(currentSunday);
 
-  const { data: swrData, isLoading } = useSWR(`/api/small-group?weekStart=${weekStart}`);
+  const { data: swrData, isLoading } = useSWR(
+    `/api/small-group?weekStart=${weekStart}`,
+    { keepPreviousData: true }
+  );
 
   // Derive stable values from SWR cache
   const cellName = swrData?.cell?.name || null;

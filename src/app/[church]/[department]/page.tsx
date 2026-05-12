@@ -1,12 +1,10 @@
-'use client';
-
-import { useAuth } from '@/hooks/use-auth';
-import { Card, CardTitle } from '@/components/ui/card';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { UsersRound, Megaphone, MessageSquare, Users, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 
 const QUICK_LINKS = [
   { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
@@ -16,16 +14,18 @@ const QUICK_LINKS = [
   { href: '/boards/intercession', label: '기도제목', icon: Heart, color: 'bg-rose-50 text-rose-600' },
 ];
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const params = useParams();
+interface PageProps {
+  params: { church: string; department: string };
+}
+
+export default async function DashboardPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
   const basePath = `/${params.church}/${params.department}`;
-
-  if (!user) return null;
-
-  const roleLabel = user.ministerRank
-    ? MINISTER_RANK_LABELS[user.ministerRank]
-    : ROLE_LABELS_DEFAULT[user.role];
+  const roleLabel = session.ministerRank
+    ? MINISTER_RANK_LABELS[session.ministerRank]
+    : ROLE_LABELS_DEFAULT[session.role];
 
   return (
     <div className="space-y-6">
@@ -34,7 +34,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold mb-1">
-              안녕하세요, {user.name}님 👋
+              안녕하세요, {session.name}님 👋
             </h1>
             <p className="text-primary-100 text-sm">오늘도 은혜로운 하루 되세요.</p>
           </div>

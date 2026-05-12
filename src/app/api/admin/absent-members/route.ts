@@ -74,15 +74,23 @@ export async function GET() {
 
   const memberIds = members.map((m) => m.id);
 
-  // Get attendance records for the last 4 weeks
-  const { data: attendanceRecords } = await supabase
-    .from('attendance')
-    .select('user_id, week_start, worship_service, department_meeting, small_group, prayer_count, qt_count, bible_reading')
-    .in('user_id', memberIds)
-    .gte('week_start', fourWeeksAgoStr)
-    .lte('week_start', currentWeekStr);
+  // Parallel: 최근 4주 출석 + 마지막 출석일 동시 조회
+  const [{ data: attendanceRecords }, { data: lastAttendance }] = await Promise.all([
+    supabase
+      .from('attendance')
+      .select('user_id, week_start, worship_service, department_meeting, small_group, prayer_count, qt_count, bible_reading')
+      .in('user_id', memberIds)
+      .gte('week_start', fourWeeksAgoStr)
+      .lte('week_start', currentWeekStr),
+    supabase
+      .from('attendance')
+      .select('user_id, week_start')
+      .in('user_id', memberIds)
+      .or('worship_service.not.is.null,department_meeting.eq.true,small_group.eq.true,prayer_count.gt.0,qt_count.gt.0,bible_reading.eq.true')
+      .order('week_start', { ascending: false }),
+  ]);
 
-  // Build attendance map: user_id -> set of weeks they attended (any of worship/dept/sg)
+  // Build attendance map: user_id -> set of weeks they attended
   const userAttendedWeeks: Record<string, Set<string>> = {};
   (attendanceRecords || []).forEach((a) => {
     const attended = a.worship_service || a.department_meeting || a.small_group || a.prayer_count > 0 || a.qt_count > 0 || a.bible_reading;
@@ -91,14 +99,6 @@ export async function GET() {
       userAttendedWeeks[a.user_id].add(a.week_start);
     }
   });
-
-  // Get the last attendance for each user (to show last attended date)
-  const { data: lastAttendance } = await supabase
-    .from('attendance')
-    .select('user_id, week_start')
-    .in('user_id', memberIds)
-    .or('worship_service.not.is.null,department_meeting.eq.true,small_group.eq.true,prayer_count.gt.0,qt_count.gt.0,bible_reading.eq.true')
-    .order('week_start', { ascending: false });
 
   const lastAttendedMap: Record<string, string> = {};
   (lastAttendance || []).forEach((a) => {

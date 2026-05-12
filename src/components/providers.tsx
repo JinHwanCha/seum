@@ -2,6 +2,7 @@
 
 import { SWRConfig } from 'swr';
 import { AuthProvider } from '@/hooks/use-auth';
+import type { SessionPayload } from '@/lib/types';
 
 const swrFetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -9,10 +10,16 @@ const swrFetcher = (url: string) =>
     return res.json();
   });
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  initialUser: SessionPayload | null;
+}) {
   return (
-    <SWRConfig value={{ fetcher: swrFetcher, revalidateOnFocus: false, dedupingInterval: 5000 }}>
-      <AuthProvider>{children}</AuthProvider>
+    <SWRConfig value={{ fetcher: swrFetcher, revalidateOnFocus: false, dedupingInterval: 10000, keepPreviousData: true }}>
+      <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
     </SWRConfig>
   );
 }

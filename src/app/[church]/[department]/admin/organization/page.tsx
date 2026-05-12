@@ -1,6 +1,11 @@
 'use client';
 
-import { VillageManager } from '@/components/admin/village-manager';
+import dynamic from 'next/dynamic';
+
+const VillageManager = dynamic(
+  () => import('@/components/admin/village-manager').then((m) => m.VillageManager),
+  { loading: () => <div className="animate-pulse h-32 bg-stone-100 rounded-xl" /> }
+);
 
 export default function OrganizationPage() {
   return (

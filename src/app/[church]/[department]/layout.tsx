@@ -1,23 +1,9 @@
-'use client';
-
 import { Header } from '@/components/layout/header';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MobileNav } from '@/components/layout/mobile-nav';
-import { useAuth } from '@/hooks/use-auth';
 
+// 인증은 미들웨어에서 처리 — 여기까지 도달한 요청은 유효한 세션 보장
 export default function DepartmentLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf8f3]">
-        <div className="animate-pulse text-primary-600 text-lg font-medium">세움</div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
     <div className="min-h-screen bg-[#faf8f3]">
       <Header />

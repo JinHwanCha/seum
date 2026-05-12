@@ -4,10 +4,11 @@ import {
   createContext,
   useContext,
   useCallback,
+  useState,
+  useEffect,
   type ReactNode,
 } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import useSWR from 'swr';
+import { useRouter } from 'next/navigation';
 import type { SessionPayload } from '@/lib/types';
 
 interface AuthContextType {
@@ -26,60 +27,58 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const authFetcher = (url: string) =>
-  fetch(url).then((res) => {
-    if (!res.ok) throw new Error('Not authenticated');
-    return res.json();
-  });
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  initialUser,
+}: {
+  children: ReactNode;
+  initialUser: SessionPayload | null;
+}) {
   const router = useRouter();
-  const pathname = usePathname();
+  // 서버에서 내려온 세션을 초기값으로 사용 — API 호출 없음
+  const [user, setUser] = useState<SessionPayload | null>(initialUser ?? null);
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  // router.refresh() 후 서버 컴포넌트가 재렌더링되면 initialUser가 갱신됨
+  useEffect(() => {
+    setUser(initialUser ?? null);
+  }, [initialUser]);
 
-  const { data, isLoading, mutate } = useSWR(
-    isAuthPage ? null : '/api/auth/me',
-    authFetcher,
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
+  const login = useCallback(
+    async (
+      churchName: string,
+      name: string,
+      password: string,
+      selectedUserId?: string,
+      rememberMe?: boolean
+    ) => {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe }),
+      });
+      const resData = await res.json();
+      if (res.ok && !resData.multipleMatches) {
+        // 하드 네비게이션: 쿠키가 확실히 포함된 새 요청으로 Server Component를 렌더링
+        window.location.href = `/${resData.churchSlug}/${resData.departmentSlug}`;
+      }
+      return resData;
+    },
+    []
   );
-
-  const user = data?.user ?? null;
-  const loading = isAuthPage ? false : isLoading;
-
-  const refreshUser = useCallback(async () => {
-    await mutate();
-  }, [mutate]);
-
-  const login = useCallback(async (
-    churchName: string,
-    name: string,
-    password: string,
-    selectedUserId?: string,
-    rememberMe?: boolean
-  ) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe }),
-    });
-    const resData = await res.json();
-
-    if (res.ok && !resData.multipleMatches) {
-      await mutate();
-      router.push(`/${resData.churchSlug}/${resData.departmentSlug}`);
-    }
-    return resData;
-  }, [mutate, router]);
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    await mutate(null, false);
+    setUser(null);
     router.push('/login');
-  }, [mutate, router]);
+  }, [router]);
+
+  // Server Component를 소프트 리프레시해서 세션 최신화 (프로필 업데이트 후 등)
+  const refreshUser = useCallback(async () => {
+    router.refresh();
+  }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading: false, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

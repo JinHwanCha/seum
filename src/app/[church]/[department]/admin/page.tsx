@@ -1,11 +1,10 @@
-'use client';
-
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
-import { Card } from '@/components/ui/card';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import { canAccessAdmin } from '@/lib/permissions';
+import { Card } from '@/components/ui/card';
 import { Users, Map, Tag, Settings, UserCheck, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import type { Role } from '@/lib/types';
 
 const ADMIN_ITEMS = [
   { href: '/admin/members?tab=pending', label: '가입 승인', desc: '대기 중인 회원 승인/거절', icon: UserCheck, color: 'bg-green-50 text-green-600' },
@@ -16,18 +15,23 @@ const ADMIN_ITEMS = [
   { href: '/admin/settings', label: '설정', desc: '교회/부서 정보 및 명칭 설정', icon: Settings, color: 'bg-stone-100 text-stone-600' },
 ];
 
-export default function AdminPage() {
-  const { user } = useAuth();
-  const params = useParams();
-  const basePath = `/${params.church}/${params.department}`;
+interface PageProps {
+  params: { church: string; department: string };
+}
 
-  if (!user || !canAccessAdmin(user.role as any, user.isBureauLeader || user.isBureauMember, user.isAdmin)) {
+export default async function AdminPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
+  if (!canAccessAdmin(session.role as Role, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
     return (
       <div className="text-center py-12 text-stone-400 text-sm">
         접근 권한이 없습니다.
       </div>
     );
   }
+
+  const basePath = `/${params.church}/${params.department}`;
 
   return (
     <div className="space-y-4">

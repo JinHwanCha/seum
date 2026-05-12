@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
-import { JWT_SECRET_KEY, COOKIE_NAME } from '@/lib/constants';
+import { COOKIE_NAME } from '@/lib/constants';
+
+// Edge 런타임에서 모듈 레벨 Uint8Array가 올바르게 직렬화되지 않을 수 있으므로
+// 미들웨어 함수 내에서 직접 키를 생성합니다
+function getJwtSecretKey(): Uint8Array {
+  return new TextEncoder().encode(
+    process.env.JWT_SECRET || 'seum-dev-secret-key-change-in-production-32ch'
+  );
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,10 +34,14 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
-    // Pass decoded payload via request headers to avoid re-verifying JWT in route handlers
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
+    // HTTP 헤더는 ASCII만 허용하므로 non-ASCII 문자(한글 등)를 \uXXXX 이스케이프로 인코딩
+    const safePayload = JSON.stringify(payload).replace(
+      /[\u007F-\uFFFF]/g,
+      (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+    );
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-session-payload', JSON.stringify(payload));
+    requestHeaders.set('x-session-payload', safePayload);
     return NextResponse.next({
       request: { headers: requestHeaders },
     });

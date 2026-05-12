@@ -144,10 +144,15 @@ export async function GET(request: Request) {
     let cellMembersMap: Record<string, any[]> = {};
 
     if (cIds.length > 0) {
-      // Parallel: leaders + members
-      const [leadersResult, allMembersResult] = await Promise.all([
+      // Parallel: leaders + members + prayers (prayers filtered by dept+week, narrowed by cell in JS)
+      const [leadersResult, allMembersResult, vPrayersResult] = await Promise.all([
         supabase.from('users').select('name, cell_id').in('cell_id', cIds).eq('role', 'cell_leader').eq('is_graduated', false),
         supabase.from('users').select('id, name, role, cell_id, birth_date').in('cell_id', cIds).eq('is_approved', true).eq('is_graduated', false),
+        supabase.from('prayer_requests')
+          .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+          .eq('department_id', session.departmentId)
+          .eq('week_start', weekStart)
+          .order('created_at', { ascending: true }),
       ]);
 
       (leadersResult.data || []).forEach((l: any) => {
@@ -161,17 +166,10 @@ export async function GET(request: Request) {
         }
       });
 
-      const memberIds = (allMembersResult.data || []).map((m: any) => m.id);
-      const { data: vPrayers } = await supabase
-        .from('prayer_requests')
-        .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
-        .in('user_id', memberIds)
-        .eq('week_start', weekStart)
-        .order('created_at', { ascending: true });
-
+      const cIdSet = new Set(cIds);
       const prayerByCellUser: Record<string, any> = {};
-      (vPrayers || []).forEach((p) => {
-        if (p.user?.cell_id) {
+      (vPrayersResult.data || []).forEach((p: any) => {
+        if (p.user?.cell_id && cIdSet.has(p.user.cell_id)) {
           prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
         }
       });

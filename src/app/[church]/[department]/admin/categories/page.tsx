@@ -1,6 +1,11 @@
 'use client';
 
-import { CategoryManager } from '@/components/admin/category-manager';
+import dynamic from 'next/dynamic';
+
+const CategoryManager = dynamic(
+  () => import('@/components/admin/category-manager').then((m) => m.CategoryManager),
+  { loading: () => <div className="animate-pulse h-32 bg-stone-100 rounded-xl" /> }
+);
 
 export default function CategoriesPage() {
   return (
