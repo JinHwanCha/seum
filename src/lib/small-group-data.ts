@@ -3,7 +3,17 @@ import type { SessionPayload } from '@/lib/types';
 
 export async function getSmallGroupData(session: SessionPayload, weekStart: string) {
   const supabase = createClient();
-  const { cellId, villageId } = session;
+
+  // 세션 JWT는 로그인 시점 스냅샷이라 관리자 배정 변경이 즉시 반영되지 않음.
+  // 항상 DB에서 최신 cell/village를 조회한다.
+  const { data: freshUser } = await supabase
+    .from('users')
+    .select('cell_id, village_id')
+    .eq('id', session.userId)
+    .single();
+
+  const cellId = freshUser?.cell_id ?? session.cellId ?? null;
+  const villageId = freshUser?.village_id ?? session.villageId ?? null;
 
   // 모든 쿼리(base + role별)를 동시에 시작해 워터폴 제거
   const basePromises = [

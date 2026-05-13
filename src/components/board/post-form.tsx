@@ -27,7 +27,13 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const [title, setTitle] = useState(existingPost?.title || '');
   const [content, setContent] = useState(existingPost?.content || '');
   const [categoryId, setCategoryId] = useState(existingPost?.category_id || '');
-  const [gatheringType, setGatheringType] = useState(existingPost?.gathering_type || '');
+  // 직접 입력한 카테고리 (DB 저장 X, post.gathering_type 컬럼에 텍스트로만 저장)
+  const [customCategory, setCustomCategory] = useState(
+    !existingPost?.category_id && existingPost?.gathering_type ? existingPost.gathering_type : ''
+  );
+  const [useCustomCategory, setUseCustomCategory] = useState(
+    !existingPost?.category_id && !!existingPost?.gathering_type
+  );
   const [images, setImages] = useState<string[]>(existingPost?.images || []);
   const [visibility, setVisibility] = useState<Visibility>(existingPost?.visibility || 'all');
   const [targetVillageId, setTargetVillageId] = useState<string>(
@@ -43,15 +49,16 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const canPickAnyVillage = user?.role === 'minister' || user?.role === 'village_leader';
   // 마을공개 가능: 본인 마을 있거나, 사역자/마을장 (마을 선택 가능)
   const canPickVillage = !!user?.villageId || canPickAnyVillage;
+  // 카테고리 선택 영역은 모든 글쓰기에 노출
+  const showCategory = true;
 
   useEffect(() => {
-    if (boardType === 'sharing' || boardType === 'gathering') {
-      fetch(`/api/admin/categories?boardType=${boardType}`)
-        .then((r) => r.json())
-        .then((data) => setCategories(data.categories || []))
-        .catch(() => {});
-    }
-  }, [boardType]);
+    if (!showCategory) return;
+    fetch(`/api/admin/categories?boardType=${boardType}`)
+      .then((r) => (r.ok ? r.json() : { categories: [] }))
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => {});
+  }, [boardType, showCategory]);
 
   // 사역자/마을장이면 마을 목록 fetch (드롭다운용)
   useEffect(() => {
@@ -75,6 +82,10 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
     setLoading(true);
     setError('');
 
+    // 카테고리 직접 입력은 DB에 저장하지 않고 post.gathering_type 텍스트 컬럼에 보관
+    const resolvedCategoryId = useCustomCategory ? null : (categoryId || null);
+    const resolvedCustomText = useCustomCategory ? customCategory.trim() : null;
+
     try {
       const url = existingPost
         ? `/api/posts/${existingPost.id}`
@@ -88,8 +99,8 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
           title: title.trim(),
           content: content.trim(),
           boardType,
-          categoryId: categoryId || null,
-          gatheringType: gatheringType || null,
+          categoryId: resolvedCategoryId,
+          gatheringType: resolvedCustomText,
           images,
           visibility: showVisibility ? visibility : 'all',
           villageId: visibility === 'village' ? (targetVillageId || user?.villageId || null) : null,
@@ -122,23 +133,37 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
         required
       />
 
-      {boardType === 'gathering' && (
-        <Input
-          label="어떤 모임인가요? (선택)"
-          placeholder="예: 등산, 캠핑, 전도, 러닝..."
-          value={gatheringType}
-          onChange={(e) => setGatheringType(e.target.value)}
-        />
-      )}
-
-      {categories.length > 0 && (
-        <Select
-          label="카테고리 (선택)"
-          options={categories.map((c) => ({ value: c.id, label: c.name }))}
-          placeholder="카테고리 선택"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-        />
+      {showCategory && (
+        <div>
+          <Select
+            label="카테고리 (선택)"
+            options={[
+              ...categories.map((c) => ({ value: c.id, label: c.name })),
+              { value: '__custom__', label: '+ 직접 입력' },
+            ]}
+            placeholder="카테고리 선택"
+            value={useCustomCategory ? '__custom__' : categoryId}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '__custom__') {
+                setUseCustomCategory(true);
+                setCategoryId('');
+              } else {
+                setUseCustomCategory(false);
+                setCategoryId(v);
+              }
+            }}
+          />
+          {useCustomCategory && (
+            <Input
+              className="mt-2"
+              placeholder="카테고리를 직접 입력하세요 (예: 등산, 캠핑, 러닝...)"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              maxLength={20}
+            />
+          )}
+        </div>
       )}
 
       <Textarea

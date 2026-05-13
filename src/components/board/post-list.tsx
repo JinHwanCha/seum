@@ -30,19 +30,19 @@ export function PostList({
 }: PostListProps) {
   const showTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
 
-  // 사용자가 볼 수 있는 마을 탭 (사역자·마을장·마을미배정은 전체 마을, 그 외에는 자기 마을만)
+  // 모든 사용자에게 전체 마을 탭을 노출 (권한없는 village-private 글은 서버에서 이미 걸러짐)
   const visibleVillages = useMemo(() => {
     if (!showTabs) return [];
-    if (canSeeAll || !currentVillageId) return villages;
-    return villages.filter((v) => v.id === currentVillageId);
-  }, [showTabs, canSeeAll, currentVillageId, villages]);
+    return villages;
+  }, [showTabs, villages]);
 
   // 'all' or villageId
   const [activeTab, setActiveTab] = useState<string>('all');
 
+  // 마을 탭 = 작성자가 속한 마을 기준으로 그룹핑 (visibility 무관)
   const filteredPosts = useMemo(() => {
     if (!showTabs || activeTab === 'all') return posts;
-    return posts.filter((p) => p.visibility === 'village' && p.village_id === activeTab);
+    return posts.filter((p) => p.author?.village_id === activeTab);
   }, [showTabs, activeTab, posts]);
 
   const pinned = filteredPosts.filter((p) => p.is_pinned);
