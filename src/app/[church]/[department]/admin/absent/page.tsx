@@ -9,6 +9,7 @@ import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { AlertTriangle, User, Calendar, Phone } from 'lucide-react';
 import { formatDate } from '@/lib/date-utils';
 import type { Role } from '@/lib/types';
+import { AdminBackButton } from '@/components/admin/back-button';
 
 interface AbsentMember {
   id: string;
@@ -232,7 +233,8 @@ export default async function AbsentMembersPage() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <AdminBackButton />
           <AlertTriangle size={20} className="text-amber-500" />
           <h1 className="text-lg font-bold text-stone-900">장기미출석</h1>
         </div>

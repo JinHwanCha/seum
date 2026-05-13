@@ -7,9 +7,10 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw } from 'lucide-react';
+import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw, Trash2 } from 'lucide-react';
 import type { User } from '@/lib/types';
 import type { VillageWithCells, CellWithLeader } from '@/lib/admin-data';
+import { useAuth } from '@/hooks/use-auth';
 
 interface MemberListProps {
   showPending?: boolean;
@@ -25,6 +26,8 @@ export function MemberList({
   initialVillages,
 }: MemberListProps) {
   const router = useRouter();
+  const { user: currentUser } = useAuth();
+  const canDelete = currentUser?.role === 'minister' || !!currentUser?.isAdmin;
   const [, startTransition] = useTransition();
   const members = initialMembers;
   const villages = initialVillages;
@@ -91,6 +94,21 @@ export function MemberList({
         cellId: editCellId || null,
       }),
     });
+    setEditingMember(null);
+    fetchMembers();
+  };
+
+  const handleDeleteMember = async () => {
+    if (!editingMember) return;
+    if (!confirm(`⚠️ ${editingMember.name} 님의 계정을 완전히 삭제합니다.\n이 회원이 작성한 게시글·댓글·기도제목 등도 삭제되며 되돌릴 수 없습니다.\n\n계속하시겠습니까?`)) return;
+    const res = await fetch(`/api/admin/members/${editingMember.id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || '삭제에 실패했습니다.');
+      return;
+    }
     setEditingMember(null);
     fetchMembers();
   };
@@ -387,11 +405,20 @@ export function MemberList({
             />
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setEditingMember(null)}>
-              취소
-            </Button>
-            <Button onClick={handleUpdateMember}>저장</Button>
+          <div className="flex justify-between items-center gap-2 pt-2">
+            {canDelete && editingMember?.id !== currentUser?.userId ? (
+              <Button variant="danger" onClick={handleDeleteMember}>
+                <Trash2 size={14} className="mr-1" /> 회원 삭제
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setEditingMember(null)}>
+                취소
+              </Button>
+              <Button onClick={handleUpdateMember}>저장</Button>
+            </div>
           </div>
         </div>
       </Modal>

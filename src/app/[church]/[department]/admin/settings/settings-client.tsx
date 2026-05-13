@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import type { SessionPayload } from '@/lib/types';
+import { AdminBackButton } from '@/components/admin/back-button';
 
 interface Settings {
   church_name?: string;
@@ -45,7 +46,10 @@ export default function SettingsClient({ user, settings, initialRoleLabels }: Pr
 
   return (
     <div className="space-y-6 max-w-lg">
-      <h1 className="text-lg font-bold text-stone-900">설정</h1>
+      <div className="flex items-center gap-1">
+        <AdminBackButton />
+        <h1 className="text-lg font-bold text-stone-900">설정</h1>
+      </div>
 
       <Card>
         <CardTitle>교회 정보</CardTitle>

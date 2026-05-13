@@ -82,3 +82,57 @@ export async function PATCH(
 
   return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // 사역자 또는 시스템 관리자만 회원 삭제 가능
+  if (session.role !== 'minister' && !session.isAdmin) {
+    return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
+  }
+
+  // 본인 계정은 삭제 차단
+  if (params.id === session.userId) {
+    return NextResponse.json({ error: '본인 계정은 삭제할 수 없습니다.' }, { status: 400 });
+  }
+
+  const supabase = createClient();
+
+  // 다른 부서 회원 보호 — 같은 부서만
+  const { data: target } = await supabase
+    .from('users')
+    .select('department_id, role, minister_rank')
+    .eq('id', params.id)
+    .single();
+
+  if (!target) return NextResponse.json({ error: '회원을 찾을 수 없습니다.' }, { status: 404 });
+  if (target.department_id !== session.departmentId) {
+    return NextResponse.json({ error: '같은 부서 회원만 삭제할 수 있습니다.' }, { status: 403 });
+  }
+
+  // 사역자 삭제는 동등하거나 더 높은 권한자만
+  if (target.role === 'minister') {
+    if (
+      !canModifyUserRole(
+        session.role as Role,
+        session.ministerRank as MinisterRank | null,
+        target.role as Role,
+        target.minister_rank as MinisterRank | null,
+        session.isAdmin
+      )
+    ) {
+      return NextResponse.json({ error: '이 사역자를 삭제할 권한이 없습니다.' }, { status: 403 });
+    }
+  }
+
+  const { error } = await supabase.from('users').delete().eq('id', params.id);
+  if (error) {
+    console.error('Member delete error:', error);
+    return NextResponse.json({ error: '삭제에 실패했습니다.' }, { status: 500 });
+  }
+  return NextResponse.json({ success: true });
+}

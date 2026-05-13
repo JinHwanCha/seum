@@ -52,7 +52,7 @@ export default function PostDetailClient({
   const canDelete = canDeletePost(user.role as any, boardType as BoardType, isAuthor);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-2">
+    <div className="space-y-2">
       <button
         onClick={() => router.push(`${basePath}/boards/${boardType}`)}
         className="flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors"

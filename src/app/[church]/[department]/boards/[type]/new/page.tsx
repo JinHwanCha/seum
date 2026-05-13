@@ -10,7 +10,7 @@ export default function NewPostPage() {
   const boardType = params.type as string;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       <Card>
         <CardTitle>{BOARD_TYPE_LABELS[boardType] || boardType} 글쓰기</CardTitle>
         <PostForm boardType={boardType} />

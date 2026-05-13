@@ -23,7 +23,7 @@ export default async function EditPostPage({ params }: PageProps) {
   if (!post) notFound();
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       <Card>
         <CardTitle>{BOARD_TYPE_LABELS[params.type] || params.type} 수정</CardTitle>
         <PostForm boardType={params.type} existingPost={post as any} />

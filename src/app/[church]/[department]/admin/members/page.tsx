@@ -9,6 +9,7 @@ import {
 } from '@/lib/admin-data';
 import type { Role } from '@/lib/types';
 import MembersClient from './members-client';
+import { AdminBackButton } from '@/components/admin/back-button';
 
 interface PageProps {
   params: { church: string; department: string };
@@ -88,7 +89,10 @@ export default function MembersPage({ params, searchParams }: PageProps) {
 
   return (
     <div className="space-y-2">
-      <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
+      <div className="flex items-center gap-1">
+        <AdminBackButton />
+        <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
+      </div>
       <Suspense key={tab} fallback={<MembersSkeleton />}>
         <MembersData tab={tab} basePath={basePath} />
       </Suspense>
