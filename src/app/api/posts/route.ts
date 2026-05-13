@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, content, boardType, categoryId, gatheringType } = await request.json();
+  const { title, content, boardType, categoryId, gatheringType, images } = await request.json();
 
   if (!title || !content || !boardType) {
     return NextResponse.json({ error: '필수 항목을 입력해주세요.' }, { status: 400 });
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       title,
       content,
       gathering_type: gatheringType || null,
+      images: Array.isArray(images) ? images : [],
     })
     .select('id')
     .single();

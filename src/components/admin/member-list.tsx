@@ -340,7 +340,7 @@ export function MemberList({
         onClose={() => setEditingMember(null)}
         title={`${editingMember?.name} 편성`}
       >
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Select
             label="역할"
             options={roleOptions}

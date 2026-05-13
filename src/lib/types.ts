@@ -91,6 +91,7 @@ export interface PrayerRequest {
   department_id: string;
   week_start: string;
   content: string;
+  images: string[];
   created_at: string;
   updated_at: string;
   user?: User;
@@ -112,6 +113,7 @@ export interface Post {
   author_id: string;
   title: string;
   content: string;
+  images: string[];
   gathering_type: string | null;
   is_pinned: boolean;
   created_at: string;

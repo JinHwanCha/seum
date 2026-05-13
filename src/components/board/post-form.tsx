@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { ImageUploader } from '@/components/ui/image-uploader';
 import type { BoardCategory, Post } from '@/lib/types';
 
 interface PostFormProps {
@@ -22,6 +23,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const [content, setContent] = useState(existingPost?.content || '');
   const [categoryId, setCategoryId] = useState(existingPost?.category_id || '');
   const [gatheringType, setGatheringType] = useState(existingPost?.gathering_type || '');
+  const [images, setImages] = useState<string[]>(existingPost?.images || []);
   const [categories, setCategories] = useState<BoardCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,6 +59,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
           boardType,
           categoryId: categoryId || null,
           gatheringType: gatheringType || null,
+          images,
         }),
       });
 
@@ -77,7 +80,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <Input
         label="제목"
         placeholder="제목을 입력하세요"
@@ -113,6 +116,11 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
         rows={8}
         required
       />
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">사진 첨부 (선택)</label>
+        <ImageUploader images={images} onChange={setImages} />
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

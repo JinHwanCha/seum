@@ -66,7 +66,7 @@ export async function PATCH(
     return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
   }
 
-  const { title, content, categoryId, gatheringType } = await request.json();
+  const { title, content, categoryId, gatheringType, images } = await request.json();
 
   const { error } = await supabase
     .from('posts')
@@ -75,6 +75,7 @@ export async function PATCH(
       content,
       category_id: categoryId || null,
       gathering_type: gatheringType || null,
+      images: Array.isArray(images) ? images : [],
       updated_at: new Date().toISOString(),
     })
     .eq('id', params.id);

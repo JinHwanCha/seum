@@ -21,7 +21,7 @@ export function PrayerList({ prayers, session, weekStart, onUpdated, groupByVill
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {prayers.map((prayer) => (
         <PrayerCard
           key={prayer.id}

@@ -73,7 +73,7 @@ export function CategoryManager() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <Tabs tabs={tabs} activeKey={activeBoard} onChange={setActiveBoard} />
 
       <div className="flex justify-end">
@@ -117,7 +117,7 @@ export function CategoryManager() {
       )}
 
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="카테고리 추가">
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Input
             label="카테고리 이름"
             value={newName}
@@ -136,7 +136,7 @@ export function CategoryManager() {
         onClose={() => setEditingCat(null)}
         title="카테고리 수정"
       >
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Input
             label="카테고리 이름"
             value={editName}

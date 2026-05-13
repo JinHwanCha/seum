@@ -113,13 +113,15 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { content, weekStart, targetUserId } = await request.json();
+  const { content, images, weekStart, targetUserId } = await request.json();
   if (!content || !weekStart) {
     return NextResponse.json({ error: 'content and weekStart required' }, { status: 400 });
   }
 
   const userId = targetUserId || session.userId;
   const supabase = createClient();
+
+  const safeImages = Array.isArray(images) ? images : [];
 
   // Check if already exists (upsert)
   const { data: existing } = await supabase
@@ -132,7 +134,7 @@ export async function POST(request: Request) {
   if (existing) {
     const { error } = await supabase
       .from('prayer_requests')
-      .update({ content, updated_at: new Date().toISOString() })
+      .update({ content, images: safeImages, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
 
     if (error) return NextResponse.json({ error: '저장에 실패했습니다.' }, { status: 500 });
@@ -146,6 +148,7 @@ export async function POST(request: Request) {
       department_id: session.departmentId,
       week_start: weekStart,
       content,
+      images: safeImages,
     })
     .select('id')
     .single();

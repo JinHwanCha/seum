@@ -40,7 +40,7 @@ export default function MembersClient({
   resetRequests,
 }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="border-b border-stone-200">
         <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Tabs">
           {TABS.map((t) => {

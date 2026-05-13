@@ -181,7 +181,7 @@ export function VillageManager() {
 
       {/* Add Village Modal */}
       <Modal isOpen={showAddVillage} onClose={() => setShowAddVillage(false)} title="마을 추가">
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Input
             label="마을 이름"
             value={newVillageName}
@@ -201,7 +201,7 @@ export function VillageManager() {
         onClose={() => setEditingVillage(null)}
         title="마을 이름 수정"
       >
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Input
             label="마을 이름"
             value={editVillageName}
@@ -220,7 +220,7 @@ export function VillageManager() {
         onClose={() => setAddCellToVillage(null)}
         title="소그룹 추가"
       >
-        <div className="space-y-4">
+        <div className="space-y-2">
           <Input
             label="소그룹 이름 (선택)"
             value={newCellName}

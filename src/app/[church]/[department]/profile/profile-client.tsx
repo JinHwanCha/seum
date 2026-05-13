@@ -87,7 +87,7 @@ export default function ProfileClient({ user, basePath, profile }: Props) {
     : ROLE_LABELS_DEFAULT[user.role];
 
   return (
-    <div className="space-y-4 max-w-lg">
+    <div className="space-y-2 max-w-lg">
       <div className="flex items-center gap-2">
         <Link
           href={basePath}
@@ -131,7 +131,7 @@ export default function ProfileClient({ user, basePath, profile }: Props) {
         )}
       </Card>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-2">
         <Card>
           <CardTitle className="text-base mb-4">기본 정보</CardTitle>
           <div className="space-y-3">

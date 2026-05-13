@@ -230,7 +230,7 @@ export default async function AbsentMembersPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertTriangle size={20} className="text-amber-500" />

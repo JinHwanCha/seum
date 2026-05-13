@@ -16,7 +16,7 @@ async function SmallGroupWithData() {
 
 function PrayerSkeleton() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <div className="space-y-2 animate-pulse">
       <div className="h-7 w-32 bg-stone-200 rounded" />
       <div className="h-10 w-full bg-stone-100 rounded-xl" />
       <div className="h-32 w-full bg-stone-100 rounded-xl" />

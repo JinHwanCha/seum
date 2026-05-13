@@ -22,7 +22,7 @@ export function PostList({ posts, boardType }: PostListProps) {
   const regular = posts.filter((p) => !p.is_pinned);
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {pinned.map((post) => (
         <PostCard key={post.id} post={post} boardType={boardType} />
       ))}

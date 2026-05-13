@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Edit3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { PrayerForm } from './prayer-form';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import type { PrayerRequest, SessionPayload } from '@/lib/types';
@@ -12,11 +13,12 @@ interface PrayerCardProps {
   prayer: PrayerRequest;
   session: SessionPayload;
   weekStart: string;
-  onUpdated: (content: string) => void;
+  onUpdated: (content: string, images: string[]) => void;
 }
 
 export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCardProps) {
   const [editing, setEditing] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const user = prayer.user!;
 
   const isOwn = user.id === session.userId;
@@ -42,17 +44,20 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
         <PrayerForm
           weekStart={weekStart}
           existingContent={prayer.content}
+          existingImages={prayer.images || []}
           existingId={prayer.id}
           targetUserName={isOwn ? undefined : user.name}
           targetUserId={isOwn ? undefined : user.id}
-          onSaved={(content) => {
+          onSaved={(content, images) => {
             setEditing(false);
-            onUpdated(content);
+            onUpdated(content, images);
           }}
         />
       </div>
     );
   }
+
+  const images = prayer.images || [];
 
   return (
     <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 transition-colors">
@@ -74,6 +79,27 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
       <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
         {prayer.content}
       </p>
+      {images.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {images.map((src, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setLightboxIdx(idx)}
+              className="block rounded-lg overflow-hidden border border-stone-200 hover:opacity-90 transition-opacity"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" className="h-20 w-20 object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+      <ImageLightbox
+        images={images}
+        startIndex={lightboxIdx ?? 0}
+        open={lightboxIdx !== null}
+        onClose={() => setLightboxIdx(null)}
+      />
     </div>
   );
 }

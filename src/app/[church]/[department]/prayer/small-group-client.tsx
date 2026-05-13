@@ -9,6 +9,7 @@ import { AttendanceCheck } from '@/components/attendance/attendance-check';
 import { Tabs } from '@/components/ui/tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
@@ -48,6 +49,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('prayer');
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   // Optimistic local state (updated by callbacks, synced from SWR)
   const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(initialData?.myPrayer ?? null);
@@ -142,7 +144,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <h1 className="text-lg font-bold text-stone-900">소그룹</h1>
 
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
@@ -160,24 +162,26 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <PrayerForm
               weekStart={weekStart}
               existingContent={myPrayer?.content}
+              existingImages={myPrayer?.images || []}
               existingId={myPrayer?.id}
-              onSaved={(content) => {
+              onSaved={(content, images) => {
                 setMyPrayer((prev) =>
                   prev
-                    ? { ...prev, content }
+                    ? { ...prev, content, images }
                     : ({
                         id: `temp-${Date.now()}`,
                         user_id: user.userId,
                         department_id: '',
                         week_start: weekStart,
                         content,
+                        images,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                       } as any)
                 );
                 setPrayers((prev) =>
                   prev.map((p) =>
-                    p.user_id === user.userId ? { ...p, content } : p
+                    p.user_id === user.userId ? { ...p, content, images } : p
                   )
                 );
               }}
@@ -190,7 +194,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <>
               {/* === Cell Member / Cell Leader View === */}
               {hasCell && !hasOversight && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* Cell Info Header */}
                   <div className="warm-surface rounded-xl border border-stone-200/80 p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -236,7 +240,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                       소그룹이 배정되지 않았습니다.
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {members.map((m) => {
                         const prayer = prayerByUser[m.id];
                         if (!prayer) {
@@ -261,15 +265,15 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                             prayer={prayer}
                             session={user}
                             weekStart={weekStart}
-                            onUpdated={(content) => {
+                            onUpdated={(content, images) => {
                               setPrayers((prev) =>
                                 prev.map((p) =>
-                                  p.id === prayer.id ? { ...p, content } : p
+                                  p.id === prayer.id ? { ...p, content, images } : p
                                 )
                               );
                               if (prayer.user_id === user.userId) {
                                 setMyPrayer((prev) =>
-                                  prev ? { ...prev, content } : prev
+                                  prev ? { ...prev, content, images } : prev
                                 );
                               }
                             }}
@@ -292,7 +296,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
               {/* === Minister / Village Leader Oversight View === */}
               {hasOversight && villageCells.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {villageCells.map((village) => (
                     <div key={village.id}>
                       {isMinister && (
@@ -373,6 +377,21 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                             <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
                                               {prayer.content}
                                             </p>
+                                            {(prayer.images || []).length > 0 && (
+                                              <div className="mt-2 flex flex-wrap gap-2">
+                                                {(prayer.images as string[]).map((src, idx) => (
+                                                  <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setLightbox({ images: prayer.images as string[], index: idx })}
+                                                    className="block rounded-md overflow-hidden border border-stone-200 hover:opacity-90 transition-opacity"
+                                                  >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={src} alt="" className="h-16 w-16 object-cover" />
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            )}
                                           </div>
                                         ) : (
                                           <p className="ml-6 text-xs text-stone-400 italic">
@@ -431,7 +450,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
               {/* Minister / Village Leader: all cells */}
               {hasOversight && villageCells.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {villageCells.map((village) => (
                     <div key={village.id}>
                       {isMinister && (
@@ -523,6 +542,13 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
           )}
         </>
       )}
+
+      <ImageLightbox
+        images={lightbox?.images || []}
+        startIndex={lightbox?.index ?? 0}
+        open={!!lightbox}
+        onClose={() => setLightbox(null)}
+      />
     </div>
   );
 }

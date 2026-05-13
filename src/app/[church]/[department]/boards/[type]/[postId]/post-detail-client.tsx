@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { CommentSection } from '@/components/board/comment-section';
 import { ReactionBar } from '@/components/board/reaction-bar';
 import { canEditPost, canDeletePost } from '@/lib/permissions';
@@ -31,6 +33,7 @@ export default function PostDetailClient({
   reactions,
 }: Props) {
   const router = useRouter();
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const refresh = () => router.refresh();
 
@@ -49,7 +52,7 @@ export default function PostDetailClient({
   const canDelete = canDeletePost(user.role as any, boardType as BoardType, isAuthor);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="max-w-2xl mx-auto space-y-2">
       <button
         onClick={() => router.push(`${basePath}/boards/${boardType}`)}
         className="flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors"
@@ -95,7 +98,32 @@ export default function PostDetailClient({
 
         <div className="prose prose-sm max-w-none mb-6">
           <p className="text-stone-700 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+          {Array.isArray(post.images) && post.images.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 not-prose">
+              {(post.images as string[]).map((src, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setLightboxIdx(idx)}
+                  className="block rounded-lg overflow-hidden border border-stone-200 hover:opacity-90 transition-opacity"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full aspect-square object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        <ImageLightbox
+          images={(post.images as string[]) || []}
+          startIndex={lightboxIdx ?? 0}
+          open={lightboxIdx !== null}
+          onClose={() => setLightboxIdx(null)}
+        />
 
         {/* Reactions */}
         <div className="border-t border-stone-100 pt-4 mb-4">

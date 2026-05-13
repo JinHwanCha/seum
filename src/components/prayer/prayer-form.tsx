@@ -7,21 +7,25 @@ import { Button } from '@/components/ui/button';
 interface PrayerFormProps {
   weekStart: string;
   existingContent?: string;
+  existingImages?: string[];
   existingId?: string;
   targetUserName?: string;
   targetUserId?: string;
-  onSaved: (content: string) => void;
+  onSaved: (content: string, images: string[]) => void;
 }
 
 export function PrayerForm({
   weekStart,
   existingContent,
+  existingImages,
   existingId,
   targetUserName,
   targetUserId,
   onSaved,
 }: PrayerFormProps) {
   const [content, setContent] = useState(existingContent || '');
+  // 기도제목은 텍스트만 편집 — 기존 이미지는 그대로 유지
+  const images = existingImages || [];
 
   useEffect(() => {
     setContent(existingContent || '');
@@ -33,7 +37,7 @@ export function PrayerForm({
     if (!trimmed) return;
 
     // Optimistic: notify parent immediately
-    onSaved(trimmed);
+    onSaved(trimmed, images);
 
     // Fire-and-forget API call
     const url = existingId
@@ -46,6 +50,7 @@ export function PrayerForm({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: trimmed,
+        images,
         weekStart,
         targetUserId: targetUserId || undefined,
       }),

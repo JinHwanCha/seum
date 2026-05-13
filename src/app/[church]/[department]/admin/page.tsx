@@ -34,7 +34,7 @@ export default async function AdminPage({ params }: PageProps) {
   const basePath = `/${params.church}/${params.department}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <h1 className="text-lg font-bold text-stone-900">관리</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ADMIN_ITEMS.map((item) => {

@@ -87,7 +87,7 @@ export default function MembersPage({ params, searchParams }: PageProps) {
   const basePath = `/${params.church}/${params.department}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
       <Suspense key={tab} fallback={<MembersSkeleton />}>
         <MembersData tab={tab} basePath={basePath} />

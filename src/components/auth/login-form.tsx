@@ -85,7 +85,7 @@ export function LoginForm() {
         <p className="text-stone-500 text-sm">교회 공동체 나눔 플랫폼</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-2">
         <Input
           label="교회 이름"
           placeholder="예: 내수동교회"

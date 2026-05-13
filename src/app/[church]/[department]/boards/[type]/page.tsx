@@ -58,7 +58,7 @@ export default async function BoardListPage({ params }: PageProps) {
   const basePath = `/${params.church}/${params.department}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-stone-900">
           {BOARD_TYPE_LABELS[params.type] || params.type}
