@@ -11,13 +11,15 @@ import type { Post } from '@/lib/types';
 interface PostCardProps {
   post: Post;
   boardType: string;
+  villageMap?: Record<string, string>;
 }
 
-export function PostCard({ post, boardType }: PostCardProps) {
+export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
   const params = useParams();
   const basePath = `/${params.church}/${params.department}`;
   const firstImage = post.images && post.images.length > 0 ? post.images[0] : null;
   const extraCount = post.images && post.images.length > 1 ? post.images.length - 1 : 0;
+  const authorVillageName = villageMap[(post.author as any)?.village_id] || null;
 
   return (
     <Link href={`${basePath}/boards/${boardType}/${post.id}`} className="block">
@@ -48,7 +50,12 @@ export function PostCard({ post, boardType }: PostCardProps) {
           )}
         </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
-          <div className="flex items-center gap-3 text-xs text-stone-400">
+          <div className="flex items-center gap-2 text-xs text-stone-400">
+            {authorVillageName && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[10px] font-medium border border-primary-100">
+                {authorVillageName}
+              </span>
+            )}
             <span className="font-medium text-stone-600">
               {post.author?.name}
               {birthYearTag((post.author as any)?.birth_date)}

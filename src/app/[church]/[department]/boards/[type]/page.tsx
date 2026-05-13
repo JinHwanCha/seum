@@ -65,11 +65,16 @@ async function PostListServer({
     },
   }));
 
+  // 서버에서 id→이름 맵 생성—클라이언트 추가 쿼리 없이 작성자 마을명 표기 용
+  const villageMap: Record<string, string> = {};
+  villages.forEach((v) => { villageMap[v.id] = v.name; });
+
   return (
     <PostList
       posts={enrichedPosts}
       boardType={type}
       villages={villages}
+      villageMap={villageMap}
       currentVillageId={villageId}
       canSeeAll={canSeeAll}
     />

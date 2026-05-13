@@ -13,6 +13,7 @@ interface PostListProps {
   posts: Post[];
   boardType: string;
   villages?: VillageOpt[];
+  villageMap?: Record<string, string>;
   currentVillageId?: string | null;
   /** 사역자 또는 마을장 — 모든 마을 글 열람 가능 */
   canSeeAll?: boolean;
@@ -25,6 +26,7 @@ export function PostList({
   posts,
   boardType,
   villages = [],
+  villageMap = {},
   currentVillageId = null,
   canSeeAll = false,
 }: PostListProps) {
@@ -74,10 +76,10 @@ export function PostList({
       ) : (
         <div className="flex flex-col gap-3">
           {pinned.map((post) => (
-            <PostCard key={post.id} post={post} boardType={boardType} />
+            <PostCard key={post.id} post={post} boardType={boardType} villageMap={villageMap} />
           ))}
           {regular.map((post) => (
-            <PostCard key={post.id} post={post} boardType={boardType} />
+            <PostCard key={post.id} post={post} boardType={boardType} villageMap={villageMap} />
           ))}
         </div>
       )}

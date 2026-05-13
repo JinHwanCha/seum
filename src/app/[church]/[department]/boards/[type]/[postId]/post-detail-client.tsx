@@ -75,6 +75,11 @@ export default function PostDetailClient({
             </div>
             <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
             <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">
+              {(post.author as any)?.village?.name && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[11px] font-medium border border-primary-100">
+                  {(post.author as any).village.name}
+                </span>
+              )}
               <span className="font-medium text-stone-700">
                 {post.author?.name}
                 {birthYearTag((post.author as any)?.birth_date)}

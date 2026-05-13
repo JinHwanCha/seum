@@ -18,7 +18,7 @@ export default async function PostDetailPage({ params }: PageProps) {
     .from('posts')
     .select(`
       *,
-      author:users(id, name, role, minister_rank, birth_date),
+      author:users(id, name, role, minister_rank, birth_date, village:villages(id, name)),
       category:board_categories(id, name),
       comments(*, author:users(id, name, role, minister_rank, birth_date)),
       reactions(*)
