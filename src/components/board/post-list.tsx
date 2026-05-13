@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { PostCard } from './post-card';
+import { useDragScroll } from '@/hooks/use-drag-scroll';
 import type { Post } from '@/lib/types';
 
 interface VillageOpt {
@@ -53,7 +54,7 @@ export function PostList({
   return (
     <div className="space-y-3">
       {showTabs && (
-        <div className="flex flex-wrap gap-1.5 pb-1 -mx-1 px-1 scrollbar-hide">
+        <PostTabsScroller>
           <TabBtn active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
             전체
           </TabBtn>
@@ -66,7 +67,7 @@ export function PostList({
               {v.name}
             </TabBtn>
           ))}
-        </div>
+        </PostTabsScroller>
       )}
 
       {filteredPosts.length === 0 ? (
@@ -108,5 +109,19 @@ function TabBtn({
     >
       {children}
     </button>
+  );
+}
+
+function PostTabsScroller({ children }: { children: React.ReactNode }) {
+  const ref = useDragScroll<HTMLDivElement>();
+  return (
+    <div className="min-w-0 w-full">
+      <div
+        ref={ref}
+        className="flex gap-1.5 pb-1 -mx-1 px-1 overflow-x-auto scrollbar-hide cursor-grab select-none touch-pan-x"
+      >
+        {children}
+      </div>
+    </div>
   );
 }
