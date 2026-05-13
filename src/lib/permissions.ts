@@ -74,10 +74,16 @@ export function canEditPrayer(
 
 export function canAccessAdmin(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
   if (isAdmin) return true;
-  return isMinister(role) || isBureau;
+  return isMinister(role) || role === 'village_leader' || isBureau;
 }
 
 export function canApproveMembers(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
+  return isMinister(role) || role === 'village_leader' || isBureau;
+}
+
+/** 사역자/국장단/시스템관리자만 접근 가능한 고급 관리 메뉴 (조직/카테고리/설정) */
+export function canAccessAdvancedAdmin(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
   if (isAdmin) return true;
   return isMinister(role) || isBureau;
 }
