@@ -68,6 +68,9 @@ export default function PostDetailClient({
               {post.is_pinned && <Badge variant="danger">고정</Badge>}
               {post.category && <Badge>{post.category.name}</Badge>}
               {post.gathering_type && <Badge variant="primary">{post.gathering_type}</Badge>}
+              {post.visibility === 'village' && post.village && (
+                <Badge variant="warning">🏘 {post.village.name}</Badge>
+              )}
             </div>
             <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
             <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">

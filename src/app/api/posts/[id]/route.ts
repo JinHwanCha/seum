@@ -18,12 +18,23 @@ export async function GET(
     .select(`
       *,
       author:users(id, name, role, minister_rank),
-      category:board_categories(id, name)
+      category:board_categories(id, name),
+      village:villages(id, name)
     `)
     .eq('id', params.id)
     .single();
 
   if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+
+  // 가시성 검사 — 마을공개인데 다른 마을 사용자면 차단 (사역자/마을장은 전체 열람)
+  const canView =
+    post.visibility === 'all' ||
+    session.role === 'minister' ||
+    session.role === 'village_leader' ||
+    (post.village_id && post.village_id === session.villageId);
+  if (!canView) {
+    return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+  }
 
   const [{ data: comments }, { data: reactions }] = await Promise.all([
     supabase
@@ -66,7 +77,11 @@ export async function PATCH(
     return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
   }
 
-  const { title, content, categoryId, gatheringType, images } = await request.json();
+  const { title, content, categoryId, gatheringType, images, visibility } = await request.json();
+
+  const requestedVisibility = visibility === 'village' ? 'village' : 'all';
+  const finalVisibility = requestedVisibility === 'village' && session.villageId ? 'village' : 'all';
+  const finalVillageId = finalVisibility === 'village' ? session.villageId : null;
 
   const { error } = await supabase
     .from('posts')
@@ -76,6 +91,8 @@ export async function PATCH(
       category_id: categoryId || null,
       gathering_type: gatheringType || null,
       images: Array.isArray(images) ? images : [],
+      visibility: finalVisibility,
+      village_id: finalVillageId,
       updated_at: new Date().toISOString(),
     })
     .eq('id', params.id);

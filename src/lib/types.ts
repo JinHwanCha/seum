@@ -115,11 +115,14 @@ export interface Post {
   content: string;
   images: string[];
   gathering_type: string | null;
+  visibility: 'all' | 'village';
+  village_id: string | null;
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
   author?: User;
   category?: BoardCategory;
+  village?: { id: string; name: string } | null;
   _count?: { comments: number; reactions: number };
 }
 

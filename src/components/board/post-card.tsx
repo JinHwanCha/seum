@@ -27,6 +27,9 @@ export function PostCard({ post, boardType }: PostCardProps) {
               {post.is_pinned && <Badge variant="danger">고정</Badge>}
               {post.category && <Badge>{post.category.name}</Badge>}
               {post.gathering_type && <Badge variant="primary">{post.gathering_type}</Badge>}
+              {post.visibility === 'village' && post.village && (
+                <Badge variant="warning">🏘 {post.village.name}</Badge>
+              )}
             </div>
             <h3 className="font-medium text-stone-900 text-sm truncate">{post.title}</h3>
             <p className="text-xs text-stone-500 mt-1 line-clamp-2">{post.content}</p>
