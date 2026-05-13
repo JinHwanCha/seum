@@ -1,27 +1,32 @@
-'use client';
-
-import { useParams } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { createClient } from '@/lib/supabase';
 import { PostForm } from '@/components/board/post-form';
 import { Card, CardTitle } from '@/components/ui/card';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
-import useSWR from 'swr';
 
-export default function EditPostPage() {
-  const params = useParams();
-  const postId = params.postId as string;
-  const boardType = params.type as string;
+interface PageProps {
+  params: { church: string; department: string; type: string; postId: string };
+}
 
-  const { data, isLoading } = useSWR(`/api/posts/${postId}`);
-  const post = data?.post ?? null;
+export default async function EditPostPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect('/login');
 
-  if (isLoading) return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
-  if (!post) return <div className="text-center py-8 text-stone-400 text-sm">게시글을 찾을 수 없습니다.</div>;
+  const supabase = createClient();
+  const { data: post } = await supabase
+    .from('posts')
+    .select('*, category:board_categories(id, name)')
+    .eq('id', params.postId)
+    .single();
+
+  if (!post) notFound();
 
   return (
     <div className="max-w-2xl mx-auto">
       <Card>
-        <CardTitle>{BOARD_TYPE_LABELS[boardType] || boardType} 수정</CardTitle>
-        <PostForm boardType={boardType} existingPost={post} />
+        <CardTitle>{BOARD_TYPE_LABELS[params.type] || params.type} 수정</CardTitle>
+        <PostForm boardType={params.type} existingPost={post as any} />
       </Card>
     </div>
   );

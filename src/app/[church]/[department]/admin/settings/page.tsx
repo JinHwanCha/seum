@@ -1,115 +1,43 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { canAccessAdmin } from '@/lib/permissions';
+import { createClient } from '@/lib/supabase';
+import type { Role } from '@/lib/types';
+import SettingsClient from './settings-client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { Card, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
+export default async function SettingsPage() {
+  const session = await getSession();
+  if (!session) redirect('/login');
 
-export default function SettingsPage() {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<any>(null);
-  const [roleLabels, setRoleLabels] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    fetch('/api/admin/settings')
-      .then((r) => r.json())
-      .then((data) => {
-        setSettings(data.settings);
-        const labels: Record<string, string> = {};
-        (data.roleLabels || []).forEach((rl: any) => {
-          labels[rl.role_key] = rl.label;
-        });
-        setRoleLabels(labels);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const handleSaveLabels = async () => {
-    setSaving(true);
-    setMessage('');
-    try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roleLabels }),
-      });
-      if (res.ok) {
-        setMessage('저장되었습니다.');
-      }
-    } catch {
-      setMessage('저장에 실패했습니다.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
+  if (!canAccessAdmin(session.role as Role, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
+    return <div className="text-center py-12 text-stone-400 text-sm">접근 권한이 없습니다.</div>;
   }
 
-  const isPastor = user?.ministerRank === 'pastor';
+  const supabase = createClient();
+
+  // 모든 쿼리 병렬 실행
+  const [{ data: church }, { data: department }, { data: roleLabelsRaw }] = await Promise.all([
+    supabase.from('churches').select('name, pastor_name').eq('id', session.churchId).single(),
+    supabase.from('departments').select('name').eq('id', session.departmentId).single(),
+    supabase.from('role_labels').select('role_key, label').eq('department_id', session.departmentId),
+  ]);
+
+  const settings = {
+    church_name: church?.name,
+    pastor_name: church?.pastor_name,
+    department_name: department?.name,
+  };
+
+  const initialRoleLabels: Record<string, string> = {};
+  (roleLabelsRaw || []).forEach((rl: any) => {
+    initialRoleLabels[rl.role_key] = rl.label;
+  });
 
   return (
-    <div className="space-y-6 max-w-lg">
-      <h1 className="text-lg font-bold text-stone-900">설정</h1>
-
-      {/* Church info */}
-      {settings && (
-        <Card>
-          <CardTitle>교회 정보</CardTitle>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-stone-500">교회 이름</span>
-              <span className="font-medium">{settings.church_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-stone-500">담임 목사</span>
-              <span className="font-medium">{settings.pastor_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-stone-500">부서</span>
-              <span className="font-medium">{settings.department_name}</span>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Role labels */}
-      {isPastor && (
-        <Card>
-          <CardTitle>직급 명칭 설정</CardTitle>
-          <p className="text-xs text-stone-500 mb-4">목사님만 수정 가능합니다.</p>
-          <div className="space-y-3">
-            {Object.entries(ROLE_LABELS_DEFAULT).map(([key, defaultLabel]) => {
-              if (key === 'pending') return null;
-              return (
-                <Input
-                  key={key}
-                  label={`${defaultLabel} 명칭`}
-                  value={roleLabels[key] || defaultLabel}
-                  onChange={(e) =>
-                    setRoleLabels((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                />
-              );
-            })}
-          </div>
-          {message && (
-            <p className="text-sm text-green-600 mt-2">{message}</p>
-          )}
-          <div className="flex justify-end mt-4">
-            <Button onClick={handleSaveLabels} loading={saving}>
-              저장
-            </Button>
-          </div>
-        </Card>
-      )}
-    </div>
+    <SettingsClient
+      user={session}
+      settings={settings}
+      initialRoleLabels={initialRoleLabels}
+    />
   );
 }

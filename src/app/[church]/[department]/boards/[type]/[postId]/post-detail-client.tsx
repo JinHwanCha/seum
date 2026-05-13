@@ -1,0 +1,122 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CommentSection } from '@/components/board/comment-section';
+import { ReactionBar } from '@/components/board/reaction-bar';
+import { canEditPost, canDeletePost } from '@/lib/permissions';
+import { formatDateTime } from '@/lib/date-utils';
+import { BOARD_TYPE_LABELS } from '@/lib/constants';
+import { ArrowLeft, Edit3, Trash2 } from 'lucide-react';
+import type { BoardType, Comment, Reaction, SessionPayload } from '@/lib/types';
+
+interface Props {
+  basePath: string;
+  boardType: string;
+  postId: string;
+  user: SessionPayload;
+  post: any;
+  comments: Comment[];
+  reactions: Reaction[];
+}
+
+export default function PostDetailClient({
+  basePath,
+  boardType,
+  postId,
+  user,
+  post,
+  comments,
+  reactions,
+}: Props) {
+  const router = useRouter();
+
+  const refresh = () => router.refresh();
+
+  const handleDelete = async () => {
+    if (!confirm('게시글을 삭제하시겠습니까?')) return;
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      if (res.ok) router.push(`${basePath}/boards/${boardType}`);
+    } catch {
+      // ignore
+    }
+  };
+
+  const isAuthor = post.author_id === user.userId;
+  const canEdit = canEditPost(user.role as any, isAuthor);
+  const canDelete = canDeletePost(user.role as any, boardType as BoardType, isAuthor);
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      <button
+        onClick={() => router.push(`${basePath}/boards/${boardType}`)}
+        className="flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors"
+      >
+        <ArrowLeft size={16} />
+        {BOARD_TYPE_LABELS[boardType]} 목록
+      </button>
+
+      <Card>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              {post.is_pinned && <Badge variant="danger">고정</Badge>}
+              {post.category && <Badge>{post.category.name}</Badge>}
+              {post.gathering_type && <Badge variant="primary">{post.gathering_type}</Badge>}
+            </div>
+            <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
+            <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">
+              <span className="font-medium text-stone-700">{post.author?.name}</span>
+              <span>{formatDateTime(post.created_at)}</span>
+              {post.updated_at !== post.created_at && <span>(수정됨)</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {canEdit && (
+              <button
+                onClick={() => router.push(`${basePath}/boards/${boardType}/${postId}/edit`)}
+                className="p-2 text-stone-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              >
+                <Edit3 size={16} />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="prose prose-sm max-w-none mb-6">
+          <p className="text-stone-700 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+        </div>
+
+        {/* Reactions */}
+        <div className="border-t border-stone-100 pt-4 mb-4">
+          <ReactionBar
+            postId={postId}
+            reactions={reactions}
+            session={user}
+            onRefresh={refresh}
+          />
+        </div>
+
+        {/* Comments */}
+        <div className="border-t border-stone-100 pt-4">
+          <CommentSection
+            postId={postId}
+            comments={comments}
+            session={user}
+            onRefresh={refresh}
+          />
+        </div>
+      </Card>
+    </div>
+  );
+}
