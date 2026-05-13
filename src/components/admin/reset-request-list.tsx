@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, KeyRound } from 'lucide-react';
@@ -13,28 +14,14 @@ interface ResetRequest {
   user: { id: string; name: string; phone: string | null };
 }
 
-export function ResetRequestList() {
-  const [requests, setRequests] = useState<ResetRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ResetRequestListProps {
+  initialRequests: ResetRequest[];
+}
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/reset-requests');
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data.requests || []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+export function ResetRequestList({ initialRequests }: ResetRequestListProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const requests = initialRequests;
 
   const handleAction = async (requestId: string, action: 'approve' | 'reject') => {
     if (action === 'reject' && !confirm('초기화 요청을 거절하시겠습니까?')) return;
@@ -44,17 +31,13 @@ export function ResetRequestList() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requestId, action }),
     });
-    fetchRequests();
+    startTransition(() => router.refresh());
   };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
-
-  if (loading) {
-    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
-  }
 
   if (requests.length === 0) {
     return (

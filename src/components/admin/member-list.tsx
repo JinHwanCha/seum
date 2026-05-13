@@ -1,32 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw } from 'lucide-react';
-import type { User, Village, Cell } from '@/lib/types';
-
-interface CellWithLeader extends Cell {
-  leader_name?: string | null;
-}
-
-interface VillageWithCells extends Village {
-  cells: CellWithLeader[];
-}
+import type { User } from '@/lib/types';
+import type { VillageWithCells, CellWithLeader } from '@/lib/admin-data';
 
 interface MemberListProps {
   showPending?: boolean;
   showGraduated?: boolean;
+  initialMembers: User[];
+  initialVillages: VillageWithCells[];
 }
 
-export function MemberList({ showPending = false, showGraduated = false }: MemberListProps) {
-  const [members, setMembers] = useState<User[]>([]);
-  const [villages, setVillages] = useState<VillageWithCells[]>([]);
-  const [cells, setCells] = useState<CellWithLeader[]>([]);
-  const [loading, setLoading] = useState(true);
+export function MemberList({
+  showPending = false,
+  showGraduated = false,
+  initialMembers,
+  initialVillages,
+}: MemberListProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const members = initialMembers;
+  const villages = initialVillages;
+  const cells: CellWithLeader[] = [];
+  initialVillages.forEach((v) => {
+    (v.cells || []).forEach((c) => cells.push({ ...c, village_id: v.id }));
+  });
+  const loading = false;
   const [editingMember, setEditingMember] = useState<User | null>(null);
   const [editRole, setEditRole] = useState('');
   const [editMinisterRank, setEditMinisterRank] = useState('');
@@ -35,39 +41,15 @@ export function MemberList({ showPending = false, showGraduated = false }: Membe
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
 
-  const fetchMembers = useCallback(async () => {
-    setLoading(true);
-    setSelectedIds(new Set());
-    try {
-      const query = showPending ? '?status=pending' : showGraduated ? '?status=graduated' : '';
-      const [membersRes, villagesRes] = await Promise.all([
-        fetch(`/api/admin/members${query}`),
-        fetch('/api/admin/villages'),
-      ]);
-      if (membersRes.ok) {
-        const data = await membersRes.json();
-        setMembers(data.members || []);
-      }
-      if (villagesRes.ok) {
-        const data = await villagesRes.json();
-        setVillages(data.villages || []);
-        // Flatten cells with leader info
-        const allCells: CellWithLeader[] = [];
-        (data.villages || []).forEach((v: any) => {
-          (v.cells || []).forEach((c: any) => allCells.push({ ...c, village_id: v.id }));
-        });
-        setCells(allCells);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [showPending, showGraduated]);
-
+  // 탭 변경 시 selection 초기화
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    setSelectedIds(new Set());
+  }, [showPending, showGraduated, initialMembers]);
+
+  const fetchMembers = () => {
+    setSelectedIds(new Set());
+    startTransition(() => router.refresh());
+  };
 
   const handleApprove = async (userId: string) => {
     await fetch(`/api/admin/members/${userId}`, {
@@ -195,10 +177,6 @@ export function MemberList({ showPending = false, showGraduated = false }: Membe
     { value: 'associate_pastor', label: '강도사' },
     { value: 'pastor', label: '목사' },
   ];
-
-  if (loading) {
-    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
-  }
 
   const showCheckboxes = !showPending;
 

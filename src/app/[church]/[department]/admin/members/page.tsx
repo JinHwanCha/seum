@@ -1,46 +1,97 @@
-'use client';
+import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
+import { canAccessAdmin } from '@/lib/permissions';
+import {
+  getMembers,
+  getResetRequests,
+  getVillagesWithCells,
+} from '@/lib/admin-data';
+import type { Role } from '@/lib/types';
+import MembersClient from './members-client';
 
-import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { Tabs } from '@/components/ui/tabs';
-import dynamic from 'next/dynamic';
+interface PageProps {
+  params: { church: string; department: string };
+  searchParams: { tab?: string };
+}
 
-const MemberList = dynamic(
-  () => import('@/components/admin/member-list').then((m) => m.MemberList),
-  { loading: () => <div className="animate-pulse h-48 bg-stone-100 rounded-xl" /> }
-);
-const ResetRequestList = dynamic(
-  () => import('@/components/admin/reset-request-list').then((m) => m.ResetRequestList),
-  { loading: () => <div className="animate-pulse h-32 bg-stone-100 rounded-xl" /> }
-);
+type TabKey = 'pending' | 'all' | 'graduated' | 'reset';
 
-export default function MembersPage() {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam === 'pending' ? 'pending'
-    : tabParam === 'reset' ? 'reset'
-    : tabParam === 'graduated' ? 'graduated' : 'all';
-  const [activeTab, setActiveTab] = useState(defaultTab);
+function resolveTab(tab?: string): TabKey {
+  if (tab === 'pending' || tab === 'graduated' || tab === 'reset') return tab;
+  return 'all';
+}
 
-  const tabs = [
-    { key: 'pending', label: '승인 대기' },
-    { key: 'all', label: '전체 회원' },
-    { key: 'graduated', label: '졸업' },
-    { key: 'reset', label: '비밀번호 초기화' },
-  ];
+async function MembersData({
+  tab,
+  basePath,
+}: {
+  tab: TabKey;
+  basePath: string;
+}) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
+  if (!canAccessAdmin(session.role as Role, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
+    return <div className="text-center py-12 text-stone-400 text-sm">접근 권한이 없습니다.</div>;
+  }
+
+  // 모든 데이터 병렬 prefetch
+  if (tab === 'reset') {
+    const [resetRequests, villages] = await Promise.all([
+      getResetRequests(session),
+      getVillagesWithCells(session),
+    ]);
+    return (
+      <MembersClient
+        tab={tab}
+        basePath={basePath}
+        members={[]}
+        villages={villages}
+        resetRequests={resetRequests}
+      />
+    );
+  }
+
+  const status = tab === 'pending' ? 'pending' : tab === 'graduated' ? 'graduated' : 'all';
+  const [members, villages, resetRequests] = await Promise.all([
+    getMembers(session, status),
+    getVillagesWithCells(session),
+    getResetRequests(session),
+  ]);
+
+  return (
+    <MembersClient
+      tab={tab}
+      basePath={basePath}
+      members={members}
+      villages={villages}
+      resetRequests={resetRequests}
+    />
+  );
+}
+
+function MembersSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="animate-pulse h-10 bg-stone-100 rounded-xl" />
+      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
+      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
+      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
+    </div>
+  );
+}
+
+export default function MembersPage({ params, searchParams }: PageProps) {
+  const tab = resolveTab(searchParams.tab);
+  const basePath = `/${params.church}/${params.department}`;
 
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
-      <Tabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
-      {activeTab === 'reset' ? (
-        <ResetRequestList />
-      ) : (
-        <MemberList
-          showPending={activeTab === 'pending'}
-          showGraduated={activeTab === 'graduated'}
-        />
-      )}
+      <Suspense key={tab} fallback={<MembersSkeleton />}>
+        <MembersData tab={tab} basePath={basePath} />
+      </Suspense>
     </div>
   );
 }
