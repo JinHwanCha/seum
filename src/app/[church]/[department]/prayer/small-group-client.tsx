@@ -11,6 +11,8 @@ import { PillTabs } from '@/components/ui/pill-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
+import { TreeGrowth } from '@/components/prayer/tree-growth';
+import { TreeOverview } from '@/components/prayer/tree-overview';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
@@ -158,6 +160,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const TABS = [
     { key: 'prayer', label: '기도제목' },
+    ...(hasCell || hasOversight ? [{ key: 'tree', label: '🌱 나무' }] : []),
     ...(canSeeVillageTab && villageName
       ? [{ key: 'village', label: `${villageName} 마을` }]
       : []),
@@ -466,6 +469,28 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             </>
           )}
         </>
+      )}
+
+      {/* ===== TREE TAB ===== */}
+      {activeTab === 'tree' && (
+        <div className="space-y-3">
+          {hasCell && (
+            <TreeGrowth
+              cellId={effectiveCellId}
+              cellName={cellName}
+              villageName={villageName}
+              weekStart={weekStart}
+              members={members.map((m) => ({ id: m.id, name: m.name }))}
+            />
+          )}
+          {hasOversight && villageCells.length > 0 && (
+            <TreeOverview
+              villageCells={villageCells}
+              weekStart={weekStart}
+              showVillageFilter={isMinister}
+            />
+          )}
+        </div>
       )}
 
       {/* ===== VILLAGE TAB ===== */}
