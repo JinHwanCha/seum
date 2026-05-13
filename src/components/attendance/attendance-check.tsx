@@ -145,7 +145,7 @@ export function AttendanceCheck({
                           handleToggle(member.id, 'worship_service', opt.value)
                         }
                         className={cn(
-                          'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                          'px-2 py-1.5 rounded-lg text-xs font-medium transition-colors',
                           isActive
                             ? opt.value === null
                               ? 'bg-stone-200 text-stone-600'
@@ -190,7 +190,7 @@ export function AttendanceCheck({
               </div>
 
               {/* Prayer & QT Counters */}
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <Counter
                   label="기도"
                   icon={<Heart size={12} />}

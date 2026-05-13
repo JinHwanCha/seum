@@ -305,7 +305,7 @@ export function TreeGrowth({ cellId, cellName, villageName, weekStart, members }
       </div>
 
       {/* 주차 진행 바 */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex gap-1.5">
         {[0, 1, 2, 3].map((i) => {
           const wk = weeks[i];
           const isPast = i < stage;
