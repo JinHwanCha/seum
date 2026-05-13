@@ -7,6 +7,7 @@ import { PrayerForm } from '@/components/prayer/prayer-form';
 import { PrayerCard } from '@/components/prayer/prayer-card';
 import { AttendanceCheck } from '@/components/attendance/attendance-check';
 import { Tabs } from '@/components/ui/tabs';
+import { PillTabs } from '@/components/ui/pill-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
@@ -163,7 +164,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
 
       {showTabs && (
-        <Tabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
+        <PillTabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
       )}
 
       {/* ===== PRAYER TAB ===== */}
@@ -562,7 +563,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               {isCellLeader && hasCell && (
                 <div className="space-y-3">
                   {myVillageCells.length > 0 && villageName && (
-                    <Tabs
+                    <PillTabs
                       tabs={[
                         { key: 'mine', label: '내 소그룹' },
                         { key: 'village', label: `${villageName} 마을` },
@@ -684,7 +685,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               {hasOversight && villageCells.length > 0 && (
                 <div className="space-y-2">
                   {isMinister && villageCells.length > 1 && (
-                    <Tabs
+                    <PillTabs
                       tabs={[
                         { key: '__all__', label: '전체' },
                         ...villageCells.map((v) => ({ key: v.id, label: v.name })),

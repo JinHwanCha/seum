@@ -9,7 +9,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-4 sm:p-6 pb-20 md:pb-6 max-w-5xl">
+        <main className="flex-1 overflow-hidden p-4 sm:p-6 pb-20 md:pb-6 max-w-5xl">
           {children}
         </main>
       </div>

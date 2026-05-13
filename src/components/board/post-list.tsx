@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { PostCard } from './post-card';
-import { useDragScroll } from '@/hooks/use-drag-scroll';
+import { PillTabs } from '@/components/ui/pill-tabs';
 import type { Post } from '@/lib/types';
 
 interface VillageOpt {
@@ -28,8 +28,6 @@ export function PostList({
   boardType,
   villages = [],
   villageMap = {},
-  currentVillageId = null,
-  canSeeAll = false,
 }: PostListProps) {
   const showTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
 
@@ -54,20 +52,14 @@ export function PostList({
   return (
     <div className="space-y-3">
       {showTabs && (
-        <PostTabsScroller>
-          <TabBtn active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
-            전체
-          </TabBtn>
-          {visibleVillages.map((v) => (
-            <TabBtn
-              key={v.id}
-              active={activeTab === v.id}
-              onClick={() => setActiveTab(v.id)}
-            >
-              {v.name}
-            </TabBtn>
-          ))}
-        </PostTabsScroller>
+        <PillTabs
+          tabs={[
+            { key: 'all', label: '전체' },
+            ...visibleVillages.map((v) => ({ key: v.id, label: v.name })),
+          ]}
+          activeKey={activeTab}
+          onChange={setActiveTab}
+        />
       )}
 
       {filteredPosts.length === 0 ? (
@@ -84,44 +76,6 @@ export function PostList({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-        active
-          ? 'bg-primary-600 text-white border-primary-600'
-          : 'bg-white text-stone-600 border-stone-200 hover:border-stone-300'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function PostTabsScroller({ children }: { children: React.ReactNode }) {
-  const ref = useDragScroll<HTMLDivElement>();
-  return (
-    <div className="min-w-0 w-full">
-      <div
-        ref={ref}
-        className="flex gap-1.5 pb-1 -mx-1 px-1 overflow-x-auto scrollbar-hide cursor-grab select-none touch-pan-x"
-      >
-        {children}
-      </div>
     </div>
   );
 }
