@@ -212,7 +212,7 @@ CREATE TABLE attendance (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
   week_start DATE NOT NULL,
-  worship_service TEXT CHECK (worship_service IS NULL OR worship_service IN ('1부', '2부', '3부')),
+  worship_service TEXT CHECK (worship_service IS NULL OR worship_service IN ('1부', '2부', '3부', '온라인')),
   department_meeting BOOLEAN DEFAULT false,
   small_group BOOLEAN DEFAULT false,
   prayer_count INT DEFAULT 0,

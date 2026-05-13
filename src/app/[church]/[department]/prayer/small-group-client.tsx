@@ -616,6 +616,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                           {village.cells.map((cell) => {
                             const isExpanded = expandedCells.has(`att-${cell.id}`);
                             const memberCount = cell.members.length;
+                            const wsCount = cell.members.filter((m) => attendanceMap[m.id]?.worship_service).length;
+                            const dmCount = cell.members.filter((m) => attendanceMap[m.id]?.department_meeting).length;
                             const sgCount = cell.members.filter((m) => attendanceMap[m.id]?.small_group).length;
                             return (
                               <div
@@ -649,10 +651,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                     <Badge variant="default">{memberCount}명</Badge>
+                                    <Badge variant={wsCount === memberCount ? 'success' : 'warning'}>
+                                      예배 {wsCount}/{memberCount}
+                                    </Badge>
+                                    <Badge variant={dmCount === memberCount ? 'success' : 'warning'}>
+                                      부서 {dmCount}/{memberCount}
+                                    </Badge>
                                     <Badge variant={sgCount === memberCount ? 'success' : 'warning'}>
-                                      출석 {sgCount}/{memberCount}
+                                      소그룹 {sgCount}/{memberCount}
                                     </Badge>
                                   </div>
                                 </button>
@@ -730,6 +738,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         {village.cells.map((cell) => {
                           const isExpanded = expandedCells.has(`att-${cell.id}`);
                           const memberCount = cell.members.length;
+                          const wsCount = cell.members.filter((m) => attendanceMap[m.id]?.worship_service).length;
+                          const dmCount = cell.members.filter((m) => attendanceMap[m.id]?.department_meeting).length;
                           const sgCount = cell.members.filter((m) => attendanceMap[m.id]?.small_group).length;
 
                           return (
@@ -764,10 +774,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                     </span>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                   <Badge variant="default">{memberCount}명</Badge>
+                                  <Badge variant={wsCount === memberCount ? 'success' : 'warning'}>
+                                    예배 {wsCount}/{memberCount}
+                                  </Badge>
+                                  <Badge variant={dmCount === memberCount ? 'success' : 'warning'}>
+                                    부서 {dmCount}/{memberCount}
+                                  </Badge>
                                   <Badge variant={sgCount === memberCount ? 'success' : 'warning'}>
-                                    출석 {sgCount}/{memberCount}
+                                    소그룹 {sgCount}/{memberCount}
                                   </Badge>
                                 </div>
                               </button>

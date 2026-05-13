@@ -30,6 +30,7 @@ const WORSHIP_OPTIONS = [
   { value: '1부', label: '1부', short: '1' },
   { value: '2부', label: '2부', short: '2' },
   { value: '3부', label: '3부', short: '3' },
+  { value: '온라인', label: '온라인', short: 'O' },
 ] as const;
 
 const birthYearLabel = (birthDate?: string | null) => {
@@ -98,30 +99,8 @@ export function AttendanceCheck({
     return 0;
   });
 
-  // Stats
-  const total = members.length;
-  const worshipCount = members.filter((m) => attendance[m.id]?.worship_service).length;
-  const deptCount = members.filter((m) => attendance[m.id]?.department_meeting).length;
-  const sgCount = members.filter((m) => attendance[m.id]?.small_group).length;
-
   return (
     <div className="space-y-3">
-      {/* Summary */}
-      <div className="flex gap-2 flex-wrap">
-        <Badge variant={worshipCount === total ? 'success' : 'default'}>
-          <Church size={12} className="mr-1" />
-          예배 {worshipCount}/{total}
-        </Badge>
-        <Badge variant={deptCount === total ? 'success' : 'default'}>
-          <Users size={12} className="mr-1" />
-          부서 {deptCount}/{total}
-        </Badge>
-        <Badge variant={sgCount === total ? 'success' : 'default'}>
-          <UsersRound size={12} className="mr-1" />
-          소그룹 {sgCount}/{total}
-        </Badge>
-      </div>
-
       {/* Member Attendance List */}
       <div className="space-y-2">
         {sorted.map((member) => {
