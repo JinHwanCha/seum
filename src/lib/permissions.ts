@@ -103,7 +103,13 @@ export function canAccessAdvancedAdmin(role: Role, isBureau: boolean, isAdmin?: 
 
 export function canManageVillages(role: Role, isAdmin?: boolean): boolean {
   if (isAdmin) return true;
-  return isMinister(role);
+  return isMinister(role) || role === 'village_leader';
+}
+
+/** 조직관리 메뉴 접근 권한 (마을/소그룹 CRUD) */
+export function canManageOrganization(role: Role, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
+  return isMinister(role) || role === 'village_leader';
 }
 
 export function canManageCategories(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {

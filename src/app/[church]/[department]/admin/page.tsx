@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
-import { canAccessAdmin, canAccessAdvancedAdmin } from '@/lib/permissions';
+import { canAccessAdmin, canAccessAdvancedAdmin, canManageOrganization } from '@/lib/permissions';
 import { Card } from '@/components/ui/card';
 import { Users, Map, Tag, Settings, UserCheck, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -12,8 +12,9 @@ const BASIC_ITEMS = [
   { href: '/admin/absent', label: '장기미출석', desc: '4주 이상 출석 기록 없는 멤버', icon: AlertTriangle, color: 'bg-red-50 text-red-600' },
 ];
 
+const ORGANIZATION_ITEM = { href: '/admin/organization', label: '조직 관리', desc: '마을/소그룹 생성 및 관리', icon: Map, color: 'bg-purple-50 text-purple-600' };
+
 const ADVANCED_ITEMS = [
-  { href: '/admin/organization', label: '조직 관리', desc: '마을/소그룹 생성 및 관리', icon: Map, color: 'bg-purple-50 text-purple-600' },
   { href: '/admin/categories', label: '카테고리 관리', desc: '게시판 카테고리 추가/수정', icon: Tag, color: 'bg-amber-50 text-amber-600' },
   { href: '/admin/settings', label: '설정', desc: '교회/부서 정보 및 명칭 설정', icon: Settings, color: 'bg-stone-100 text-stone-600' },
 ];
@@ -36,7 +37,12 @@ export default async function AdminPage({ params }: PageProps) {
   }
 
   const showAdvanced = canAccessAdvancedAdmin(session.role as Role, isBureau, session.isAdmin);
-  const items = showAdvanced ? [...BASIC_ITEMS, ...ADVANCED_ITEMS] : BASIC_ITEMS;
+  const showOrganization = canManageOrganization(session.role as Role, session.isAdmin);
+  const items = [
+    ...BASIC_ITEMS,
+    ...(showOrganization ? [ORGANIZATION_ITEM] : []),
+    ...(showAdvanced ? ADVANCED_ITEMS : []),
+  ];
 
   const basePath = `/${params.church}/${params.department}`;
 

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (session.role !== 'minister') {
+  if (session.role !== 'minister' && session.role !== 'village_leader' && !session.isAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
