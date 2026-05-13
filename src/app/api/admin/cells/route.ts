@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 
@@ -35,5 +36,6 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: '소그룹 추가에 실패했습니다.' }, { status: 500 });
+  revalidatePath('/', 'layout');
   return NextResponse.json({ success: true, cell: data });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 
@@ -22,6 +23,7 @@ export async function PATCH(
     .eq('id', params.id);
 
   if (error) return NextResponse.json({ error: '수정에 실패했습니다.' }, { status: 500 });
+  revalidatePath('/', 'layout');
   return NextResponse.json({ success: true });
 }
 
@@ -46,5 +48,6 @@ export async function DELETE(
 
   const { error } = await supabase.from('villages').delete().eq('id', params.id);
   if (error) return NextResponse.json({ error: '삭제에 실패했습니다.' }, { status: 500 });
+  revalidatePath('/', 'layout');
   return NextResponse.json({ success: true });
 }

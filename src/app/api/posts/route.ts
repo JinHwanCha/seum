@@ -22,7 +22,9 @@ export async function GET(request: Request) {
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
-  // Visibility 필터: 사역자/마을장은 전체, 그 외에는 (visibility='all' OR village_id = 내 마을)
+  // Visibility 필터:
+  //  - 사역자/마을장 → 전체 열람
+  //  - 일반 → 'all' + 본인 마을
   const canSeeAll = session.role === 'minister' || session.role === 'village_leader';
   if (!canSeeAll) {
     if (session.villageId) {
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, content, boardType, categoryId, gatheringType, images, visibility } = await request.json();
+  const { title, content, boardType, categoryId, gatheringType, images, visibility, villageId: targetVillageId } = await request.json();
 
   if (!title || !content || !boardType) {
     return NextResponse.json({ error: '필수 항목을 입력해주세요.' }, { status: 400 });
@@ -59,10 +61,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '작성 권한이 없습니다.' }, { status: 403 });
   }
 
-  // 마을공개는 본인 마을이 있을 때만 허용. 그 외는 강제 'all'
-  const requestedVisibility = visibility === 'village' ? 'village' : 'all';
-  const finalVisibility = requestedVisibility === 'village' && session.villageId ? 'village' : 'all';
-  const finalVillageId = finalVisibility === 'village' ? session.villageId : null;
+  // 가시성 결정 — 권한 위조 방지
+  const canPickAnyVillage = session.role === 'minister' || session.role === 'village_leader';
+  let finalVisibility: 'all' | 'village' = 'all';
+  let finalVillageId: string | null = null;
+
+  if (visibility === 'village') {
+    // 사역자/마을장은 임의 마을 지정 가능, 그 외는 본인 마을로 강제
+    const chosen = canPickAnyVillage ? targetVillageId : session.villageId;
+    if (chosen) {
+      finalVisibility = 'village';
+      finalVillageId = chosen;
+    }
+  }
 
   const supabase = createClient();
 

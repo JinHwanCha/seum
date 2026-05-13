@@ -26,12 +26,15 @@ export async function GET(
 
   if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
 
-  // 가시성 검사 — 마을공개인데 다른 마을 사용자면 차단 (사역자/마을장은 전체 열람)
+  // 가시성 검사
+  //  - 'all' 은 모두
+  //  - 사역자/마을장은 전부 읽기 가능
+  //  - 'village' 는 해당 마을 소속자
   const canView =
     post.visibility === 'all' ||
     session.role === 'minister' ||
     session.role === 'village_leader' ||
-    (post.village_id && post.village_id === session.villageId);
+    (post.visibility === 'village' && post.village_id && post.village_id === session.villageId);
   if (!canView) {
     return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
   }
@@ -77,11 +80,19 @@ export async function PATCH(
     return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
   }
 
-  const { title, content, categoryId, gatheringType, images, visibility } = await request.json();
+  const { title, content, categoryId, gatheringType, images, visibility, villageId: targetVillageId } = await request.json();
 
-  const requestedVisibility = visibility === 'village' ? 'village' : 'all';
-  const finalVisibility = requestedVisibility === 'village' && session.villageId ? 'village' : 'all';
-  const finalVillageId = finalVisibility === 'village' ? session.villageId : null;
+  const canPickAnyVillage = session.role === 'minister' || session.role === 'village_leader';
+  let finalVisibility: 'all' | 'village' = 'all';
+  let finalVillageId: string | null = null;
+
+  if (visibility === 'village') {
+    const chosen = canPickAnyVillage ? targetVillageId : session.villageId;
+    if (chosen) {
+      finalVisibility = 'village';
+      finalVillageId = chosen;
+    }
+  }
 
   const { error } = await supabase
     .from('posts')

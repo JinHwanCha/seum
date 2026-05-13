@@ -16,6 +16,8 @@ interface PostFormProps {
   existingPost?: Post;
 }
 
+type Visibility = 'all' | 'village';
+
 export function PostForm({ boardType, existingPost }: PostFormProps) {
   const router = useRouter();
   const params = useParams();
@@ -27,15 +29,20 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const [categoryId, setCategoryId] = useState(existingPost?.category_id || '');
   const [gatheringType, setGatheringType] = useState(existingPost?.gathering_type || '');
   const [images, setImages] = useState<string[]>(existingPost?.images || []);
-  const [visibility, setVisibility] = useState<'all' | 'village'>(existingPost?.visibility || 'all');
+  const [visibility, setVisibility] = useState<Visibility>(existingPost?.visibility || 'all');
+  const [targetVillageId, setTargetVillageId] = useState<string>(
+    existingPost?.village_id || user?.villageId || ''
+  );
+  const [villages, setVillages] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<BoardCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // 공지 게시판은 항상 전체공개
   const showVisibility = boardType !== 'notice';
-  // 마을이 없으면 마을공개 선택 불가
-  const canPickVillage = !!user?.villageId;
+  const canPickAnyVillage = user?.role === 'minister' || user?.role === 'village_leader';
+  // 마을공개 가능: 본인 마을 있거나, 사역자/마을장 (마을 선택 가능)
+  const canPickVillage = !!user?.villageId || canPickAnyVillage;
 
   useEffect(() => {
     if (boardType === 'sharing' || boardType === 'gathering') {
@@ -46,9 +53,24 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
     }
   }, [boardType]);
 
+  // 사역자/마을장이면 마을 목록 fetch (드롭다운용)
+  useEffect(() => {
+    if (!showVisibility || !canPickAnyVillage) return;
+    fetch('/api/admin/villages')
+      .then((r) => (r.ok ? r.json() : { villages: [] }))
+      .then((data) => setVillages(data.villages || []))
+      .catch(() => {});
+  }, [showVisibility, canPickAnyVillage]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
+
+    // 마을공개 선택했는데 마을이 정해지지 않았으면 차단
+    if (showVisibility && visibility === 'village' && !targetVillageId && !user?.villageId) {
+      setError('공개할 마을을 선택해주세요.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -70,6 +92,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
           gatheringType: gatheringType || null,
           images,
           visibility: showVisibility ? visibility : 'all',
+          villageId: visibility === 'village' ? (targetVillageId || user?.villageId || null) : null,
         }),
       });
 
@@ -139,20 +162,20 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
             <button
               type="button"
               onClick={() => setVisibility('all')}
-              className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
+              className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
                 visibility === 'all'
                   ? 'border-primary-500 bg-primary-50 text-primary-700'
                   : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
               }`}
             >
               <Globe2 size={16} />
-              <span className="font-medium">전체 공개</span>
+              <span className="font-medium">전체</span>
             </button>
             <button
               type="button"
               disabled={!canPickVillage}
               onClick={() => canPickVillage && setVisibility('village')}
-              className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
+              className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
                 visibility === 'village'
                   ? 'border-primary-500 bg-primary-50 text-primary-700'
                   : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
@@ -160,12 +183,31 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
               title={!canPickVillage ? '마을이 배정된 사용자만 선택할 수 있습니다.' : ''}
             >
               <Home size={16} />
-              <span className="font-medium">우리 마을만</span>
+              <span className="font-medium">마을</span>
             </button>
           </div>
+
+          {/* 마을공개 선택 시 — 사역자/마을장은 드롭다운, 그 외는 본인 마을 표시 */}
+          {visibility === 'village' && (
+            <div className="mt-2">
+              {canPickAnyVillage ? (
+                <Select
+                  options={villages.map((v) => ({ value: v.id, label: v.name }))}
+                  placeholder="공개할 마을 선택"
+                  value={targetVillageId}
+                  onChange={(e) => setTargetVillageId(e.target.value)}
+                />
+              ) : (
+                <p className="text-xs text-stone-500">
+                  공개 대상: <span className="font-medium text-stone-700">우리 마을</span>
+                </p>
+              )}
+            </div>
+          )}
+
           <p className="text-[11px] text-stone-400 mt-1">
             {visibility === 'village'
-              ? '같은 마을 멤버와 사역자만 볼 수 있어요.'
+              ? '해당 마을 멤버와 사역자/마을장만 볼 수 있어요.'
               : '부서 전체 멤버가 볼 수 있어요.'}
           </p>
         </div>
