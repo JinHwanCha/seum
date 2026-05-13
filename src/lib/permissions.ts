@@ -23,6 +23,19 @@ export function canModifyUserRole(
   return (MINISTER_HIERARCHY[actorMinisterRank] ?? 0) > (MINISTER_HIERARCHY[targetMinisterRank] ?? 0);
 }
 
+/**
+ * 마을장이 부여/변경 가능한 역할인지 검사.
+ * 마을장은 본인 동급(village_leader) 또는 사역자(minister) 역할은 부여하거나 박탈할 수 없음.
+ * 즉, 대상의 현재 역할과 변경하려는 역할 모두 cell_leader 이하여야 함.
+ */
+export function canVillageLeaderAssignRole(
+  newRole: Role,
+  targetCurrentRole: Role
+): boolean {
+  const ALLOWED: Role[] = ['pending', 'cell_member', 'cell_leader'];
+  return ALLOWED.includes(newRole) && ALLOWED.includes(targetCurrentRole);
+}
+
 // ─── Post Permissions ───
 
 export function canWritePost(role: Role, boardType: BoardType, isBureau: boolean): boolean {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
-import { canApproveMembers, canModifyUserRole } from '@/lib/permissions';
+import { canApproveMembers, canModifyUserRole, canVillageLeaderAssignRole } from '@/lib/permissions';
 import type { Role, MinisterRank } from '@/lib/types';
 
 export async function PATCH(
@@ -50,6 +50,16 @@ export async function PATCH(
       .single();
 
     if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // 마을장 권한 가드 — 본인보다 동급/상위 역할 부여·박탈 차단
+    if (session.role === 'village_leader' && !session.isAdmin) {
+      if (!canVillageLeaderAssignRole(role as Role, target.role as Role)) {
+        return NextResponse.json(
+          { error: '마을장은 목자/목원까지만 배정할 수 있습니다.' },
+          { status: 403 }
+        );
+      }
+    }
 
     // Permission check for role changes
     if (role !== target.role || ministerRank !== target.minister_rank) {

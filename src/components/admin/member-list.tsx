@@ -189,6 +189,17 @@ export function MemberList({
     { value: 'minister', label: '사역자' },
   ];
 
+  // 마을장은 목자/목원까지만 부여 가능 (시스템관리자/사역자가 아닌 경우)
+  const isVillageLeaderOnly =
+    currentUser?.role === 'village_leader' && !currentUser?.isAdmin;
+  const visibleRoleOptions = isVillageLeaderOnly
+    ? roleOptions.filter((o) => o.value === 'cell_member' || o.value === 'cell_leader')
+    : roleOptions;
+  // 마을장이 동급/상위(마을장·사역자)를 편집하려 하면 역할 변경 불가
+  const canEditRoleField =
+    !isVillageLeaderOnly ||
+    (editingMember?.role !== 'minister' && editingMember?.role !== 'village_leader');
+
   const ministerRankOptions = [
     { value: 'secretary', label: '간사' },
     { value: 'evangelist', label: '전도사' },
@@ -359,12 +370,18 @@ export function MemberList({
         title={`${editingMember?.name} 편성`}
       >
         <div className="space-y-2">
-          <Select
-            label="역할"
-            options={roleOptions}
-            value={editRole}
-            onChange={(e) => setEditRole(e.target.value)}
-          />
+          {canEditRoleField ? (
+            <Select
+              label="역할"
+              options={visibleRoleOptions}
+              value={editRole}
+              onChange={(e) => setEditRole(e.target.value)}
+            />
+          ) : (
+            <div className="text-xs text-stone-500 px-1 py-2 bg-stone-50 rounded-lg border border-stone-200">
+              마을장은 사역자/마을장의 역할을 변경할 수 없습니다.
+            </div>
+          )}
 
           {editRole === 'minister' && (
             <Select
