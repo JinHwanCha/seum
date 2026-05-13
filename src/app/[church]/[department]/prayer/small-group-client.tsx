@@ -52,6 +52,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [activeTab, setActiveTab] = useState('prayer');
   const [attSubTab, setAttSubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
+  const [prayerVillageFilter, setPrayerVillageFilter] = useState<string>('__all__');
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   // Optimistic local state (updated by callbacks, synced from SWR)
@@ -164,7 +165,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
 
       {showTabs && (
-        <PillTabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
+        <Tabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
       )}
 
       {/* ===== PRAYER TAB ===== */}
@@ -311,7 +312,24 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               {/* === Minister / Village Leader Oversight View === */}
               {hasOversight && villageCells.length > 0 && (
                 <div className="space-y-2">
-                  {villageCells.map((village) => (
+                  {isMinister && villageCells.length > 1 && (
+                    <PillTabs
+                      tabs={[
+                        { key: '__all__', label: '전체' },
+                        ...villageCells.map((v) => ({ key: v.id, label: v.name })),
+                      ]}
+                      activeKey={prayerVillageFilter}
+                      onChange={setPrayerVillageFilter}
+                    />
+                  )}
+                  {villageCells
+                    .filter(
+                      (v) =>
+                        !isMinister ||
+                        prayerVillageFilter === '__all__' ||
+                        v.id === prayerVillageFilter
+                    )
+                    .map((village) => (
                     <div key={village.id}>
                       {isMinister && (
                         <h2 className="text-sm font-semibold text-stone-700 mb-2 px-1">
