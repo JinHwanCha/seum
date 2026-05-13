@@ -5,8 +5,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   const supabase = createClient();
   const { cellId, villageId } = session;
 
-  // 모든 기본 데이터 단일 병렬 배치
-  const [cellResult, villageResult, cellMembersResult, deptPrayersResult, deptAttendanceResult] = await Promise.all([
+  // 모든 쿼리(base + role별)를 동시에 시작해 워터폴 제거
+  const basePromises = [
     cellId
       ? supabase.from('cells').select('id, name, village_id').eq('id', cellId).single()
       : Promise.resolve({ data: null }),
@@ -27,7 +27,38 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       .select('*')
       .eq('department_id', session.departmentId)
       .eq('week_start', weekStart),
+  ] as const;
+
+  // role별 추가 쿼리도 동시에 시작
+  const rolePromises = session.role === 'minister'
+    ? [
+        supabase
+          .from('group_years')
+          .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
+          .eq('department_id', session.departmentId)
+          .eq('is_active', true)
+          .single(),
+        supabase
+          .from('users')
+          .select('id, name, role, cell_id, village_id, birth_date')
+          .eq('department_id', session.departmentId)
+          .eq('is_approved', true)
+          .eq('is_graduated', false),
+      ]
+    : session.role === 'village_leader' && villageId
+    ? [
+        supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
+        supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
+      ]
+    : [];
+
+  // 모든 쿼리 동시 실행
+  const [baseResults, roleResults] = await Promise.all([
+    Promise.all(basePromises),
+    Promise.all(rolePromises),
   ]);
+
+  const [cellResult, villageResult, cellMembersResult, deptPrayersResult, deptAttendanceResult] = baseResults;
 
   const cell = cellResult.data;
   const villageName = villageResult.data?.name || null;
@@ -48,20 +79,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   let villageCells: any[] = [];
 
   if (session.role === 'minister') {
-    const [groupYearResult, deptMembersResult] = await Promise.all([
-      supabase
-        .from('group_years')
-        .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
-        .eq('department_id', session.departmentId)
-        .eq('is_active', true)
-        .single(),
-      supabase
-        .from('users')
-        .select('id, name, role, cell_id, village_id, birth_date')
-        .eq('department_id', session.departmentId)
-        .eq('is_approved', true)
-        .eq('is_graduated', false),
-    ]);
+    const [groupYearResult, deptMembersResult] = roleResults as any[];
 
     const groupYear = groupYearResult.data as any;
     const villages = (groupYear?.villages || []) as any[];
@@ -107,10 +125,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           })),
       }));
   } else if (session.role === 'village_leader' && villageId) {
-    const [vCellsResult, villageMembersResult] = await Promise.all([
-      supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
-      supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
-    ]);
+    const [vCellsResult, villageMembersResult] = roleResults as any[];
 
     const vCells = (vCellsResult.data || []) as any[];
     const allVillageMembers = (villageMembersResult.data || []) as any[];

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
@@ -13,17 +14,13 @@ interface PageProps {
   params: { church: string; department: string; type: string };
 }
 
-export default async function BoardListPage({ params }: PageProps) {
-  const session = await getSession();
-  if (!session) redirect('/login');
-
+async function PostListServer({ departmentId, type }: { departmentId: string; type: string }) {
   const supabase = createClient();
-
   const { data: posts } = await supabase
     .from('posts')
     .select('*, author:users(id, name, role, minister_rank), category:board_categories(id, name), comments(count), reactions(count)')
-    .eq('department_id', session.departmentId)
-    .eq('board_type', params.type)
+    .eq('department_id', departmentId)
+    .eq('board_type', type)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -34,6 +31,23 @@ export default async function BoardListPage({ params }: PageProps) {
       reactions: (post.reactions as any[])?.[0]?.count ?? 0,
     },
   }));
+
+  return <PostList posts={enrichedPosts} boardType={type} />;
+}
+
+function PostListSkeleton() {
+  return (
+    <div className="space-y-2 animate-pulse">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="h-20 bg-stone-100 rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
+export default async function BoardListPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect('/login');
 
   const canWrite = canWritePost(
     session.role as any,
@@ -58,7 +72,10 @@ export default async function BoardListPage({ params }: PageProps) {
           </Link>
         )}
       </div>
-      <PostList posts={enrichedPosts} boardType={params.type} />
+      <Suspense fallback={<PostListSkeleton />}>
+        <PostListServer departmentId={session.departmentId} type={params.type} />
+      </Suspense>
     </div>
   );
 }
+

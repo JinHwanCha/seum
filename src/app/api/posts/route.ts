@@ -14,42 +14,20 @@ export async function GET(request: Request) {
 
   const supabase = createClient();
 
+  // 단일 쿼리에 comments/reactions count 내장 — 2단계 워터폴 → 1단계
   const { data: posts } = await supabase
     .from('posts')
-    .select(`
-      *,
-      author:users(id, name, role, minister_rank),
-      category:board_categories(id, name)
-    `)
+    .select('*, author:users(id, name, role, minister_rank), category:board_categories(id, name), comments(count), reactions(count)')
     .eq('department_id', session.departmentId)
     .eq('board_type', boardType)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
-  const postIds = (posts || []).map((p) => p.id);
-
-  // Batch: get all comment & reaction counts in 2 queries instead of 2N
-  let commentCounts: Record<string, number> = {};
-  let reactionCounts: Record<string, number> = {};
-
-  if (postIds.length > 0) {
-    const [{ data: comments }, { data: reactions }] = await Promise.all([
-      supabase.from('comments').select('post_id').in('post_id', postIds),
-      supabase.from('reactions').select('post_id').in('post_id', postIds),
-    ]);
-    (comments || []).forEach((c) => {
-      commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1;
-    });
-    (reactions || []).forEach((r) => {
-      reactionCounts[r.post_id] = (reactionCounts[r.post_id] || 0) + 1;
-    });
-  }
-
-  const postsWithCounts = (posts || []).map((post) => ({
+  const postsWithCounts = (posts || []).map((post: any) => ({
     ...post,
     _count: {
-      comments: commentCounts[post.id] || 0,
-      reactions: reactionCounts[post.id] || 0,
+      comments: (post.comments as any[])?.[0]?.count ?? 0,
+      reactions: (post.reactions as any[])?.[0]?.count ?? 0,
     },
   }));
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
@@ -34,33 +35,29 @@ async function getAbsentData(departmentId: string) {
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
   const fourWeeksAgoStr = fourWeeksAgo.toISOString().split('T')[0];
 
+  // 조직 구조 단일 쿼리 (embedded) — 5단계 워터폴 → 3단계
   const { data: groupYear } = await supabase
     .from('group_years')
-    .select('id')
+    .select('id, villages(id, name, cells(id, name))')
     .eq('department_id', departmentId)
     .eq('is_active', true)
     .single();
 
   if (!groupYear) return { data: [], totalMembers: 0, periodWeeks: 0 };
 
-  const { data: villages } = await supabase
-    .from('villages')
-    .select('id, name')
-    .eq('group_year_id', groupYear.id);
-
-  const villageIds = (villages || []).map((v) => v.id);
-  if (villageIds.length === 0) return { data: [], totalMembers: 0, periodWeeks: 0 };
-
   const villageMap: Record<string, string> = {};
-  (villages || []).forEach((v) => { villageMap[v.id] = v.name; });
-
-  const { data: cells } = await supabase
-    .from('cells')
-    .select('id, village_id, name')
-    .in('village_id', villageIds);
-
   const cellMap: Record<string, { name: string | null; village_id: string }> = {};
-  (cells || []).forEach((c) => { cellMap[c.id] = { name: c.name, village_id: c.village_id }; });
+  const allCellIds: string[] = [];
+
+  ((groupYear as any).villages || []).forEach((v: any) => {
+    villageMap[v.id] = v.name;
+    (v.cells || []).forEach((c: any) => {
+      cellMap[c.id] = { name: c.name, village_id: v.id };
+      allCellIds.push(c.id);
+    });
+  });
+
+  if (allCellIds.length === 0) return { data: [], totalMembers: 0, periodWeeks: 0 };
 
   const { data: members } = await supabase
     .from('users')
@@ -68,7 +65,7 @@ async function getAbsentData(departmentId: string) {
     .eq('department_id', departmentId)
     .eq('is_approved', true)
     .eq('is_graduated', false)
-    .in('cell_id', (cells || []).map((c) => c.id));
+    .in('cell_id', allCellIds);
 
   if (!members || members.length === 0) return { data: [], totalMembers: 0, periodWeeks: 0 };
 
@@ -140,40 +137,31 @@ async function getAbsentData(departmentId: string) {
   return { data: absentMembers, totalMembers: members.length, periodWeeks: totalWeeks };
 }
 
-export default async function AbsentMembersPage() {
-  const session = await getSession();
-  if (!session) redirect('/login');
-
-  if (!canAccessAdmin(session.role as Role, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
-    return (
-      <div className="text-center py-12 text-stone-400 text-sm">
-        접근 권한이 없습니다.
+function AbsentSkeleton() {
+  return (
+    <div className="space-y-2 animate-pulse">
+      <div className="flex gap-2">
+        <div className="h-6 w-24 bg-stone-100 rounded-full" />
+        <div className="h-6 w-24 bg-stone-100 rounded-full" />
+        <div className="h-6 w-24 bg-stone-100 rounded-full" />
       </div>
-    );
-  }
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-20 bg-stone-100 rounded-xl" />
+      ))}
+    </div>
+  );
+}
 
-  const { data: members, totalMembers, periodWeeks } = await getAbsentData(session.departmentId);
+async function AbsentContent({ departmentId, periodWeeksLabel }: { departmentId: string; periodWeeksLabel?: string }) {
+  const { data: members, totalMembers, periodWeeks } = await getAbsentData(departmentId);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={20} className="text-amber-500" />
-          <h1 className="text-lg font-bold text-stone-900">장기미출석</h1>
-        </div>
-      </div>
-
+    <>
       {/* Summary */}
       <div className="flex gap-2 flex-wrap">
-        <Badge variant="warning">
-          최근 {periodWeeks}주 기준
-        </Badge>
-        <Badge variant="danger">
-          {members.length}명 미출석
-        </Badge>
-        <Badge variant="default">
-          전체 {totalMembers}명 중
-        </Badge>
+        <Badge variant="warning">최근 {periodWeeks}주 기준</Badge>
+        <Badge variant="danger">{members.length}명 미출석</Badge>
+        <Badge variant="default">전체 {totalMembers}명 중</Badge>
       </div>
 
       {members.length === 0 ? (
@@ -198,18 +186,12 @@ export default async function AbsentMembersPage() {
                         <span className="text-stone-400 font-normal"> ({m.birth_date.substring(2, 4)})</span>
                       )}
                     </span>
-                    <Badge variant="default">
-                      {ROLE_LABELS_DEFAULT[m.role] || m.role}
-                    </Badge>
+                    <Badge variant="default">{ROLE_LABELS_DEFAULT[m.role] || m.role}</Badge>
                   </div>
 
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
-                    {m.village_name && (
-                      <span>{m.village_name}</span>
-                    )}
-                    {m.cell_name && (
-                      <span>{m.cell_name}</span>
-                    )}
+                    {m.village_name && <span>{m.village_name}</span>}
+                    {m.cell_name && <span>{m.cell_name}</span>}
                     {m.phone && (
                       <span className="flex items-center gap-1">
                         <Phone size={10} />
@@ -220,14 +202,10 @@ export default async function AbsentMembersPage() {
                 </div>
 
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <Badge variant="danger">
-                    {m.absent_weeks}주 미출석
-                  </Badge>
+                  <Badge variant="danger">{m.absent_weeks}주 미출석</Badge>
                   <span className="text-[10px] text-stone-400 flex items-center gap-1">
                     <Calendar size={10} />
-                    {m.last_attended
-                      ? `마지막: ${formatDate(m.last_attended)}`
-                      : '출석 기록 없음'}
+                    {m.last_attended ? `마지막: ${formatDate(m.last_attended)}` : '출석 기록 없음'}
                   </span>
                 </div>
               </div>
@@ -235,6 +213,34 @@ export default async function AbsentMembersPage() {
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+export default async function AbsentMembersPage() {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
+  if (!canAccessAdmin(session.role as Role, session.isBureauLeader || session.isBureauMember, session.isAdmin)) {
+    return (
+      <div className="text-center py-12 text-stone-400 text-sm">
+        접근 권한이 없습니다.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={20} className="text-amber-500" />
+          <h1 className="text-lg font-bold text-stone-900">장기미출석</h1>
+        </div>
+      </div>
+      <Suspense fallback={<AbsentSkeleton />}>
+        <AbsentContent departmentId={session.departmentId} />
+      </Suspense>
     </div>
   );
 }
+

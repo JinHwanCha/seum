@@ -56,9 +56,15 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const weekStart = formatWeekDate(currentSunday);
 
+  const isInitialWeek = weekStart === formatWeekDate(getCurrentWeekSunday());
   const { data: swrData, isLoading } = useSWR(
     `/api/small-group?weekStart=${weekStart}`,
-    { fallbackData: initialData, keepPreviousData: true }
+    {
+      fallbackData: isInitialWeek ? initialData : undefined,
+      keepPreviousData: true,
+      // 초기 주차는 서버에서 이미 최신 데이터를 받았으므로 재검증 생략
+      revalidateOnMount: !isInitialWeek,
+    }
   );
 
   // Derive stable values from SWR cache

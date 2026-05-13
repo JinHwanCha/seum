@@ -8,45 +8,40 @@ export async function GET() {
 
   const supabase = createClient();
 
-  // Get active group year
-  const { data: groupYear } = await supabase
-    .from('group_years')
-    .select('id')
-    .eq('department_id', session.departmentId)
-    .eq('is_active', true)
-    .single();
+  // groupYear(villages+cells 내장) + cell leaders 동시 조회 — 3단계 워터폴 → 2단계 병렬
+  const [orgResult, cellLeadersResult] = await Promise.all([
+    supabase
+      .from('group_years')
+      .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
+      .eq('department_id', session.departmentId)
+      .eq('is_active', true)
+      .single(),
+    supabase
+      .from('users')
+      .select('id, name, cell_id')
+      .eq('department_id', session.departmentId)
+      .eq('role', 'cell_leader')
+      .eq('is_approved', true),
+  ]);
 
+  const groupYear = orgResult.data as any;
   if (!groupYear) return NextResponse.json({ villages: [] });
 
-  // Get villages with cells
-  const { data: villages } = await supabase
-    .from('villages')
-    .select('*, cells(*)')
-    .eq('group_year_id', groupYear.id)
-    .order('sort_order', { ascending: true });
-
-  // Get cell leaders (users with role=cell_leader who have a cell_id)
-  const { data: cellLeaders } = await supabase
-    .from('users')
-    .select('id, name, cell_id')
-    .eq('department_id', session.departmentId)
-    .eq('role', 'cell_leader')
-    .eq('is_approved', true);
-
   const leaderByCell: Record<string, string> = {};
-  (cellLeaders || []).forEach((u: any) => {
+  ((cellLeadersResult.data || []) as any[]).forEach((u: any) => {
     if (u.cell_id) leaderByCell[u.cell_id] = u.name;
   });
 
-  // Sort cells within each village + attach leader name
-  const sorted = (villages || []).map((v: any) => ({
-    ...v,
-    cells: (v.cells || [])
-      .sort((a: any, b: any) => a.sort_order - b.sort_order)
-      .map((c: any) => ({ ...c, leader_name: leaderByCell[c.id] || null })),
-  }));
+  const villages = ((groupYear.villages || []) as any[])
+    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+    .map((v: any) => ({
+      ...v,
+      cells: ((v.cells || []) as any[])
+        .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map((c: any) => ({ ...c, leader_name: leaderByCell[c.id] || null })),
+    }));
 
-  return NextResponse.json({ villages: sorted });
+  return NextResponse.json({ villages });
 }
 
 export async function POST(request: Request) {

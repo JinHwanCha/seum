@@ -12,8 +12,8 @@ export async function GET(request: Request) {
 
   const supabase = createClient();
 
-  // Parallel: fetch prayers + group year at the same time
-  const [prayersResult, groupYearResult] = await Promise.all([
+  // 모든 쿼리를 동시에 시작 — 4단계 워터폴 → 1단계 병렬
+  const [prayersResult, orgResult, cellLeadersResult, bureauResult] = await Promise.all([
     supabase
       .from('prayer_requests')
       .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
@@ -22,57 +22,51 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: true }),
     supabase
       .from('group_years')
-      .select('id')
+      .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
       .eq('department_id', session.departmentId)
       .eq('is_active', true)
       .single(),
+    supabase
+      .from('users')
+      .select('id, name, cell_id')
+      .eq('department_id', session.departmentId)
+      .eq('role', 'cell_leader')
+      .eq('is_graduated', false),
+    (session.isBureauLeader || session.isBureauMember)
+      ? supabase.from('bureau_members').select('user_id')
+      : Promise.resolve({ data: null }),
   ]);
 
   const allPrayers = prayersResult.data;
   if (!allPrayers) return NextResponse.json({ prayers: [], myPrayer: null, villages: [], cells: [] });
 
-  const groupYear = groupYearResult.data;
+  const groupYear = orgResult.data as any;
+  const cellLeadersList = (cellLeadersResult.data || []) as any[];
 
-  let villages: { id: string; name: string; sort_order: number }[] = [];
-  let cells: { id: string; village_id: string; name: string | null; sort_order: number; leader?: { id: string; name: string } }[] = [];
+  const cellLeadersMap: Record<string, { id: string; name: string }> = {};
+  cellLeadersList.forEach((l: any) => {
+    if (l.cell_id) cellLeadersMap[l.cell_id] = { id: l.id, name: l.name };
+  });
 
-  if (groupYear) {
-    const { data: v } = await supabase
-      .from('villages')
-      .select('id, name, sort_order')
-      .eq('group_year_id', groupYear.id)
-      .order('sort_order');
-    villages = v || [];
+  const rawVillages = ((groupYear?.villages || []) as any[])
+    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
 
-    const villageIds = villages.map((vi) => vi.id);
-    if (villageIds.length > 0) {
-      const { data: c } = await supabase
-        .from('cells')
-        .select('id, village_id, name, sort_order')
-        .in('village_id', villageIds)
-        .order('sort_order');
-      
-      // Find cell leaders
-      const cellIds = (c || []).map((cl) => cl.id);
-      let cellLeaders: Record<string, { id: string; name: string }> = {};
-      if (cellIds.length > 0) {
-        const { data: leaders } = await supabase
-          .from('users')
-          .select('id, name, cell_id')
-          .in('cell_id', cellIds)
-          .eq('role', 'cell_leader')
-          .eq('is_graduated', false);
-        (leaders || []).forEach((l) => {
-          if (l.cell_id) cellLeaders[l.cell_id] = { id: l.id, name: l.name };
-        });
-      }
+  const villages: { id: string; name: string; sort_order: number }[] = rawVillages.map((v: any) => ({
+    id: v.id, name: v.name, sort_order: v.sort_order,
+  }));
 
-      cells = (c || []).map((cl) => ({
-        ...cl,
-        leader: cellLeaders[cl.id] || undefined,
-      }));
-    }
-  }
+  const cells: { id: string; village_id: string; name: string | null; sort_order: number; leader?: { id: string; name: string } }[] =
+    rawVillages.flatMap((v: any) =>
+      ((v.cells || []) as any[])
+        .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map((c: any) => ({
+          id: c.id,
+          village_id: v.id,
+          name: c.name,
+          sort_order: c.sort_order,
+          leader: cellLeadersMap[c.id] || undefined,
+        }))
+    );
 
   // My prayer
   const myPrayer = allPrayers.find((p) => p.user_id === session.userId) || null;
@@ -81,40 +75,32 @@ export async function GET(request: Request) {
   const visibleIds = new Set<string>();
 
   if (session.role === 'minister') {
-    // See all
     allPrayers.forEach((p) => visibleIds.add(p.user_id));
   } else {
-    // Village leader / cell leader: see own village
     if (session.role === 'village_leader' || session.role === 'cell_leader') {
       allPrayers.forEach((p) => {
         if (p.user?.village_id === session.villageId) visibleIds.add(p.user_id);
       });
     }
 
-    // Cell member: see own cell
     if (session.role === 'cell_member' || session.role === 'cell_leader') {
       allPrayers.forEach((p) => {
         if (p.user?.cell_id === session.cellId && session.cellId) visibleIds.add(p.user_id);
       });
     }
 
-    // Bureau: see bureau + minister
     if (session.isBureauLeader || session.isBureauMember) {
-      const { data: bureauUserIds } = await supabase
-        .from('bureau_members')
-        .select('user_id');
-      bureauUserIds?.forEach((b) => visibleIds.add(b.user_id));
+      const bureauUserIds = (bureauResult.data || []) as any[];
+      bureauUserIds.forEach((b: any) => visibleIds.add(b.user_id));
       allPrayers.forEach((p) => {
         if (p.user?.role === 'minister') visibleIds.add(p.user_id);
       });
     }
 
-    // Pastor's prayers are always visible
     allPrayers.forEach((p) => {
       if (p.user?.minister_rank === 'pastor') visibleIds.add(p.user_id);
     });
 
-    // Always see own
     visibleIds.add(session.userId);
   }
 
