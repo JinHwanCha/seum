@@ -2,18 +2,23 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 
-const MAX_PER_WEEK = 6;
+const MAX_PER_WEEK = 1;
 
+// 한 멤버의 한 주간 점수 (0..1)
+// 베이스 70%: 예배/부서/소그룹, 보너스 30%: 기도/QT/통독
 function weekScoreOf(att: any): number {
   if (!att) return 0;
-  let s = 0;
-  if (att.worship_service) s++;
-  if (att.department_meeting) s++;
-  if (att.small_group) s++;
-  if ((att.prayer_count ?? 0) > 0) s++;
-  if ((att.qt_count ?? 0) > 0) s++;
-  if (att.bible_reading) s++;
-  return s;
+  const base =
+    ((att.worship_service ? 1 : 0) +
+      (att.department_meeting ? 1 : 0) +
+      (att.small_group ? 1 : 0)) /
+    3;
+  const bonus =
+    (((att.prayer_count ?? 0) > 0 ? 1 : 0) +
+      ((att.qt_count ?? 0) > 0 ? 1 : 0) +
+      (att.bible_reading ? 1 : 0)) /
+    3;
+  return base * 0.7 + bonus * 0.3;
 }
 
 function sundaysOfMonth(year: number, month0: number): string[] {
