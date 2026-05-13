@@ -49,6 +49,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('prayer');
+  const [attSubTab, setAttSubTab] = useState<'mine' | 'village'>('mine');
+  const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   // Optimistic local state (updated by callbacks, synced from SWR)
@@ -556,8 +558,111 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>
-              {/* Cell Leader: own cell attendance */}
-              {hasCell && !hasOversight && (
+              {/* Cell Leader: sub-tabs (내 소그룹 / OO 마을) */}
+              {isCellLeader && hasCell && (
+                <div className="space-y-3">
+                  {myVillageCells.length > 0 && villageName && (
+                    <Tabs
+                      tabs={[
+                        { key: 'mine', label: '내 소그룹' },
+                        { key: 'village', label: `${villageName} 마을` },
+                      ]}
+                      activeKey={attSubTab}
+                      onChange={(k) => setAttSubTab(k as 'mine' | 'village')}
+                    />
+                  )}
+
+                  {attSubTab === 'mine' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                        <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>
+                        {villageName && <Badge variant="default">{villageName}</Badge>}
+                      </div>
+                      <AttendanceCheck
+                        members={members}
+                        attendance={attendanceMap}
+                        weekStart={weekStart}
+                        session={user}
+                        cellId={user.cellId}
+                        cellVillageId={user.villageId}
+                        onAttendanceChange={handleAttendanceChange}
+                      />
+                    </div>
+                  )}
+
+                  {attSubTab === 'village' && myVillageCells.length > 0 && (
+                    <div className="space-y-2">
+                      {myVillageCells.map((village) => (
+                        <div key={village.id} className="space-y-2">
+                          {village.cells.map((cell) => {
+                            const isExpanded = expandedCells.has(`att-${cell.id}`);
+                            const memberCount = cell.members.length;
+                            const sgCount = cell.members.filter((m) => attendanceMap[m.id]?.small_group).length;
+                            return (
+                              <div
+                                key={cell.id}
+                                className="warm-surface rounded-xl border border-stone-200/80 overflow-hidden"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setExpandedCells((prev) => {
+                                      const next = new Set(prev);
+                                      const key = `att-${cell.id}`;
+                                      if (next.has(key)) next.delete(key);
+                                      else next.add(key);
+                                      return next;
+                                    });
+                                  }}
+                                  className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronDown size={16} className="text-stone-400" />
+                                    ) : (
+                                      <ChevronRight size={16} className="text-stone-400" />
+                                    )}
+                                    <span className="font-medium text-stone-900 text-sm">
+                                      {cell.name || '소그룹'}
+                                    </span>
+                                    {cell.leader_name && (
+                                      <span className="text-xs text-stone-500">
+                                        목자: {cell.leader_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="default">{memberCount}명</Badge>
+                                    <Badge variant={sgCount === memberCount ? 'success' : 'warning'}>
+                                      출석 {sgCount}/{memberCount}
+                                    </Badge>
+                                  </div>
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="border-t border-stone-100 p-4">
+                                    <AttendanceCheck
+                                      members={cell.members}
+                                      attendance={attendanceMap}
+                                      weekStart={weekStart}
+                                      session={user}
+                                      cellId={cell.id}
+                                      cellVillageId={village.id}
+                                      onAttendanceChange={handleAttendanceChange}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cell Member (non-leader): own cell attendance */}
+              {hasCell && !hasOversight && !isCellLeader && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>
@@ -578,7 +683,24 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               {/* Minister / Village Leader: all cells */}
               {hasOversight && villageCells.length > 0 && (
                 <div className="space-y-2">
-                  {villageCells.map((village) => (
+                  {isMinister && villageCells.length > 1 && (
+                    <Tabs
+                      tabs={[
+                        { key: '__all__', label: '전체' },
+                        ...villageCells.map((v) => ({ key: v.id, label: v.name })),
+                      ]}
+                      activeKey={attVillageFilter}
+                      onChange={setAttVillageFilter}
+                    />
+                  )}
+                  {villageCells
+                    .filter(
+                      (v) =>
+                        !isMinister ||
+                        attVillageFilter === '__all__' ||
+                        v.id === attVillageFilter
+                    )
+                    .map((village) => (
                     <div key={village.id}>
                       {isMinister && (
                         <h2 className="text-sm font-semibold text-stone-700 mb-2 px-1">
