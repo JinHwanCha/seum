@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canApproveMembers, canModifyUserRole, canVillageLeaderAssignRole } from '@/lib/permissions';
+import { MINISTER_HIERARCHY } from '@/lib/constants';
 import type { Role, MinisterRank } from '@/lib/types';
 
 export async function PATCH(
@@ -73,6 +74,21 @@ export async function PATCH(
           session.isAdmin
         )) {
           return NextResponse.json({ error: '이 사용자의 역할을 변경할 권한이 없습니다.' }, { status: 403 });
+        }
+        // 새로 부여할 직급이 본인 등급보다 낮아야 함 (간사는 간사/목사 부여 불가)
+        if (
+          role === 'minister' &&
+          ministerRank &&
+          !session.isAdmin
+        ) {
+          const actorRank = MINISTER_HIERARCHY[session.ministerRank || ''] ?? 0;
+          const desiredRank = MINISTER_HIERARCHY[ministerRank] ?? 0;
+          if (desiredRank >= actorRank) {
+            return NextResponse.json(
+              { error: '본인 등급 이상의 직급은 부여할 수 없습니다.' },
+              { status: 403 }
+            );
+          }
         }
       }
     }

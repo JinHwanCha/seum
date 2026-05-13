@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
+import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS, MINISTER_HIERARCHY } from '@/lib/constants';
 import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw, Trash2 } from 'lucide-react';
 import type { User } from '@/lib/types';
 import type { VillageWithCells, CellWithLeader } from '@/lib/admin-data';
@@ -207,6 +207,16 @@ export function MemberList({
     { value: 'pastor', label: '목사' },
   ];
 
+  // 본인 등급보다 낮은 직급만 부여 가능 (시스템관리자는 전체 가능)
+  const visibleMinisterRankOptions = (() => {
+    if (currentUser?.isAdmin) return ministerRankOptions;
+    if (currentUser?.role !== 'minister') return ministerRankOptions;
+    const actorRank = MINISTER_HIERARCHY[currentUser?.ministerRank || ''] ?? 0;
+    return ministerRankOptions.filter(
+      (o) => (MINISTER_HIERARCHY[o.value] ?? 0) < actorRank
+    );
+  })();
+
   const showCheckboxes = !showPending;
 
   const renderMemberCard = (member: User) => (
@@ -386,7 +396,7 @@ export function MemberList({
           {editRole === 'minister' && (
             <Select
               label="사역자 직급"
-              options={ministerRankOptions}
+              options={visibleMinisterRankOptions}
               value={editMinisterRank}
               onChange={(e) => setEditMinisterRank(e.target.value)}
             />
