@@ -7,8 +7,8 @@ import { UsersRound, Megaphone, MessageSquare, Users, Heart } from 'lucide-react
 import Link from 'next/link';
 
 const QUICK_LINKS = [
-  { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
   { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
+  { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
   { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
   { href: '/boards/intercession', label: '기도제목', icon: Heart, color: 'bg-rose-50 text-rose-600' },
