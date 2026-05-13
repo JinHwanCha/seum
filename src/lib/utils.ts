@@ -12,6 +12,12 @@ export function maskPhone(phone: string | null): string {
   return `***-****-${digits.slice(-4)}`;
 }
 
+/** "1995-03-12" → " (95)" / null → "" */
+export function birthYearTag(birthDate?: string | null): string {
+  if (!birthDate || birthDate.length < 4) return '';
+  return ` (${birthDate.substring(2, 4)})`;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

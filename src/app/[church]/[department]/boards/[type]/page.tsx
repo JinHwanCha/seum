@@ -41,7 +41,7 @@ async function PostListServer({
   // 2) 게시글 (가시성 필터 포함)
   let query = supabase
     .from('posts')
-    .select('*, author:users(id, name, role, minister_rank, village_id), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)')
+    .select('*, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)')
     .eq('department_id', departmentId)
     .eq('board_type', type)
     .order('is_pinned', { ascending: false })

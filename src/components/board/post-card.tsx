@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { MessageSquare, Heart as HeartIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/date-utils';
+import { birthYearTag } from '@/lib/utils';
 import type { Post } from '@/lib/types';
 
 interface PostCardProps {
@@ -48,7 +49,10 @@ export function PostCard({ post, boardType }: PostCardProps) {
         </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
           <div className="flex items-center gap-3 text-xs text-stone-400">
-            <span className="font-medium text-stone-600">{post.author?.name}</span>
+            <span className="font-medium text-stone-600">
+              {post.author?.name}
+              {birthYearTag((post.author as any)?.birth_date)}
+            </span>
             <span>{formatDateTime(post.created_at)}</span>
           </div>
           <div className="flex items-center gap-3 text-xs text-stone-400">

@@ -9,6 +9,7 @@ import { CommentSection } from '@/components/board/comment-section';
 import { ReactionBar } from '@/components/board/reaction-bar';
 import { canEditPost, canDeletePost } from '@/lib/permissions';
 import { formatDateTime } from '@/lib/date-utils';
+import { birthYearTag } from '@/lib/utils';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
 import { ArrowLeft, Edit3, Trash2 } from 'lucide-react';
 import type { BoardType, Comment, Reaction, SessionPayload } from '@/lib/types';
@@ -74,7 +75,10 @@ export default function PostDetailClient({
             </div>
             <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
             <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">
-              <span className="font-medium text-stone-700">{post.author?.name}</span>
+              <span className="font-medium text-stone-700">
+                {post.author?.name}
+                {birthYearTag((post.author as any)?.birth_date)}
+              </span>
               <span>{formatDateTime(post.created_at)}</span>
               {post.updated_at !== post.created_at && <span>(수정됨)</span>}
             </div>

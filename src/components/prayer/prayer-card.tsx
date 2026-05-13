@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { PrayerForm } from './prayer-form';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
+import { birthYearTag } from '@/lib/utils';
 import type { PrayerRequest, SessionPayload } from '@/lib/types';
 import { canEditPrayer } from '@/lib/permissions';
 
@@ -63,7 +64,10 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
     <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-medium text-stone-900 text-sm">{user.name}</span>
+          <span className="font-medium text-stone-900 text-sm">
+            {user.name}
+            {birthYearTag((user as any).birth_date)}
+          </span>
           <Badge variant={roleBadgeVariant()}>{getRoleDisplay()}</Badge>
         </div>
         {canEdit && (

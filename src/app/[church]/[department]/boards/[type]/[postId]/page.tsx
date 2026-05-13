@@ -18,9 +18,9 @@ export default async function PostDetailPage({ params }: PageProps) {
     .from('posts')
     .select(`
       *,
-      author:users(id, name, role, minister_rank),
+      author:users(id, name, role, minister_rank, birth_date),
       category:board_categories(id, name),
-      comments(*, author:users(id, name, role, minister_rank)),
+      comments(*, author:users(id, name, role, minister_rank, birth_date)),
       reactions(*)
     `)
     .eq('id', params.postId)

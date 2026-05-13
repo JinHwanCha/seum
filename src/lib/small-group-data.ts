@@ -28,7 +28,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       : Promise.resolve({ data: [] }),
     supabase
       .from('prayer_requests')
-      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date)')
       .eq('department_id', session.departmentId)
       .eq('week_start', weekStart)
       .order('created_at', { ascending: true }),
@@ -55,7 +55,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .eq('is_approved', true)
           .eq('is_graduated', false),
       ]
-    : session.role === 'village_leader' && villageId
+    : (session.role === 'village_leader' || session.role === 'cell_leader') && villageId
     ? [
         supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
         supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
@@ -134,7 +134,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
               .filter(Boolean),
           })),
       }));
-  } else if (session.role === 'village_leader' && villageId) {
+  } else if ((session.role === 'village_leader' || session.role === 'cell_leader') && villageId) {
     const [vCellsResult, villageMembersResult] = roleResults as any[];
 
     const vCells = (vCellsResult.data || []) as any[];
