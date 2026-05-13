@@ -128,19 +128,33 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   if (!user) return null;
 
-  const isMinister = user.role === 'minister';
-  const isVillageLeader = user.role === 'village_leader';
-  const hasOversight = isMinister || isVillageLeader;
-  const hasCell = !!user.cellId;
+  // 서버에서 DB 최신값을 받아오므로 JWT가 stale해도 정확하게 분기
+  const fresh = swrData?.currentUser;
+  const effectiveRole = (fresh?.role ?? user.role) as string;
+  const effectiveCellId = fresh?.cellId ?? user.cellId ?? null;
+  const effectiveVillageId = fresh?.villageId ?? user.villageId ?? null;
 
-  const isCellLeader = user.role === 'cell_leader';
+  const isMinister = effectiveRole === 'minister';
+  const isVillageLeader = effectiveRole === 'village_leader';
+  const hasOversight = isMinister || isVillageLeader;
+  const hasCell = !!effectiveCellId;
+
+  const isCellLeader = effectiveRole === 'cell_leader';
   const canCheckAtt = isCellLeader || hasOversight || user.isAdmin;
   // 마을 탭은 셀장 이상에게만 노출 (셀원에겐 민감할 수 있어 가림)
-  const canSeeVillageTab = !!user.villageId && (isCellLeader || hasOversight);
+  const canSeeVillageTab = !!effectiveVillageId && (isCellLeader || hasOversight);
   // 사역자는 villageCells에 여러 마을 포함 → 본인 마을만 필터
   const myVillageCells = canSeeVillageTab
-    ? villageCells.filter((v) => v.id === user.villageId)
+    ? villageCells.filter((v) => v.id === effectiveVillageId)
     : [];
+
+  // AttendanceCheck에 전달할 최신 세션 (JWT stale 보정)
+  const effectiveSession = {
+    ...user,
+    role: effectiveRole as any,
+    cellId: effectiveCellId,
+    villageId: effectiveVillageId,
+  };
 
   const TABS = [
     { key: 'prayer', label: '기도제목' },
@@ -350,7 +364,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                               {/* Cell Header - Clickable */}
                               <button
                                 onClick={() => toggleCell(cell.id)}
-                                className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                                className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
                               >
                                 <div className="flex items-center gap-2">
                                   {isExpanded ? (
@@ -486,7 +500,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                             return next;
                           });
                         }}
-                        className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                        className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
                       >
                         <div className="flex items-center gap-2">
                           {isExpanded ? (
@@ -601,9 +615,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         members={members}
                         attendance={attendanceMap}
                         weekStart={weekStart}
-                        session={user}
-                        cellId={user.cellId}
-                        cellVillageId={user.villageId}
+                        session={effectiveSession}
+                        cellId={effectiveCellId}
+                        cellVillageId={effectiveVillageId}
                         onAttendanceChange={handleAttendanceChange}
                       />
                     </div>
@@ -634,7 +648,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                       return next;
                                     });
                                   }}
-                                  className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                                  className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
                                 >
                                   <div className="flex items-center gap-2">
                                     {isExpanded ? (
@@ -671,7 +685,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                       members={cell.members}
                                       attendance={attendanceMap}
                                       weekStart={weekStart}
-                                      session={user}
+                                      session={effectiveSession}
                                       cellId={cell.id}
                                       cellVillageId={village.id}
                                       onAttendanceChange={handleAttendanceChange}
@@ -699,9 +713,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                     members={members}
                     attendance={attendanceMap}
                     weekStart={weekStart}
-                    session={user}
-                    cellId={user.cellId}
-                    cellVillageId={user.villageId}
+                    session={effectiveSession}
+                    cellId={effectiveCellId}
+                    cellVillageId={effectiveVillageId}
                     onAttendanceChange={handleAttendanceChange}
                   />
                 </div>
@@ -757,7 +771,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                     return next;
                                   });
                                 }}
-                                className="w-full flex items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                                className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
                               >
                                 <div className="flex items-center gap-2">
                                   {isExpanded ? (
@@ -794,7 +808,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                     members={cell.members}
                                     attendance={attendanceMap}
                                     weekStart={weekStart}
-                                    session={user}
+                                    session={effectiveSession}
                                     cellId={cell.id}
                                     cellVillageId={village.id}
                                     onAttendanceChange={handleAttendanceChange}

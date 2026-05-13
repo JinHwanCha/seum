@@ -8,12 +8,13 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   // 항상 DB에서 최신 cell/village를 조회한다.
   const { data: freshUser } = await supabase
     .from('users')
-    .select('cell_id, village_id')
+    .select('role, cell_id, village_id')
     .eq('id', session.userId)
     .single();
 
   const cellId = freshUser?.cell_id ?? session.cellId ?? null;
   const villageId = freshUser?.village_id ?? session.villageId ?? null;
+  const role = (freshUser?.role as string) ?? session.role;
 
   // 모든 쿼리(base + role별)를 동시에 시작해 워터폴 제거
   const basePromises = [
@@ -40,7 +41,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   ] as const;
 
   // role별 추가 쿼리도 동시에 시작
-  const rolePromises = session.role === 'minister'
+  const rolePromises = role === 'minister'
     ? [
         supabase
           .from('group_years')
@@ -55,7 +56,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .eq('is_approved', true)
           .eq('is_graduated', false),
       ]
-    : (session.role === 'village_leader' || session.role === 'cell_leader') && villageId
+    : (role === 'village_leader' || role === 'cell_leader') && villageId
     ? [
         supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
         supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
@@ -88,7 +89,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
   let villageCells: any[] = [];
 
-  if (session.role === 'minister') {
+  if (role === 'minister') {
     const [groupYearResult, deptMembersResult] = roleResults as any[];
 
     const groupYear = groupYearResult.data as any;
@@ -134,7 +135,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
               .filter(Boolean),
           })),
       }));
-  } else if ((session.role === 'village_leader' || session.role === 'cell_leader') && villageId) {
+  } else if ((role === 'village_leader' || role === 'cell_leader') && villageId) {
     const [vCellsResult, villageMembersResult] = roleResults as any[];
 
     const vCells = (vCellsResult.data || []) as any[];
@@ -188,5 +189,10 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     prayers,
     villageCells,
     attendanceMap,
+    currentUser: {
+      role,
+      cellId,
+      villageId,
+    },
   };
 }
