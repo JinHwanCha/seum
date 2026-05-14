@@ -3,16 +3,31 @@ import { getSession } from '@/lib/auth';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { UsersRound, Megaphone, MessageSquare, Users, Heart } from 'lucide-react';
+import { UsersRound, Megaphone, MessageSquare, Users, Heart, Shield } from 'lucide-react';
 import Link from 'next/link';
 
-const QUICK_LINKS = [
-  { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
-  { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
-  { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
-  { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
-  { href: '/boards/intercession', label: '기도제목', icon: Heart, color: 'bg-rose-50 text-rose-600' },
-];
+
+function getQuickLinks(session: any) {
+  const links = [
+    { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
+    { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
+    { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
+    { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
+    { href: '/boards/intercession', label: '기도제목', icon: Heart, color: 'bg-rose-50 text-rose-600' },
+  ];
+  const isBureau = session.isBureauLeader || session.isBureauMember;
+  const isAdmin = session.isAdmin;
+  const isVillageLeaderOrAbove = session.role === 'minister' || session.role === 'village_leader' || isBureau || isAdmin;
+  if (isVillageLeaderOrAbove) {
+    links.push({
+      href: '/admin',
+      label: '관리',
+      icon: Shield,
+      color: 'bg-amber-50 text-amber-600',
+    });
+  }
+  return links;
+}
 
 interface PageProps {
   params: { church: string; department: string };
@@ -46,7 +61,7 @@ export default async function DashboardPage({ params }: PageProps) {
       <div>
         <h2 className="text-sm font-semibold text-stone-500 mb-3 px-1">바로가기</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {QUICK_LINKS.map((link) => {
+          {getQuickLinks(session).map((link) => {
             const Icon = link.icon;
             return (
               <Link key={link.href} href={`${basePath}${link.href}`}>

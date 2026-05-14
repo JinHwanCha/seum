@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { LogOut, UserCircle } from 'lucide-react';
+import { LogOut, UserCircle, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 export function Header() {
@@ -21,6 +21,12 @@ export function Header() {
     );
   }
 
+  // 마을장 이상(사역자/국장/관리자 포함) admin 버튼 노출
+  const isBureau = user.isBureauLeader || user.isBureauMember;
+  const isAdmin = user.isAdmin;
+  const isVillageLeaderOrAbove =
+    user.role === 'minister' || user.role === 'village_leader' || isBureau || isAdmin;
+
   return (
     <header className="warm-surface border-b border-stone-200/80 sticky top-0 z-40">
       <div className="px-4 h-14 flex items-center justify-between">
@@ -31,6 +37,16 @@ export function Header() {
           세움
         </Link>
         <div className="flex items-center gap-3">
+          {/* 모바일: admin 버튼 */}
+          {isVillageLeaderOrAbove && (
+            <Link
+              href={`/${params.church}/${params.department}/admin`}
+              className="sm:hidden p-2 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              title="관리자"
+            >
+              <Shield size={18} />
+            </Link>
+          )}
           <Link
             href={`/${params.church}/${params.department}/profile`}
             className="text-sm text-stone-600 hidden sm:block hover:text-primary-600 transition-colors"
