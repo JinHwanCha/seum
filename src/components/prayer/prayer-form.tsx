@@ -86,7 +86,7 @@ export function PrayerForm({
             onChange={(e) => setIsCellOnly(e.target.checked)}
             className="h-4 w-4 rounded border-stone-300 text-primary-600 focus:ring-primary-500"
           />
-          <span>소그룹에만 공개 <span className="text-stone-400">(마을 전체엔 공유되지 않음 · 마을장/사역자는 열람 가능)</span></span>
+          <span>소그룹에만 공개 <span className="text-stone-400">(마을장/사역자는 열람 가능)</span></span>
         </label>
         <Button type="submit" size="sm">
           {existingId ? '수정' : '저장'}
