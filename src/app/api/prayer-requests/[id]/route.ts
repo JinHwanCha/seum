@@ -9,18 +9,21 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { content, images } = await request.json();
+  const { content, images, isCellOnly } = await request.json();
   if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
 
   const supabase = createClient();
 
+  const updates: Record<string, unknown> = {
+    content,
+    images: Array.isArray(images) ? images : [],
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof isCellOnly === 'boolean') updates.is_cell_only = isCellOnly;
+
   const { error } = await supabase
     .from('prayer_requests')
-    .update({
-      content,
-      images: Array.isArray(images) ? images : [],
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq('id', params.id);
 
   if (error) return NextResponse.json({ error: '수정에 실패했습니다.' }, { status: 500 });

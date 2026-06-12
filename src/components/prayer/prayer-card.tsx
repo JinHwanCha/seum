@@ -14,7 +14,7 @@ interface PrayerCardProps {
   prayer: PrayerRequest;
   session: SessionPayload;
   weekStart: string;
-  onUpdated: (content: string, images: string[]) => void;
+  onUpdated: (content: string, images: string[], isCellOnly: boolean) => void;
 }
 
 export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCardProps) {
@@ -47,11 +47,12 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
           existingContent={prayer.content}
           existingImages={prayer.images || []}
           existingId={prayer.id}
+          existingIsCellOnly={prayer.is_cell_only}
           targetUserName={isOwn ? undefined : user.name}
           targetUserId={isOwn ? undefined : user.id}
-          onSaved={(content, images) => {
+          onSaved={(content, images, isCellOnly) => {
             setEditing(false);
-            onUpdated(content, images);
+            onUpdated(content, images, isCellOnly);
           }}
         />
       </div>
@@ -63,12 +64,15 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
   return (
     <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 transition-colors">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="font-medium text-stone-900 text-sm">
             {user.name}
             {birthYearTag((user as any).birth_date)}
           </span>
           <Badge variant={roleBadgeVariant()}>{getRoleDisplay()}</Badge>
+          {prayer.is_cell_only && (
+            <Badge variant="warning">소그룹공개</Badge>
+          )}
         </div>
         {canEdit && (
           <button

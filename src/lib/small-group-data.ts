@@ -56,7 +56,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .eq('is_approved', true)
           .eq('is_graduated', false),
       ]
-    : (role === 'village_leader' || role === 'cell_leader') && villageId
+    : (role === 'village_leader' || role === 'cell_leader' || role === 'cell_member') && villageId
     ? [
         supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
         supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
@@ -135,7 +135,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
               .filter(Boolean),
           })),
       }));
-  } else if ((role === 'village_leader' || role === 'cell_leader') && villageId) {
+  } else if ((role === 'village_leader' || role === 'cell_leader' || role === 'cell_member') && villageId) {
     const [vCellsResult, villageMembersResult] = roleResults as any[];
 
     const vCells = (vCellsResult.data || []) as any[];
@@ -155,11 +155,14 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     });
 
     const cellIdSet = new Set(vCells.map((c: any) => c.id));
+    // 셀장/셀원: 다른 셀의 "소그룹에만 공개" 글은 가시성 차단
+    // 마을장: 자기 마을 전체(소그룹공개 포함) 열람
+    const restrictCellOnly = role === 'cell_leader' || role === 'cell_member';
     const prayerByCellUser: Record<string, any> = {};
     allDeptPrayers.forEach((p: any) => {
-      if (p.user?.cell_id && cellIdSet.has(p.user.cell_id)) {
-        prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
-      }
+      if (!p.user?.cell_id || !cellIdSet.has(p.user.cell_id)) return;
+      if (restrictCellOnly && p.is_cell_only && p.user.cell_id !== cellId) return;
+      prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
     });
 
     villageCells = [{

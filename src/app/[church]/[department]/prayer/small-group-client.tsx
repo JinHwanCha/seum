@@ -143,8 +143,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const isCellLeader = effectiveRole === 'cell_leader';
   const canCheckAtt = isCellLeader || hasOversight || user.isAdmin;
-  // 마을 탭은 셀장 이상에게만 노출 (셀원에겐 민감할 수 있어 가림)
-  const canSeeVillageTab = !!effectiveVillageId && (isCellLeader || hasOversight);
+  // 마을 탭은 마을에 속한 모든 멤버(셀원/셀장/마을장/사역자)에게 노출
+  // 셀원이 다른 셀의 "소그룹에만 공개" 글을 보지 못하도록 서버에서 이미 필터됨
+  const canSeeVillageTab = !!effectiveVillageId && (hasCell || hasOversight);
   // 사역자는 villageCells에 여러 마을 포함 → 본인 마을만 필터
   const myVillageCells = canSeeVillageTab
     ? villageCells.filter((v) => v.id === effectiveVillageId)
@@ -196,10 +197,11 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               existingContent={myPrayer?.content}
               existingImages={myPrayer?.images || []}
               existingId={myPrayer?.id}
-              onSaved={(content, images) => {
+              existingIsCellOnly={myPrayer?.is_cell_only}
+              onSaved={(content, images, isCellOnly) => {
                 setMyPrayer((prev) =>
                   prev
-                    ? { ...prev, content, images }
+                    ? { ...prev, content, images, is_cell_only: isCellOnly }
                     : ({
                         id: `temp-${Date.now()}`,
                         user_id: user.userId,
@@ -207,13 +209,14 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         week_start: weekStart,
                         content,
                         images,
+                        is_cell_only: isCellOnly,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                       } as any)
                 );
                 setPrayers((prev) =>
                   prev.map((p) =>
-                    p.user_id === user.userId ? { ...p, content, images } : p
+                    p.user_id === user.userId ? { ...p, content, images, is_cell_only: isCellOnly } : p
                   )
                 );
               }}
@@ -297,15 +300,15 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                             prayer={prayer}
                             session={user}
                             weekStart={weekStart}
-                            onUpdated={(content, images) => {
+                            onUpdated={(content, images, isCellOnly) => {
                               setPrayers((prev) =>
                                 prev.map((p) =>
-                                  p.id === prayer.id ? { ...p, content, images } : p
+                                  p.id === prayer.id ? { ...p, content, images, is_cell_only: isCellOnly } : p
                                 )
                               );
                               if (prayer.user_id === user.userId) {
                                 setMyPrayer((prev) =>
-                                  prev ? { ...prev, content, images } : prev
+                                  prev ? { ...prev, content, images, is_cell_only: isCellOnly } : prev
                                 );
                               }
                             }}
@@ -404,7 +407,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                     );
                                     return (
                                       <div key={m.id} className="space-y-1">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           {m.role === 'cell_leader' ? (
                                             <Crown size={14} className="text-amber-500" />
                                           ) : (
@@ -420,6 +423,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                           >
                                             {ROLE_LABELS_DEFAULT[m.role]}
                                           </Badge>
+                                          {prayer?.is_cell_only && (
+                                            <Badge variant="warning">소그룹공개</Badge>
+                                          )}
                                         </div>
                                         {prayer ? (
                                           <div className="ml-6 bg-primary-50/30 rounded-lg p-3">
@@ -556,7 +562,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                             const prayer = cell.prayers.find((p) => p.user_id === m.id);
                             return (
                               <div key={m.id} className="space-y-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {m.role === 'cell_leader' ? (
                                     <Crown size={14} className="text-amber-500" />
                                   ) : (
@@ -568,6 +574,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                   <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
                                     {ROLE_LABELS_DEFAULT[m.role]}
                                   </Badge>
+                                  {prayer?.is_cell_only && (
+                                    <Badge variant="warning">소그룹공개</Badge>
+                                  )}
                                 </div>
                                 {prayer ? (
                                   <div className="ml-6 bg-primary-50/30 rounded-lg p-3">

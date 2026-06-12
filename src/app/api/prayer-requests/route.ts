@@ -77,13 +77,22 @@ export async function GET(request: Request) {
   if (session.role === 'minister') {
     allPrayers.forEach((p) => visibleIds.add(p.user_id));
   } else {
-    if (session.role === 'village_leader' || session.role === 'cell_leader') {
+    if (session.role === 'village_leader') {
+      // 마을장은 자기 마을 전체(소그룹공개 포함) 열람
       allPrayers.forEach((p) => {
         if (p.user?.village_id === session.villageId) visibleIds.add(p.user_id);
+      });
+    } else if (session.role === 'cell_leader' || session.role === 'cell_member') {
+      // 셀장/셀원은 자기 마을 열람, 단 is_cell_only 인 다른 셀 글은 제외
+      allPrayers.forEach((p) => {
+        if (p.user?.village_id !== session.villageId) return;
+        if (p.is_cell_only && p.user?.cell_id !== session.cellId) return;
+        visibleIds.add(p.user_id);
       });
     }
 
     if (session.role === 'cell_member' || session.role === 'cell_leader') {
+      // 같은 셀 글은 is_cell_only 여부와 무관하게 항상 열람
       allPrayers.forEach((p) => {
         if (p.user?.cell_id === session.cellId && session.cellId) visibleIds.add(p.user_id);
       });
@@ -113,7 +122,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { content, images, weekStart, targetUserId } = await request.json();
+  const { content, images, weekStart, targetUserId, isCellOnly } = await request.json();
   if (!content || !weekStart) {
     return NextResponse.json({ error: 'content and weekStart required' }, { status: 400 });
   }
@@ -122,6 +131,7 @@ export async function POST(request: Request) {
   const supabase = createClient();
 
   const safeImages = Array.isArray(images) ? images : [];
+  const safeIsCellOnly = !!isCellOnly;
 
   // Check if already exists (upsert)
   const { data: existing } = await supabase
@@ -134,7 +144,12 @@ export async function POST(request: Request) {
   if (existing) {
     const { error } = await supabase
       .from('prayer_requests')
-      .update({ content, images: safeImages, updated_at: new Date().toISOString() })
+      .update({
+        content,
+        images: safeImages,
+        is_cell_only: safeIsCellOnly,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', existing.id);
 
     if (error) return NextResponse.json({ error: '저장에 실패했습니다.' }, { status: 500 });
@@ -149,6 +164,7 @@ export async function POST(request: Request) {
       week_start: weekStart,
       content,
       images: safeImages,
+      is_cell_only: safeIsCellOnly,
     })
     .select('id')
     .single();
