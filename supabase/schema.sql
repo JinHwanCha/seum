@@ -227,3 +227,17 @@ CREATE TABLE attendance (
 CREATE INDEX idx_attendance_dept_week ON attendance(department_id, week_start);
 CREATE INDEX idx_attendance_user ON attendance(user_id);
 CREATE INDEX idx_attendance_user_week ON attendance(user_id, week_start);
+
+-- ─── 목장 나눔지 (Sharing Sheet) ──────────────────────────────
+-- source = 'google_sheet' → 구글 시트(CSV)에서 불러옴 / 'manual' → content(JSONB) 사용
+CREATE TABLE sharing_sheets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  source TEXT NOT NULL DEFAULT 'google_sheet',
+  google_sheet_id TEXT,
+  content JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(department_id)
+);

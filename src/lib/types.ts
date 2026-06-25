@@ -166,6 +166,25 @@ export interface Attendance {
   updated_at: string;
 }
 
+// ─── 목장 나눔지 (Sharing Sheet) ───
+export type SharingSheetSource = 'google_sheet' | 'manual';
+export type SharingSectionStyle = 'numbered' | 'bullet';
+
+export interface SharingSheetSection {
+  label: string;
+  style: SharingSectionStyle;
+  items: string[];
+}
+
+export interface SharingSheetContent {
+  title: string;
+  subtitle?: string;
+  scripture: string;
+  scriptureBody?: string;
+  preacher?: string;
+  sections: SharingSheetSection[];
+}
+
 // ─── Session / Auth ───
 export interface SessionPayload {
   userId: string;
