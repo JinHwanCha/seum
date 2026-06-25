@@ -41,3 +41,35 @@ export function isFutureWeek(sunday: Date): boolean {
   const currentSunday = getCurrentWeekSunday(now);
   return sunday > currentSunday;
 }
+
+/**
+ * 한국시간(KST) 기준으로 다가오는(혹은 오늘인) 주일(일요일) 날짜를
+ * "yyyy.MM.dd" 형식의 문자열로 반환한다. 브라우저 타임존과 무관하게 동작.
+ */
+export function getUpcomingSundayLabelKST(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const weekdayMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const dow = weekdayMap[get('weekday')] ?? 0;
+  const year = Number(get('year'));
+  const month = Number(get('month'));
+  const day = Number(get('day'));
+
+  // KST 날짜 파트로 UTC 기준 날짜를 만들어 안전하게 일수를 더한다.
+  const base = new Date(Date.UTC(year, month - 1, day));
+  const addDays = dow === 0 ? 0 : 7 - dow;
+  base.setUTCDate(base.getUTCDate() + addDays);
+
+  const yy = base.getUTCFullYear();
+  const mm = String(base.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(base.getUTCDate()).padStart(2, '0');
+  return `${yy}.${mm}.${dd}`;
+}

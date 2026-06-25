@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { TreeGrowth } from '@/components/prayer/tree-growth';
 import { TreeOverview } from '@/components/prayer/tree-overview';
+import { SharingSheet } from '@/components/prayer/sharing-sheet';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
@@ -51,7 +52,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const { user } = useAuth();
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState('prayer');
+  const [activeTab, setActiveTab] = useState('sharing');
   const [attSubTab, setAttSubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
   const [prayerVillageFilter, setPrayerVillageFilter] = useState<string>('__all__');
@@ -160,6 +161,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   };
 
   const TABS = [
+    { key: 'sharing', label: '나눔지' },
     { key: 'prayer', label: '기도제목' },
     ...(canSeeVillageTab && villageName
       ? [{ key: 'village', label: `${villageName} 마을` }]
@@ -180,11 +182,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     <div className="space-y-2">
       <h1 className="text-lg font-bold text-stone-900">소그룹</h1>
 
-      <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
-
       {showTabs && (
         <Tabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
       )}
+
+      {activeTab !== 'sharing' && (
+        <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
+      )}
+
+      {/* ===== SHARING (나눔지) TAB ===== */}
+      {activeTab === 'sharing' && <SharingSheet />}
 
       {/* ===== PRAYER TAB ===== */}
       {activeTab === 'prayer' && (
