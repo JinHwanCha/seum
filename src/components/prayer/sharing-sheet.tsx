@@ -96,7 +96,6 @@ export function SharingSheet() {
             return (
               <div
                 key={section.label}
-                className="warm-surface rounded-xl border border-stone-200/80 p-5 shadow-sm"
               >
                 <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-stone-900">
                   <span className="h-4 w-1.5 rounded-full bg-accent-400" />
