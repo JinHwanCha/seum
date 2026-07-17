@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface ImageLightboxProps {
@@ -13,8 +14,13 @@ interface ImageLightboxProps {
 export function ImageLightbox({ images, startIndex = 0, open, onClose }: ImageLightboxProps) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null);
   const pointerMoved = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) setIndex(startIndex);
@@ -46,7 +52,7 @@ export function ImageLightbox({ images, startIndex = 0, open, onClose }: ImageLi
     };
   }, [open, onClose, goPrev, goNext]);
 
-  if (!open || total === 0) return null;
+  if (!open || total === 0 || !mounted) return null;
 
   // Pointer 기반 — 마우스 / 터치 / 펜 모두 동일하게 처리
   const onPointerDown = (e: React.PointerEvent) => {
@@ -85,7 +91,7 @@ export function ImageLightbox({ images, startIndex = 0, open, onClose }: ImageLi
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] bg-black/90 select-none touch-none"
       onPointerDown={onPointerDown}
@@ -176,6 +182,7 @@ export function ImageLightbox({ images, startIndex = 0, open, onClose }: ImageLi
           ))}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
