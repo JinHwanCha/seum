@@ -7,7 +7,7 @@ import { Home, UsersRound, Megaphone, MessageSquare, Heart } from 'lucide-react'
 
 const MOBILE_NAV_ITEMS = [
   { href: '', label: '홈', icon: Home },
-  { href: '/boards/notice', label: '공지', icon: Megaphone },
+  { href: '/notice', label: '공지', icon: Megaphone },
   { href: '/prayer', label: '소그룹', icon: UsersRound },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare },
   { href: '/boards/intercession', label: '기도', icon: Heart },

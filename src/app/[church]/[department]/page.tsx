@@ -11,7 +11,7 @@ import { WorshipGuide } from '@/components/worship/worship-guide';
 
 function getQuickLinks(session: any) {
   const links = [
-    { href: '/boards/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
+    { href: '/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
     { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
     { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
     { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
@@ -69,8 +69,8 @@ export default async function DashboardPage({ params }: PageProps) {
           {getQuickLinks(session).map((link) => {
             const Icon = link.icon;
             return (
-              <Link key={link.href} href={`${basePath}${link.href}`}>
-                <Card className="text-center hover:shadow-md transition-shadow cursor-pointer">
+              <Link key={link.href} href={`${basePath}${link.href}`} className="h-full">
+                <Card className="flex h-full flex-col items-center justify-center text-center hover:shadow-md transition-shadow cursor-pointer">
                   <div className={`w-10 h-10 rounded-xl ${link.color} flex items-center justify-center mx-auto mb-2`}>
                     <Icon size={20} />
                   </div>

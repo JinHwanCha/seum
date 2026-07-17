@@ -213,8 +213,8 @@ export function WorshipGuide() {
           {visible.map((item) => {
             const d = tileDisplay(item);
             return (
-              <button key={`${item.key ?? 'sp'}-${item.id ?? item.key}`} type="button" onClick={() => openItem(item)}>
-                <Card className="cursor-pointer text-center transition-shadow hover:shadow-md">
+              <button key={`${item.key ?? 'sp'}-${item.id ?? item.key}`} type="button" onClick={() => openItem(item)} className="h-full">
+                <Card className="flex h-full flex-col items-center justify-center cursor-pointer text-center transition-shadow hover:shadow-md">
                   <TileIcon icon={d.icon} color={d.color} />
                   <span className="line-clamp-2 text-sm font-medium text-stone-700">{d.label}</span>
                   {item.kind === 'link' && (
