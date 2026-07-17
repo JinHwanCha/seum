@@ -319,6 +319,10 @@ export function GatheringBoard() {
                 {detail.buttonLabel || '바로가기'}
                 <ExternalLink size={15} />
               </a>
+            ) : detail.buttonLabel ? (
+              <div className="w-full rounded-lg bg-primary-50 py-3 text-center text-sm font-semibold text-primary-600">
+                {detail.buttonLabel}
+              </div>
             ) : null}
           </div>
         )}
