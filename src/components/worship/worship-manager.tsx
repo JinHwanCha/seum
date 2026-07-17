@@ -98,7 +98,7 @@ function TimetableRowsEditor({
       <label className="block text-sm font-medium text-stone-700">순서표</label>
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className="space-y-2 rounded-lg border border-stone-200 p-2.5">
+          <div key={i} className="space-y-2 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="w-4 text-center text-xs font-semibold text-stone-400">{i + 1}</span>
               <input
@@ -184,7 +184,7 @@ function SectionsEditor({
       <label className="block text-sm font-medium text-stone-700">{label}</label>
       <div className="space-y-2">
         {sections.map((s, i) => (
-          <div key={i} className="space-y-2 rounded-lg border border-stone-200 p-2.5">
+          <div key={i} className="space-y-2 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="w-4 text-center text-xs font-semibold text-stone-400">{i + 1}</span>
               <input
