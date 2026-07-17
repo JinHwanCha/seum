@@ -48,13 +48,14 @@ function blobToDataUrl(blob: Blob): Promise<string> {
  */
 export async function compressImageToDataUrl(
   file: File,
-  maxBytes: number = MAX_IMAGE_BYTES
+  maxBytes: number = MAX_IMAGE_BYTES,
+  maxDimCap: number = 1024
 ): Promise<string> {
   const img = await loadImage(file);
 
   let maxDim = Math.max(img.width, img.height);
   // 너무 큰 원본은 미리 한 번 축소해서 첫 시도 비용을 낮춘다
-  if (maxDim > 1024) maxDim = 1024;
+  if (maxDim > maxDimCap) maxDim = maxDimCap;
 
   let quality = 0.72;
   let bestUnder: Blob | null = null;
@@ -100,13 +101,14 @@ export async function compressImageToDataUrl(
  */
 export async function compressImages(
   files: File[],
-  maxBytes: number = MAX_IMAGE_BYTES
+  maxBytes: number = MAX_IMAGE_BYTES,
+  maxDimCap: number = 1024
 ): Promise<string[]> {
   const out: string[] = [];
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue;
     try {
-      const url = await compressImageToDataUrl(f, maxBytes);
+      const url = await compressImageToDataUrl(f, maxBytes, maxDimCap);
       out.push(url);
     } catch (err) {
       console.error('Image compress failed:', err);

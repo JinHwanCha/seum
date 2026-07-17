@@ -6,6 +6,7 @@ import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { UsersRound, Megaphone, MessageSquare, Users, Heart, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { GatheringBoard } from '@/components/gathering/gathering-board';
+import { WorshipGuide } from '@/components/worship/worship-guide';
 
 
 function getQuickLinks(session: any) {
@@ -57,6 +58,9 @@ export default async function DashboardPage({ params }: PageProps) {
           <Badge className="bg-white/20 text-white border-0">{roleLabel}</Badge>
         </div>
       </Card>
+
+      {/* Worship Guide */}
+      <WorshipGuide />
 
       {/* Quick Links */}
       <div>

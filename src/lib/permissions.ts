@@ -117,6 +117,18 @@ export function canManageCategories(role: Role, isBureau: boolean, isAdmin?: boo
   return isMinister(role) || isBureau;
 }
 
+/** 모임 게시판 직접 등록/수정 권한 (사역자/국장단/관리자) */
+export function canManageGatherings(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
+  return isMinister(role) || isBureau;
+}
+
+/** 주일 예배 안내 수정 권한 (사역자/국장단/관리자) */
+export function canManageWorship(role: Role, isBureau: boolean, isAdmin?: boolean): boolean {
+  if (isAdmin) return true;
+  return isMinister(role) || isBureau;
+}
+
 export function canChangeRoleLabels(ministerRank: MinisterRank | null, isAdmin?: boolean): boolean {
   if (isAdmin) return true;
   return ministerRank === 'pastor';

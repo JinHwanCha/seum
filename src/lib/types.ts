@@ -186,18 +186,62 @@ export interface SharingSheetContent {
 }
 
 // ─── 모임 게시판 (Gathering Board) ───
+export type GatheringSource = 'sheet' | 'db';
+
 export interface GatheringItem {
   id: string;
+  source: GatheringSource; // 'sheet' = 구글시트, 'db' = 직접 등록
   name: string;        // 모임 이름 (예: "[⭐찬양팀] 찬양팀원 모집")
   link: string;        // 모임 링크 (신청/오픈채팅 URL)
   imageUrl: string;    // 이미지 url (아이콘/이모지 이미지)
   type: string;        // 모임 종류
   leader: string;      // 모임장
   kakaoId: string;     // 카톡 ID
-  bannerUrl: string;   // 모임 이미지 (상세 배너)
+  bannerUrl: string;   // 모임 이미지 (상세 배너, 구글시트 호환용)
+  images: string[];    // 상세 팝업 슬라이드 이미지(순서 있는 배열)
   content: string;     // 모임 내용
   buttonLabel: string; // 버튼 이름
   disabled: boolean;   // 모임 신청 마감 여부
+}
+
+// ─── 주일 예배 안내 (Worship Guide) ───
+export type WorshipKind = 'timetable' | 'prayer' | 'slideshow' | 'link';
+
+// 집회 안내 타임테이블 한 행
+export interface WorshipTimetableRow {
+  duration: string; // 소요
+  program: string;  // 프로그램
+  detail: string;   // 내용 (줄바꿈으로 여러 항목)
+  leader: string;   // 인도자
+  remark: string;   // 특이사항
+}
+
+// 중보기도회 기도제목 / 광고 텍스트 섹션 (번호형)
+export interface WorshipSection {
+  title: string;    // 큰 제목 (1., 2., ...)
+  items: string[];  // 하위 항목들
+}
+
+export interface WorshipContent {
+  subtitle?: string;              // 날짜/장소 등 부제
+  note?: string;                  // 하단 안내 문구
+  rows?: WorshipTimetableRow[];   // timetable
+  sections?: WorshipSection[];    // prayer / slideshow 광고 텍스트
+}
+
+export interface WorshipAnnouncement {
+  id: string | null;   // null = 아직 저장 안 된 기본 고정 버튼
+  key: string | null;  // 'assembly'|'intercession'|'youth_ad'|'kakao' | null(특별 광고)
+  kind: WorshipKind;
+  title: string;
+  icon: string;        // 이모지 또는 이미지 URL
+  images: string[];    // 슬라이드 이미지(순서 있는 배열)
+  content: WorshipContent;
+  link: string;
+  pinned: boolean;
+  enabled: boolean;
+  sortOrder: number;
+  imageCount?: number; // 목록 응답에서 이미지 개수만 전달할 때 사용
 }
 
 // ─── Session / Auth ───
