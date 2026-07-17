@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { UsersRound, Megaphone, MessageSquare, Users, Heart, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { GatheringBoard } from '@/components/gathering/gathering-board';
 
 
 function getQuickLinks(session: any) {
@@ -76,6 +77,9 @@ export default async function DashboardPage({ params }: PageProps) {
           })}
         </div>
       </div>
+
+      {/* Gathering Board */}
+      <GatheringBoard />
     </div>
   );
 }

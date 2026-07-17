@@ -185,6 +185,21 @@ export interface SharingSheetContent {
   sections: SharingSheetSection[];
 }
 
+// ─── 모임 게시판 (Gathering Board) ───
+export interface GatheringItem {
+  id: string;
+  name: string;        // 모임 이름 (예: "[⭐찬양팀] 찬양팀원 모집")
+  link: string;        // 모임 링크 (신청/오픈채팅 URL)
+  imageUrl: string;    // 이미지 url (아이콘/이모지 이미지)
+  type: string;        // 모임 종류
+  leader: string;      // 모임장
+  kakaoId: string;     // 카톡 ID
+  bannerUrl: string;   // 모임 이미지 (상세 배너)
+  content: string;     // 모임 내용
+  buttonLabel: string; // 버튼 이름
+  disabled: boolean;   // 모임 신청 마감 여부
+}
+
 // ─── Session / Auth ───
 export interface SessionPayload {
   userId: string;

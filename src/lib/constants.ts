@@ -42,3 +42,7 @@ export const MINISTER_RANK_LABELS: Record<string, string> = {
 };
 
 export const EMOJIS = ['🙏', '❤️', '👍', '🔥', '💪', '😊', '🎉', '✝️'];
+
+// 모임 게시판 구글 시트 (CSV 공개). 환경변수로 오버라이드 가능.
+export const GATHERING_SHEET_ID =
+  process.env.GATHERING_SHEET_ID || '1fZ9UU4xTD0h0CpjLigxQpI-nYSdL4bIM3pE3YuI6gH8';
