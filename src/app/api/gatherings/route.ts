@@ -185,7 +185,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: '모임 추가에 실패했습니다.' }, { status: 500 });
+    return NextResponse.json(
+      { error: `모임 추가에 실패했습니다. (${error.message})` },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ gathering: rowToItem(data as Record<string, unknown>) });

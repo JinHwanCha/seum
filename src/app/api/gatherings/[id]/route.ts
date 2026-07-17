@@ -41,7 +41,10 @@ export async function PUT(
     .eq('department_id', session!.departmentId);
 
   if (error) {
-    return NextResponse.json({ error: '모임 수정에 실패했습니다.' }, { status: 500 });
+    return NextResponse.json(
+      { error: `모임 수정에 실패했습니다. (${error.message})` },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true });
