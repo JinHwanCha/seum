@@ -73,7 +73,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
   }
 
-  if (field === 'worship_service' && value !== null && !['1부', '2부', '3부'].includes(value)) {
+  if (field === 'worship_service' && value !== null && !['1부', '2부', '3부', '온라인'].includes(value)) {
     return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
   }
 

@@ -148,7 +148,7 @@ export interface Reaction {
 }
 
 // ─── Attendance ───
-export type WorshipService = '1부' | '2부' | '3부';
+export type WorshipService = '1부' | '2부' | '3부' | '온라인';
 
 export interface Attendance {
   id: string;

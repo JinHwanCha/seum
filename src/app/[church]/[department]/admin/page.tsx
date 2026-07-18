@@ -2,14 +2,15 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { canAccessAdmin, canAccessAdvancedAdmin, canManageOrganization } from '@/lib/permissions';
 import { Card } from '@/components/ui/card';
-import { Users, Map, Tag, Settings, UserCheck, AlertTriangle } from 'lucide-react';
+import { Users, Map, Tag, Settings, UserCheck, AlertTriangle, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import type { Role } from '@/lib/types';
 
 const BASIC_ITEMS = [
   { href: '/admin/members?tab=pending', label: '가입 승인', desc: '대기 중인 회원 승인/거절', icon: UserCheck, color: 'bg-green-50 text-green-600' },
   { href: '/admin/members', label: '회원 관리', desc: '역할 및 소속 편성', icon: Users, color: 'bg-blue-50 text-blue-600' },
-  { href: '/admin/absent', label: '장기미출석', desc: '4주 이상 출석 기록 없는 멤버', icon: AlertTriangle, color: 'bg-red-50 text-red-600' },
+  { href: '/admin/attendance', label: '출석현황', desc: '주차별 예배·부서집회·소그룹 출석 통계', icon: BarChart3, color: 'bg-indigo-50 text-indigo-600' },
+  { href: '/admin/absent', label: '장기미출석', desc: '3주 연속 결석한 멤버 (예배·부서집회·소그룹)', icon: AlertTriangle, color: 'bg-red-50 text-red-600' },
 ];
 
 const ORGANIZATION_ITEM = { href: '/admin/organization', label: '조직 관리', desc: '마을/소그룹 생성 및 관리', icon: Map, color: 'bg-purple-50 text-purple-600' };

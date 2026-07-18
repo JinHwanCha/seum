@@ -3,25 +3,13 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canAccessAdmin } from '@/lib/permissions';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
-import { AlertTriangle, User, Calendar, Phone } from 'lucide-react';
-import { formatDate } from '@/lib/date-utils';
+import { AlertTriangle } from 'lucide-react';
 import type { Role } from '@/lib/types';
 import { AdminBackButton } from '@/components/admin/back-button';
+import { AbsentList, type AbsentMember } from '@/components/admin/absent-list';
 
-interface AbsentMember {
-  id: string;
-  name: string;
-  role: string;
-  phone: string | null;
-  birth_date: string | null;
-  village_name: string | null;
-  cell_name: string | null;
-  last_attended: string | null;
-  absent_weeks: number;
-}
+// 몇 주 연속 결석하면 장기미출석으로 표기할지
+const MIN_STREAK = 3;
 
 async function getAbsentData(departmentId: string) {
   const supabase = createClient();
@@ -30,13 +18,16 @@ async function getAbsentData(departmentId: string) {
   const dayOfWeek = now.getDay();
   const currentSunday = new Date(now);
   currentSunday.setDate(now.getDate() - dayOfWeek);
-  const currentWeekStr = currentSunday.toISOString().split('T')[0];
+  currentSunday.setHours(0, 0, 0, 0);
 
-  const fourWeeksAgo = new Date(currentSunday);
-  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-  const fourWeeksAgoStr = fourWeeksAgo.toISOString().split('T')[0];
+  const empty = {
+    worship: [] as AbsentMember[],
+    department: [] as AbsentMember[],
+    smallGroup: [] as AbsentMember[],
+    totalMembers: 0,
+  };
 
-  // 조직 구조 단일 쿼리 (embedded) — 5단계 워터폴 → 3단계
+  // 조직 구조 단일 쿼리 (embedded)
   const { data: groupYear } = await supabase
     .from('group_years')
     .select('id, villages(id, name, cells(id, name))')
@@ -44,7 +35,7 @@ async function getAbsentData(departmentId: string) {
     .eq('is_active', true)
     .single();
 
-  if (!groupYear) return { data: [], totalMembers: 0, periodWeeks: 0 };
+  if (!groupYear) return empty;
 
   const villageMap: Record<string, string> = {};
   const cellMap: Record<string, { name: string | null; village_id: string }> = {};
@@ -58,7 +49,7 @@ async function getAbsentData(departmentId: string) {
     });
   });
 
-  if (allCellIds.length === 0) return { data: [], totalMembers: 0, periodWeeks: 0 };
+  if (allCellIds.length === 0) return empty;
 
   const { data: members } = await supabase
     .from('users')
@@ -68,74 +59,75 @@ async function getAbsentData(departmentId: string) {
     .eq('is_graduated', false)
     .in('cell_id', allCellIds);
 
-  if (!members || members.length === 0) return { data: [], totalMembers: 0, periodWeeks: 0 };
+  if (!members || members.length === 0) return empty;
 
   const memberIds = members.map((m) => m.id);
 
-  const [{ data: attendanceRecords }, { data: lastAttendance }] = await Promise.all([
-    supabase
-      .from('attendance')
-      .select('user_id, week_start, worship_service, department_meeting, small_group, prayer_count, qt_count, bible_reading')
-      .in('user_id', memberIds)
-      .gte('week_start', fourWeeksAgoStr)
-      .lte('week_start', currentWeekStr),
-    supabase
-      .from('attendance')
-      .select('user_id, week_start')
-      .in('user_id', memberIds)
-      .or('worship_service.not.is.null,department_meeting.eq.true,small_group.eq.true,prayer_count.gt.0,qt_count.gt.0,bible_reading.eq.true')
-      .order('week_start', { ascending: false }),
-  ]);
+  // 전체 기간 출석 기록 (윈도우 없음) — 카테고리별 마지막 참여 주 계산
+  const { data: records } = await supabase
+    .from('attendance')
+    .select('user_id, week_start, worship_service, department_meeting, small_group')
+    .in('user_id', memberIds);
 
-  const userAttendedWeeks: Record<string, Set<string>> = {};
-  (attendanceRecords || []).forEach((a) => {
-    const attended = a.worship_service || a.department_meeting || a.small_group || a.prayer_count > 0 || a.qt_count > 0 || a.bible_reading;
-    if (attended) {
-      if (!userAttendedWeeks[a.user_id]) userAttendedWeeks[a.user_id] = new Set();
-      userAttendedWeeks[a.user_id].add(a.week_start);
+  const lastWorship: Record<string, string> = {};
+  const lastDept: Record<string, string> = {};
+  const lastSg: Record<string, string> = {};
+
+  (records || []).forEach((a) => {
+    if (a.worship_service && (!lastWorship[a.user_id] || a.week_start > lastWorship[a.user_id])) {
+      lastWorship[a.user_id] = a.week_start;
+    }
+    if (a.department_meeting && (!lastDept[a.user_id] || a.week_start > lastDept[a.user_id])) {
+      lastDept[a.user_id] = a.week_start;
+    }
+    if (a.small_group && (!lastSg[a.user_id] || a.week_start > lastSg[a.user_id])) {
+      lastSg[a.user_id] = a.week_start;
     }
   });
 
-  const lastAttendedMap: Record<string, string> = {};
-  (lastAttendance || []).forEach((a) => {
-    if (!lastAttendedMap[a.user_id]) lastAttendedMap[a.user_id] = a.week_start;
-  });
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  // 마지막 참여 주 이후 이번 주까지의 연속 결석 주수. 기록 없으면 null.
+  const streakWeeks = (lastStr?: string): number | null => {
+    if (!lastStr) return null;
+    const last = new Date(lastStr + 'T00:00:00');
+    const diff = Math.round((currentSunday.getTime() - last.getTime()) / WEEK_MS);
+    return diff < 0 ? 0 : diff;
+  };
 
-  const weeks: string[] = [];
-  const d = new Date(fourWeeksAgo);
-  while (d <= currentSunday) {
-    weeks.push(d.toISOString().split('T')[0]);
-    d.setDate(d.getDate() + 7);
-  }
-  const totalWeeks = weeks.length;
+  const buildList = (lastMap: Record<string, string>): AbsentMember[] =>
+    members
+      .map((m) => ({ m, last: lastMap[m.id], streak: streakWeeks(lastMap[m.id]) }))
+      // 기록 없음(null) 또는 3주 연속 이상 결석
+      .filter((x) => x.streak === null || x.streak >= MIN_STREAK)
+      .map(({ m, last, streak }) => {
+        const cellInfo = m.cell_id ? cellMap[m.cell_id] : null;
+        return {
+          id: m.id,
+          name: m.name,
+          role: m.role,
+          phone: m.phone,
+          birth_date: m.birth_date,
+          village_name: m.village_id ? villageMap[m.village_id] : null,
+          cell_name: cellInfo?.name || null,
+          last_attended: last || null,
+          absent_weeks: streak,
+        };
+      })
+      .sort((a, b) => {
+        // 기록 없음 먼저 → 연속 결석 주수 많은 순 → 이름순
+        if (a.absent_weeks === null && b.absent_weeks === null) return a.name.localeCompare(b.name);
+        if (a.absent_weeks === null) return -1;
+        if (b.absent_weeks === null) return 1;
+        if (b.absent_weeks !== a.absent_weeks) return b.absent_weeks - a.absent_weeks;
+        return a.name.localeCompare(b.name);
+      });
 
-  const absentMembers: AbsentMember[] = members
-    .filter((m) => {
-      const attended = userAttendedWeeks[m.id];
-      return !attended || attended.size === 0;
-    })
-    .map((m) => {
-      const cellInfo = m.cell_id ? cellMap[m.cell_id] : null;
-      return {
-        id: m.id,
-        name: m.name,
-        role: m.role,
-        phone: m.phone,
-        birth_date: m.birth_date,
-        village_name: m.village_id ? villageMap[m.village_id] : null,
-        cell_name: cellInfo?.name || null,
-        last_attended: lastAttendedMap[m.id] || null,
-        absent_weeks: totalWeeks,
-      };
-    })
-    .sort((a, b) => {
-      if (!a.last_attended && !b.last_attended) return a.name.localeCompare(b.name);
-      if (!a.last_attended) return -1;
-      if (!b.last_attended) return 1;
-      return a.last_attended.localeCompare(b.last_attended);
-    });
-
-  return { data: absentMembers, totalMembers: members.length, periodWeeks: totalWeeks };
+  return {
+    worship: buildList(lastWorship),
+    department: buildList(lastDept),
+    smallGroup: buildList(lastSg),
+    totalMembers: members.length,
+  };
 }
 
 function AbsentSkeleton() {
@@ -153,68 +145,16 @@ function AbsentSkeleton() {
   );
 }
 
-async function AbsentContent({ departmentId, periodWeeksLabel }: { departmentId: string; periodWeeksLabel?: string }) {
-  const { data: members, totalMembers, periodWeeks } = await getAbsentData(departmentId);
+async function AbsentContent({ departmentId }: { departmentId: string }) {
+  const { worship, department, smallGroup, totalMembers } = await getAbsentData(departmentId);
 
   return (
-    <>
-      {/* Summary */}
-      <div className="flex gap-2 flex-wrap">
-        <Badge variant="warning">최근 {periodWeeks}주 기준</Badge>
-        <Badge variant="danger">{members.length}명 미출석</Badge>
-        <Badge variant="default">전체 {totalMembers}명 중</Badge>
-      </div>
-
-      {members.length === 0 ? (
-        <Card>
-          <div className="text-center py-8 text-stone-400">
-            <AlertTriangle size={32} className="mx-auto mb-2 opacity-30" />
-            <p className="text-sm">장기미출석자가 없습니다.</p>
-            <p className="text-xs mt-1">모든 멤버가 최근 {periodWeeks}주 내에 출석했습니다.</p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {members.map((m) => (
-            <Card key={m.id} className="!p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <User size={14} className="text-stone-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-stone-900 truncate">
-                      {m.name}
-                      {m.birth_date && (
-                        <span className="text-stone-400 font-normal"> ({m.birth_date.substring(2, 4)})</span>
-                      )}
-                    </span>
-                    <Badge variant="default">{ROLE_LABELS_DEFAULT[m.role] || m.role}</Badge>
-                  </div>
-
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-500">
-                    {m.village_name && <span>{m.village_name}</span>}
-                    {m.cell_name && <span>{m.cell_name}</span>}
-                    {m.phone && (
-                      <span className="flex items-center gap-1">
-                        <Phone size={10} />
-                        {m.phone}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <Badge variant="danger">{m.absent_weeks}주 미출석</Badge>
-                  <span className="text-[10px] text-stone-400 flex items-center gap-1">
-                    <Calendar size={10} />
-                    {m.last_attended ? `마지막: ${formatDate(m.last_attended)}` : '출석 기록 없음'}
-                  </span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </>
+    <AbsentList
+      worship={worship}
+      department={department}
+      smallGroup={smallGroup}
+      totalMembers={totalMembers}
+    />
   );
 }
 
