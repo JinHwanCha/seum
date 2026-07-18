@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { getBook } from '@/lib/bible';
+import { searchKrv } from '@/lib/bible-krv';
 
-// 단어 검색: 지금까지 캐시(열람)된 본문 안에서 단어를 포함한 구절을 찾는다.
-// (본문 저작권 상 전체 텍스트를 저장하지 않으므로, 읽은 본문 범위 내에서 검색됩니다.)
+// 단어 검색.
+//  - 개역개정(kor): 전체 본문에서 즉시 검색
+//  - 그 외(NIV 등): 지금까지 캐시(열람)된 본문 범위 내에서 검색
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,6 +17,19 @@ export async function GET(request: Request) {
 
   if (q.length < 2) {
     return NextResponse.json({ error: '두 글자 이상 입력해 주세요.', results: [] }, { status: 400 });
+  }
+
+  // 개역개정: 로컬 전체 본문 검색
+  if (version === 'kor') {
+    const found = searchKrv(q, 300);
+    const results = found.map((r) => ({
+      book: r.book,
+      bookName: getBook(r.book)?.name || r.book,
+      chapter: r.chapter,
+      verse: r.verse,
+      text: r.text,
+    }));
+    return NextResponse.json({ results, count: results.length, query: q });
   }
 
   const supabase = createClient();

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { getBook, getVersion, type BibleVerse } from '@/lib/bible';
+import { getKrvChapter } from '@/lib/bible-krv';
 
 // iBibles quote.php 응답(HTML)을 파싱해 구절 배열로 변환
 function parsePassage(html: string, chapter: number): BibleVerse[] {
@@ -58,9 +59,19 @@ export async function GET(request: Request) {
   }
 
   const version = getVersion(versionKey);
+
+  // 개역개정(kor)은 로컬 데이터에서 즉시 제공
+  if (version.key === 'kor') {
+    const verses = getKrvChapter(bookCode, chapter);
+    if (!verses || verses.length === 0) {
+      return NextResponse.json({ error: '본문을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    return NextResponse.json({ book: bookCode, chapter, version: 'kor', verses });
+  }
+
   const supabase = createClient();
 
-  // 1) 캐시 조회
+  // 1) 캐시 조회 (NIV 등 외부 번역본)
   const { data: cached } = await supabase
     .from('bible_verse_cache')
     .select('verse, text')

@@ -113,7 +113,9 @@ export function BibleSearch({ version, onOpenPassage }: BibleSearchProps) {
       <div className="flex items-start gap-2 rounded-lg bg-stone-50 px-3 py-2.5 text-xs text-stone-500">
         <Info size={14} className="mt-0.5 shrink-0" />
         <span>
-          단어 검색은 지금까지 열람한 본문 범위 안에서 찾습니다. 성경을 많이 읽을수록 검색 범위가 넓어져요.
+          {version === 'kor'
+            ? '개역개정 전체 본문에서 단어를 검색합니다. 단어 또는 "요한복음 3:16" 처럼 위치를 입력해 보세요.'
+            : '이 번역본은 지금까지 열람한 본문 범위 안에서만 검색됩니다. 개역개정으로 전환하면 전체 검색이 가능합니다.'}
         </span>
       </div>
 
