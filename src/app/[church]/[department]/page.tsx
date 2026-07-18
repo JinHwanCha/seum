@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { UsersRound, Megaphone, MessageSquare, Users, Heart, Shield } from 'lucide-react';
+import { UsersRound, BookOpen, MessageSquare, Users, Heart, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { GatheringBoard } from '@/components/gathering/gathering-board';
 import { WorshipGuide } from '@/components/worship/worship-guide';
@@ -11,7 +11,7 @@ import { WorshipGuide } from '@/components/worship/worship-guide';
 
 function getQuickLinks(session: any) {
   const links = [
-    { href: '/notice', label: '공지', icon: Megaphone, color: 'bg-accent-50 text-accent-600' },
+    { href: '/bible', label: '성경', icon: BookOpen, color: 'bg-accent-50 text-accent-600' },
     { href: '/prayer', label: '소그룹', icon: UsersRound, color: 'bg-primary-50 text-primary-600' },
     { href: '/boards/sharing', label: '나눔', icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
     { href: '/boards/gathering', label: '모임', icon: Users, color: 'bg-sky-50 text-sky-600' },
@@ -63,7 +63,7 @@ export default async function DashboardPage({ params }: PageProps) {
       <WorshipGuide />
 
       {/* Quick Links */}
-      <div>
+      {/* <div>
         <h2 className="text-sm font-semibold text-stone-500 mb-3 px-1">바로가기</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {getQuickLinks(session).map((link) => {
@@ -80,7 +80,7 @@ export default async function DashboardPage({ params }: PageProps) {
             );
           })}
         </div>
-      </div>
+      </div> */}
 
       {/* Gathering Board */}
       <GatheringBoard />
