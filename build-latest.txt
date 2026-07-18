@@ -1,0 +1,99 @@
+
+> seum@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.21
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./src/components/prayer/tree-growth.tsx
+262:9  Warning: The 'weeks' logical expression could make the dependencies of useMemo Hook (at line 267) change on every render. To fix this, wrap the initialization of 'weeks' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/38) ...
+   Generating static pages (9/38) 
+   Generating static pages (18/38) 
+   Generating static pages (28/38) 
+ ✓ Generating static pages (38/38)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                             Size     First Load JS
+┌ ƒ /                                                   138 B          87.4 kB
+├ ƒ /_not-found                                         873 B          88.2 kB
+├ ƒ /[church]/[department]                              9.52 kB         114 kB
+├ ƒ /[church]/[department]/admin                        175 B          94.3 kB
+├ ƒ /[church]/[department]/admin/absent                 4.94 kB         107 kB
+├ ƒ /[church]/[department]/admin/attendance             3.85 kB         106 kB
+├ ƒ /[church]/[department]/admin/categories             2.33 kB        89.6 kB
+├ ƒ /[church]/[department]/admin/members                8.25 kB         109 kB
+├ ƒ /[church]/[department]/admin/organization           2.32 kB        89.6 kB
+├ ƒ /[church]/[department]/admin/settings               3.99 kB        98.1 kB
+├ ƒ /[church]/[department]/bible                        11.9 kB         114 kB
+├ ƒ /[church]/[department]/boards/[type]                3.89 kB         112 kB
+├ ƒ /[church]/[department]/boards/[type]/[postId]       7.56 kB         109 kB
+├ ƒ /[church]/[department]/boards/[type]/[postId]/edit  174 B          99.9 kB
+├ ƒ /[church]/[department]/boards/[type]/new            1.82 kB         102 kB
+├ ƒ /[church]/[department]/notice                       2.08 kB         106 kB
+├ ƒ /[church]/[department]/prayer                       22.4 kB         129 kB
+├ ƒ /[church]/[department]/profile                      4.34 kB         105 kB
+├ ƒ /api/admin/absent-members                           0 B                0 B
+├ ƒ /api/admin/attendance-stats                         0 B                0 B
+├ ƒ /api/admin/bureau                                   0 B                0 B
+├ ƒ /api/admin/categories                               0 B                0 B
+├ ƒ /api/admin/categories/[id]                          0 B                0 B
+├ ƒ /api/admin/cells                                    0 B                0 B
+├ ƒ /api/admin/cells/[id]                               0 B                0 B
+├ ƒ /api/admin/group-years                              0 B                0 B
+├ ƒ /api/admin/members                                  0 B                0 B
+├ ƒ /api/admin/members/[id]                             0 B                0 B
+├ ƒ /api/admin/reset-requests                           0 B                0 B
+├ ƒ /api/admin/settings                                 0 B                0 B
+├ ƒ /api/admin/villages                                 0 B                0 B
+├ ƒ /api/admin/villages/[id]                            0 B                0 B
+├ ƒ /api/attendance                                     0 B                0 B
+├ ƒ /api/auth/login                                     0 B                0 B
+├ ƒ /api/auth/logout                                    0 B                0 B
+├ ƒ /api/auth/me                                        0 B                0 B
+├ ƒ /api/auth/profile                                   0 B                0 B
+├ ƒ /api/auth/register                                  0 B                0 B
+├ ƒ /api/auth/reset-password                            0 B                0 B
+├ ƒ /api/bible/bookmarks                                0 B                0 B
+├ ƒ /api/bible/group-progress                           0 B                0 B
+├ ƒ /api/bible/passage                                  0 B                0 B
+├ ƒ /api/bible/progress                                 0 B                0 B
+├ ƒ /api/bible/search                                   0 B                0 B
+├ ƒ /api/comments/[id]                                  0 B                0 B
+├ ƒ /api/gatherings                                     0 B                0 B
+├ ƒ /api/gatherings/[id]                                0 B                0 B
+├ ƒ /api/posts                                          0 B                0 B
+├ ƒ /api/posts/[id]                                     0 B                0 B
+├ ƒ /api/posts/[id]/comments                            0 B                0 B
+├ ƒ /api/posts/[id]/reactions                           0 B                0 B
+├ ƒ /api/prayer-requests                                0 B                0 B
+├ ƒ /api/prayer-requests/[id]                           0 B                0 B
+├ ƒ /api/small-group                                    0 B                0 B
+├ ƒ /api/small-group/sharing-sheet                      0 B                0 B
+├ ƒ /api/small-group/tree                               0 B                0 B
+├ ƒ /api/small-group/tree/summary                       0 B                0 B
+├ ƒ /api/worship-guide                                  0 B                0 B
+├ ƒ /api/worship-guide/[id]                             0 B                0 B
+├ ○ /icon                                               0 B                0 B
+├ ƒ /login                                              3.2 kB         97.3 kB
+├ ○ /opengraph-image                                    0 B                0 B
+└ ƒ /register                                           4.74 kB        98.8 kB
++ First Load JS shared by all                           87.3 kB
+  ├ chunks/117-e024586babd25465.js                      31.6 kB
+  ├ chunks/fd9d1056-934f970ac907191b.js                 53.6 kB
+  └ other shared chunks (total)                         2.08 kB
+
+
+ƒ Middleware                                            32.1 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

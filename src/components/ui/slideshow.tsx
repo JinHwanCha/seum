@@ -16,10 +16,8 @@ export function Slideshow({ images, alt = '', maxHeightClass = 'max-h-72' }: Sli
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const total = images.length;
-  if (total === 0) return null;
 
-  const cur = Math.min(index, total - 1);
-  const go = (dir: -1 | 1) => setIndex((i) => (i + dir + total) % total);
+  const cur = total > 0 ? Math.min(index, total - 1) : 0;
 
   // 인접 슬라이드를 미리 디코딩해 좌우 전환을 즉시 보이게 한다.
   useEffect(() => {
@@ -32,6 +30,10 @@ export function Slideshow({ images, alt = '', maxHeightClass = 'max-h-72' }: Sli
       }
     });
   }, [cur, images, total]);
+
+  if (total === 0) return null;
+
+  const go = (dir: -1 | 1) => setIndex((i) => (i + dir + total) % total);
 
   return (
     <div className="space-y-2">
