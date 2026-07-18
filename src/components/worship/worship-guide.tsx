@@ -37,13 +37,15 @@ function isImageSrc(v: string): boolean {
 function tileDisplay(item: WorshipAnnouncement): { label: string; icon: string; color: string } {
   if (item.key && WORSHIP_FIXED_MAP[item.key]) {
     const d = WORSHIP_FIXED_MAP[item.key];
-    return { label: d.label, icon: d.icon, color: d.color };
+    // 캘린더 버튼은 이름을 부서별로 자유롭게 바꿀 수 있다(예: 청년부 캘린더).
+    const label = item.key === 'calendar' ? item.title.trim() || d.label : d.label;
+    return { label, icon: item.icon.trim() || d.icon, color: d.color };
   }
   return { label: item.title || '특별 광고', icon: item.icon || '⭐', color: 'bg-amber-50 text-amber-600' };
 }
 
 function hasContent(item: WorshipAnnouncement): boolean {
-  if (item.kind === 'link') return !!item.link;
+  if (item.kind === 'link' || item.kind === 'calendar') return !!item.link;
   if ((item.imageCount ?? item.images.length) > 0) return true;
   const c = item.content || {};
   return !!(c.subtitle || c.note || c.rows?.length || c.sections?.length);
@@ -142,6 +144,27 @@ function WorshipDetail({ item }: { item: WorshipAnnouncement }) {
   const content = item.content || {};
   const loadingImages = needImages && !data;
 
+  if (item.kind === 'calendar') {
+    return (
+      <div className="space-y-3">
+        <iframe
+          src={item.link}
+          title={item.title || '캘린더'}
+          className="h-[65vh] w-full rounded-xl border border-stone-200"
+          loading="lazy"
+        />
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
+        >
+          새 창에서 열기 <ExternalLink size={13} />
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {loadingImages ? (
@@ -199,6 +222,8 @@ export function WorshipGuide() {
     setSelected(item);
   };
 
+  const selIsCalendar = selected?.kind === 'calendar';
+
   const selDisplay = selected ? tileDisplay(selected) : null;
 
   return (
@@ -250,7 +275,7 @@ export function WorshipGuide() {
         </div>
       )}
 
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)}>
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)} className={selIsCalendar ? 'max-w-2xl' : undefined}>
         {selected && selDisplay && (
           <div className="relative space-y-4">
             <button

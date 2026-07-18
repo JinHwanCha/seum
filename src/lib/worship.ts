@@ -9,6 +9,10 @@ import type {
 // 카카오 채널 기본 URL (변경 가능)
 export const DEFAULT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_xibZxhC';
 
+// 부서 캘린더 기본 URL (구글 캘린더 embed, 사역자/국장단/관리자가 언제든 교체 가능)
+export const DEFAULT_CALENDAR_URL =
+  'https://calendar.google.com/calendar/embed?src=1cc384df8081335a97628b2d6e4170a84430dae267b3fd579e418ffdee35ffad%40group.calendar.google.com&ctz=Asia%2FSeoul';
+
 export interface WorshipFixedDef {
   key: string;
   kind: WorshipKind;
@@ -23,14 +27,15 @@ export const WORSHIP_FIXED_DEFS: WorshipFixedDef[] = [
   { key: 'assembly',     kind: 'timetable', label: '집회 안내',   icon: '📋', color: 'bg-rose-50 text-rose-600',     order: 1 },
   { key: 'intercession', kind: 'prayer',    label: '중보기도회',  icon: '🙏', color: 'bg-indigo-50 text-indigo-600', order: 2 },
   { key: 'youth_ad',     kind: 'slideshow', label: '청년부 광고', icon: '📢', color: 'bg-sky-50 text-sky-600',       order: 3 },
-  { key: 'kakao',        kind: 'link',      label: '카카오 채널', icon: '💬', color: 'bg-yellow-50 text-yellow-600', order: 4 },
+  { key: 'calendar',     kind: 'calendar',  label: '어부들 캘린더', icon: '📅', color: 'bg-emerald-50 text-emerald-600', order: 4 },
+  { key: 'kakao',        kind: 'link',      label: '카카오 채널', icon: '💬', color: 'bg-yellow-50 text-yellow-600', order: 5 },
 ];
 
 export const WORSHIP_FIXED_MAP: Record<string, WorshipFixedDef> = Object.fromEntries(
   WORSHIP_FIXED_DEFS.map((d) => [d.key, d])
 );
 
-const VALID_KINDS: WorshipKind[] = ['timetable', 'prayer', 'slideshow', 'link'];
+const VALID_KINDS: WorshipKind[] = ['timetable', 'prayer', 'slideshow', 'link', 'calendar'];
 
 function str(v: unknown): string {
   return String(v ?? '').trim();
@@ -127,7 +132,12 @@ export function defaultFixedWorship(def: WorshipFixedDef): WorshipAnnouncement {
     icon: def.icon,
     images: [],
     content: {},
-    link: def.key === 'kakao' ? DEFAULT_KAKAO_CHANNEL_URL : '',
+    link:
+      def.key === 'kakao'
+        ? DEFAULT_KAKAO_CHANNEL_URL
+        : def.key === 'calendar'
+        ? DEFAULT_CALENDAR_URL
+        : '',
     pinned: false,
     enabled: true,
     sortOrder: def.order,

@@ -68,7 +68,7 @@ function toForm(item: WorshipAnnouncement): FormState {
 }
 
 function itemHasContent(item: WorshipAnnouncement): boolean {
-  if (item.kind === 'link') return !!item.link;
+  if (item.kind === 'link' || item.kind === 'calendar') return !!item.link;
   if ((item.imageCount ?? item.images.length) > 0) return true;
   const c = item.content || {};
   return !!(c.subtitle || c.note || c.rows?.length || c.sections?.length);
@@ -436,6 +436,25 @@ export function WorshipManager({ isOpen, onClose, items, onChanged }: Props) {
 
           {kind === 'link' ? (
             <Input label="채널 URL" placeholder="https://pf.kakao.com/..." value={form.link} onChange={(e) => set('link', e.target.value)} />
+          ) : kind === 'calendar' ? (
+            <>
+              <Input
+                label="탭 이름"
+                placeholder="예: 청년부 캘린더"
+                value={form.title}
+                onChange={(e) => set('title', e.target.value)}
+              />
+              <Input
+                label="구글 캘린더 URL"
+                placeholder="https://calendar.google.com/calendar/embed?src=..."
+                value={form.link}
+                onChange={(e) => set('link', e.target.value)}
+              />
+              <p className="text-xs leading-relaxed text-stone-400">
+                구글 캘린더 → 설정 → 캘린더 통합 → ‘삽입 코드’의 src(embed) URL을 붙여넣으세요.
+                언제든 다른 캘린더로 교체할 수 있습니다.
+              </p>
+            </>
           ) : (
             <>
               <Input

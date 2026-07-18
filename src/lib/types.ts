@@ -205,7 +205,7 @@ export interface GatheringItem {
 }
 
 // ─── 주일 예배 안내 (Worship Guide) ───
-export type WorshipKind = 'timetable' | 'prayer' | 'slideshow' | 'link';
+export type WorshipKind = 'timetable' | 'prayer' | 'slideshow' | 'link' | 'calendar';
 
 // 집회 안내 타임테이블 한 행
 export interface WorshipTimetableRow {
