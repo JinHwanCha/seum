@@ -54,8 +54,8 @@ export default async function AdminPage({ params }: PageProps) {
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={`${basePath}${item.href}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Link key={item.href} href={`${basePath}${item.href}`} className="h-full">
+              <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0`}>
                     <Icon size={20} />
