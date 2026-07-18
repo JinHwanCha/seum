@@ -66,7 +66,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
             </button>
           </div>
         )}
-        <div className="p-4">{children}</div>
+        <div className="p-2">{children}</div>
       </div>
     </div>,
     document.body
