@@ -1,14 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { Slideshow } from '@/components/ui/slideshow';
 import { WORSHIP_FIXED_MAP } from '@/lib/worship';
-import { Settings, X, ExternalLink } from 'lucide-react';
+import { Settings, X, ExternalLink, Loader2 } from 'lucide-react';
 import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
+
+const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// 이미지가 있는 광고는 상세(이미지 포함)를 미리 캐시에 채워둔다.
+function prefetchDetail(item: WorshipAnnouncement) {
+  if (item.id && (item.imageCount ?? 0) > 0) {
+    preload(`/api/worship-guide/${item.id}`, detailFetcher);
+  }
+}
 
 // 관리 UI(에디터·PPT 파서 등)는 사역자만 필요 → 코드 스플릿으로 지연 로드
 const WorshipManager = dynamic(
@@ -131,10 +140,17 @@ function WorshipDetail({ item }: { item: WorshipAnnouncement }) {
   );
   const images = data?.item.images ?? item.images ?? [];
   const content = item.content || {};
+  const loadingImages = needImages && !data;
 
   return (
     <div className="space-y-4">
-      {images.length > 0 && <Slideshow images={images} alt={item.title} maxHeightClass="max-h-[70vh]" />}
+      {loadingImages ? (
+        <div className="flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-stone-100">
+          <Loader2 size={28} className="animate-spin text-stone-300" />
+        </div>
+      ) : (
+        images.length > 0 && <Slideshow images={images} alt={item.title} maxHeightClass="max-h-[70vh]" />
+      )}
       {item.kind === 'timetable' && <TimetableView content={content} />}
       {(item.kind === 'prayer' || item.kind === 'slideshow') && <SectionsView content={content} />}
       {content.note && (
@@ -213,7 +229,14 @@ export function WorshipGuide() {
           {visible.map((item) => {
             const d = tileDisplay(item);
             return (
-              <button key={`${item.key ?? 'sp'}-${item.id ?? item.key}`} type="button" onClick={() => openItem(item)} className="h-full">
+              <button
+                key={`${item.key ?? 'sp'}-${item.id ?? item.key}`}
+                type="button"
+                onClick={() => openItem(item)}
+                onMouseEnter={() => prefetchDetail(item)}
+                onTouchStart={() => prefetchDetail(item)}
+                className="h-full"
+              >
                 <Card className="flex h-full flex-col items-center justify-center cursor-pointer text-center transition-shadow hover:shadow-md">
                   <TileIcon icon={d.icon} color={d.color} />
                   <span className="line-clamp-2 text-sm font-medium text-stone-700">{d.label}</span>

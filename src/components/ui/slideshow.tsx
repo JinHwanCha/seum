@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 
@@ -21,6 +21,18 @@ export function Slideshow({ images, alt = '', maxHeightClass = 'max-h-72' }: Sli
   const cur = Math.min(index, total - 1);
   const go = (dir: -1 | 1) => setIndex((i) => (i + dir + total) % total);
 
+  // 인접 슬라이드를 미리 디코딩해 좌우 전환을 즉시 보이게 한다.
+  useEffect(() => {
+    if (total <= 1) return;
+    [cur - 1, cur + 1].forEach((i) => {
+      const src = images[(i + total) % total];
+      if (src) {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+  }, [cur, images, total]);
+
   return (
     <div className="space-y-2">
       <div className="relative flex items-center justify-center overflow-hidden rounded-xl bg-stone-100">
@@ -28,7 +40,7 @@ export function Slideshow({ images, alt = '', maxHeightClass = 'max-h-72' }: Sli
         <img
           src={images[cur]}
           alt={alt}
-          loading="lazy"
+          decoding="async"
           onClick={() => setLightbox(true)}
           className={`w-full ${maxHeightClass} cursor-zoom-in object-contain`}
         />
