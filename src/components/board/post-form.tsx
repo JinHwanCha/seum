@@ -51,6 +51,9 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const canPickVillage = !!user?.villageId || canPickAnyVillage;
   // 카테고리 선택 영역은 모든 글쓰기에 노출
   const showCategory = true;
+  // 공지 게시판 + 사역자만: 새 글 작성 시 '모두에게 알림' 발송 옵션
+  const canNotifyAll = boardType === 'notice' && user?.role === 'minister' && !existingPost;
+  const [notifyAll, setNotifyAll] = useState(false);
 
   useEffect(() => {
     if (!showCategory) return;
@@ -104,6 +107,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
           images,
           visibility: showVisibility ? visibility : 'all',
           villageId: visibility === 'village' ? (targetVillageId || user?.villageId || null) : null,
+          notifyAll: canNotifyAll ? notifyAll : false,
         }),
       });
 
@@ -250,6 +254,23 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
               : '부서 전체 멤버가 볼 수 있어요.'}
           </p>
         </div>
+      )}
+
+      {canNotifyAll && (
+        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-200 bg-amber-50/60 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={notifyAll}
+            onChange={(e) => setNotifyAll(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-amber-500"
+          />
+          <span className="text-sm">
+            <span className="font-medium text-stone-800">모두에게 알림</span>
+            <span className="block text-xs text-stone-500 mt-0.5">
+              부서 전원에게 알림을 보내고, 접속 시 팝업으로 안내됩니다.
+            </span>
+          </span>
+        </label>
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}

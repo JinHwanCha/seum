@@ -147,6 +147,24 @@ export interface Reaction {
   created_at: string;
 }
 
+// ─── Notifications (알림) ───
+export type NotificationType = 'comment' | 'reaction' | 'announcement';
+
+export interface Notification {
+  id: string;
+  department_id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  post_id: string | null;
+  board_type: BoardType | null;
+  title: string;
+  body: string | null;
+  is_read: boolean;
+  created_at: string;
+  actor?: { id: string; name: string } | null;
+}
+
 // ─── Attendance ───
 export type WorshipService = '1부' | '2부' | '3부' | '온라인';
 

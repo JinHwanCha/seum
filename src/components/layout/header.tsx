@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { LogOut, UserCircle, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -53,6 +54,7 @@ export function Header() {
           >
             {user.name}
           </Link>
+          <NotificationBell />
           <Link
             href={`/${params.church}/${params.department}/profile`}
             className="sm:hidden p-2 rounded-lg text-stone-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"

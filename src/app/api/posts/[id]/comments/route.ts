@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
+import { notifyPostAuthor } from '@/lib/notifications';
 
 export async function POST(
   request: Request,
@@ -26,5 +27,14 @@ export async function POST(
     .single();
 
   if (error) return NextResponse.json({ error: '댓글 작성에 실패했습니다.' }, { status: 500 });
+
+  await notifyPostAuthor(supabase, {
+    postId: params.id,
+    actorId: session.userId,
+    actorName: session.name,
+    type: 'comment',
+    snippet: content,
+  }).catch(() => {});
+
   return NextResponse.json({ success: true, comment: data });
 }

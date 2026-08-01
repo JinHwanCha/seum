@@ -1,6 +1,7 @@
 import { Header } from '@/components/layout/header';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MobileNav } from '@/components/layout/mobile-nav';
+import { AnnouncementPopup } from '@/components/notifications/announcement-popup';
 
 // 인증은 미들웨어에서 처리 — 여기까지 도달한 요청은 유효한 세션 보장
 export default function DepartmentLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ export default function DepartmentLayout({ children }: { children: React.ReactNo
         </main>
       </div>
       <MobileNav />
+      <AnnouncementPopup />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
-import { canWritePost } from '@/lib/permissions';
-import type { BoardType } from '@/lib/types';
+import { canWritePost, isMinister } from '@/lib/permissions';
+import { broadcastAnnouncement } from '@/lib/notifications';
+import type { BoardType, Role } from '@/lib/types';
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, content, boardType, categoryId, gatheringType, images, visibility, villageId: targetVillageId } = await request.json();
+  const { title, content, boardType, categoryId, gatheringType, images, visibility, villageId: targetVillageId, notifyAll } = await request.json();
 
   if (!title || !content || !boardType) {
     return NextResponse.json({ error: '필수 항목을 입력해주세요.' }, { status: 400 });
@@ -109,6 +110,17 @@ export async function POST(request: Request) {
   if (error) {
     console.error('Post create error:', error);
     return NextResponse.json({ error: '작성에 실패했습니다.' }, { status: 500 });
+  }
+
+  // 공지 '모두에게 알림' — 사역자만, 부서 전원에게 방송 알림 생성
+  if (notifyAll && boardType === 'notice' && isMinister(session.role as Role)) {
+    await broadcastAnnouncement(supabase, {
+      departmentId: session.departmentId,
+      actorId: session.userId,
+      postId: data.id,
+      title,
+      body: content,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ success: true, post: data });
