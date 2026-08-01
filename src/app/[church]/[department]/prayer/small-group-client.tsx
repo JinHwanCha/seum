@@ -162,11 +162,11 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const TABS = [
     { key: 'sharing', label: '나눔지' },
+    ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
     { key: 'prayer', label: '기도제목' },
     ...(canSeeVillageTab && villageName
       ? [{ key: 'village', label: `${villageName} 마을` }]
       : []),
-    ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
     ...(hasCell || hasOversight ? [{ key: 'tree', label: '🌱 나무' }] : []),
   ];
 
