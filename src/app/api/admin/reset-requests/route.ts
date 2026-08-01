@@ -15,7 +15,7 @@ export async function GET() {
   const supabase = createClient();
   const { data: requests } = await supabase
     .from('password_reset_requests')
-    .select('*, user:users(id, name, phone)')
+    .select('*, user:users!password_reset_requests_user_id_fkey(id, name, phone)')
     .eq('church_id', session.churchId)
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
@@ -43,7 +43,7 @@ export async function PATCH(request: Request) {
   // Get the reset request
   const { data: resetReq } = await supabase
     .from('password_reset_requests')
-    .select('*, user:users(id, name)')
+    .select('*, user:users!password_reset_requests_user_id_fkey(id, name)')
     .eq('id', requestId)
     .eq('church_id', session.churchId)
     .eq('status', 'pending')

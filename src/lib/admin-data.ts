@@ -82,7 +82,7 @@ export async function getResetRequests(session: SessionPayload) {
   const supabase = createClient();
   const { data } = await supabase
     .from('password_reset_requests')
-    .select('*, user:users(id, name, phone)')
+    .select('*, user:users!password_reset_requests_user_id_fkey(id, name, phone)')
     .eq('church_id', session.churchId)
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
