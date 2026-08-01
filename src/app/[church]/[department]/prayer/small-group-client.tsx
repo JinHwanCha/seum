@@ -221,11 +221,40 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         updated_at: new Date().toISOString(),
                       } as any)
                 );
-                setPrayers((prev) =>
-                  prev.map((p) =>
-                    p.user_id === user.userId ? { ...p, content, images, is_cell_only: isCellOnly } : p
-                  )
-                );
+                setPrayers((prev) => {
+                  const exists = prev.some((p) => p.user_id === user.userId);
+                  if (exists) {
+                    return prev.map((p) =>
+                      p.user_id === user.userId
+                        ? { ...p, content, images, is_cell_only: isCellOnly }
+                        : p
+                    );
+                  }
+                  // 최초 작성 시 하단 '소그룹 기도제목'에 즉시 반영되도록 항목 추가
+                  const me = members.find((m) => m.id === user.userId);
+                  return [
+                    ...prev,
+                    {
+                      id: `temp-${Date.now()}`,
+                      user_id: user.userId,
+                      department_id: '',
+                      week_start: weekStart,
+                      content,
+                      images,
+                      is_cell_only: isCellOnly,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      user: {
+                        id: user.userId,
+                        name: me?.name ?? user.name,
+                        role: me?.role ?? user.role,
+                        birth_date: me?.birth_date ?? null,
+                        cell_id: effectiveCellId,
+                        minister_rank: null,
+                      },
+                    } as any,
+                  ];
+                });
               }}
             />
           </Card>
