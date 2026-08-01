@@ -45,6 +45,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={href}
+              replace
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
                 isActive
@@ -63,6 +64,7 @@ export function Sidebar() {
             <div className="border-t border-stone-200/80 my-3" />
             <Link
               href={`${basePath}/admin`}
+              replace
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
                 pathname.startsWith(`${basePath}/admin`)

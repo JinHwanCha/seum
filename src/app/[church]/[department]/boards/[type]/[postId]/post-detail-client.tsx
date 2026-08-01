@@ -42,7 +42,10 @@ export default function PostDetailClient({
     if (!confirm('게시글을 삭제하시겠습니까?')) return;
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
-      if (res.ok) router.push(`${basePath}/boards/${boardType}`);
+      if (res.ok) {
+        router.push(`${basePath}/boards/${boardType}`);
+        router.refresh();
+      }
     } catch {
       // ignore
     }
