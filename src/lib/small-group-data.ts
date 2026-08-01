@@ -81,16 +81,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   const allDeptAttendance = (deptAttendanceResult.data || []) as any[];
 
   const memberIdSet = new Set(members.map((m: any) => m.id));
-  // 내 기도제목은 공개 범위와 무관하게 항상 조회 (상단 폼에서 편집)
-  const myPrayer = allDeptPrayers.find((p: any) => p.user_id === session.userId) || null;
-  // 소그룹 목록에서는 '목사님 공개' 글을 숨김 (본인 글은 예외)
-  const prayers = allDeptPrayers.filter(
-    (p: any) => memberIdSet.has(p.user_id) && (!p.is_pastor_only || p.user_id === session.userId)
-  );
-
-  // 사역자 전용: '목사님 공개' 기도제목 목록
-  const pastorPrayers =
-    role === 'minister' ? allDeptPrayers.filter((p: any) => p.is_pastor_only) : [];
+  const prayers = allDeptPrayers.filter((p: any) => memberIdSet.has(p.user_id));
+  const myPrayer = prayers.find((p: any) => p.user_id === session.userId) || null;
 
   const attendanceMap: Record<string, any> = {};
   allDeptAttendance.forEach((a: any) => { attendanceMap[a.user_id] = a; });
@@ -119,8 +111,6 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
     const prayerByCellUser: Record<string, any> = {};
     allDeptPrayers.forEach((p: any) => {
-      // 목사님 공개 글은 소그룹 브레이크다운에서 숨김 (목사님 탭에서 조회)
-      if (p.is_pastor_only) return;
       if (p.user?.cell_id) prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
     });
 
@@ -171,8 +161,6 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     const prayerByCellUser: Record<string, any> = {};
     allDeptPrayers.forEach((p: any) => {
       if (!p.user?.cell_id || !cellIdSet.has(p.user.cell_id)) return;
-      // 목사님 공개 글은 마을/소그룹 뷰에서 숨김 (본인 글은 예외)
-      if (p.is_pastor_only && p.user_id !== session.userId) return;
       if (restrictCellOnly && p.is_cell_only && p.user.cell_id !== cellId) return;
       prayerByCellUser[`${p.user.cell_id}:${p.user_id}`] = p;
     });
@@ -202,7 +190,6 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     members,
     myPrayer,
     prayers,
-    pastorPrayers,
     villageCells,
     attendanceMap,
     currentUser: {

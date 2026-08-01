@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Globe2, Home } from 'lucide-react';
+import { Globe2, Home, Church } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -16,7 +16,7 @@ interface PostFormProps {
   existingPost?: Post;
 }
 
-type Visibility = 'all' | 'village';
+type Visibility = 'all' | 'village' | 'pastor';
 
 export function PostForm({ boardType, existingPost }: PostFormProps) {
   const router = useRouter();
@@ -183,7 +183,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
       {showVisibility && (
         <div>
           <label className="block text-sm font-medium text-stone-700 mb-1.5">공개 범위</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setVisibility('all')}
@@ -210,6 +210,18 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
               <Home size={16} />
               <span className="font-medium">마을</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setVisibility('pastor')}
+              className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
+                visibility === 'pastor'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
+              }`}
+            >
+              <Church size={16} />
+              <span className="font-medium">목사님</span>
+            </button>
           </div>
 
           {/* 마을공개 선택 시 — 사역자/마을장은 드롭다운, 그 외는 본인 마을 표시 */}
@@ -233,6 +245,8 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
           <p className="text-[11px] text-stone-400 mt-1">
             {visibility === 'village'
               ? '해당 마을 멤버와 사역자/마을장만 볼 수 있어요.'
+              : visibility === 'pastor'
+              ? '사역자(목사님)만 볼 수 있어요.'
               : '부서 전체 멤버가 볼 수 있어요.'}
           </p>
         </div>

@@ -33,6 +33,9 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
               {post.visibility === 'village' && post.village && (
                 <Badge variant="warning">🏘 {post.village.name}</Badge>
               )}
+              {post.visibility === 'pastor' && (
+                <Badge variant="primary">⛪ 목사님</Badge>
+              )}
             </div>
             <h3 className="font-medium text-stone-900 text-sm truncate">{post.title}</h3>
             <p className="text-xs text-stone-500 mt-1 line-clamp-2">{post.content}</p>

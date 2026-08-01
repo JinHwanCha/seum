@@ -72,6 +72,9 @@ export default function PostDetailClient({
               {post.visibility === 'village' && post.village && (
                 <Badge variant="warning">🏘 {post.village.name}</Badge>
               )}
+              {post.visibility === 'pastor' && (
+                <Badge variant="primary">⛪ 목사님</Badge>
+              )}
             </div>
             <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
             <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">

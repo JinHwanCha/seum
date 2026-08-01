@@ -23,15 +23,17 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false });
 
   // Visibility 필터:
-  //  - 사역자/마을장 → 전체 열람
-  //  - 일반 → 'all' + 본인 마을
-  const canSeeAll = session.role === 'minister' || session.role === 'village_leader';
-  if (!canSeeAll) {
-    if (session.villageId) {
-      query = query.or(`visibility.eq.all,village_id.eq.${session.villageId}`);
-    } else {
-      query = query.eq('visibility', 'all');
-    }
+  //  - 사역자 → 전체 열람 (목사님 공개 포함)
+  //  - 마을장 → 'all' + 모든 마을 공개, 목사님 공개는 본인 글만
+  //  - 일반 → 'all' + 본인 마을, 목사님 공개는 본인 글만
+  if (session.role === 'minister') {
+    // 필터 없음 — 전체 열람
+  } else if (session.role === 'village_leader') {
+    query = query.or(`visibility.eq.all,visibility.eq.village,author_id.eq.${session.userId}`);
+  } else if (session.villageId) {
+    query = query.or(`visibility.eq.all,village_id.eq.${session.villageId},author_id.eq.${session.userId}`);
+  } else {
+    query = query.or(`visibility.eq.all,author_id.eq.${session.userId}`);
   }
 
   const { data: posts } = await query;
@@ -63,10 +65,12 @@ export async function POST(request: Request) {
 
   // 가시성 결정 — 권한 위조 방지
   const canPickAnyVillage = session.role === 'minister' || session.role === 'village_leader';
-  let finalVisibility: 'all' | 'village' = 'all';
+  let finalVisibility: 'all' | 'village' | 'pastor' = 'all';
   let finalVillageId: string | null = null;
 
-  if (visibility === 'village') {
+  if (visibility === 'pastor') {
+    finalVisibility = 'pastor';
+  } else if (visibility === 'village') {
     // 사역자/마을장은 임의 마을 지정 가능, 그 외는 본인 마을로 강제
     const chosen = canPickAnyVillage ? targetVillageId : session.villageId;
     if (chosen) {

@@ -61,7 +61,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   // Optimistic local state (updated by callbacks, synced from SWR)
   const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(initialData?.myPrayer ?? null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>(initialData?.prayers ?? []);
-  const [pastorPrayers, setPastorPrayers] = useState<PrayerRequest[]>(initialData?.pastorPrayers ?? []);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, Attendance>>(initialData?.attendanceMap ?? {});
 
   const weekStart = formatWeekDate(currentSunday);
@@ -89,7 +88,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     if (swrData) {
       setMyPrayer(swrData.myPrayer || null);
       setPrayers(swrData.prayers || []);
-      setPastorPrayers(swrData.pastorPrayers || []);
       setAttendanceMap(swrData.attendanceMap || {});
     }
   }, [swrData]);
@@ -166,7 +164,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     { key: 'sharing', label: '나눔지' },
     ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
     { key: 'prayer', label: '기도제목' },
-    ...(isMinister ? [{ key: 'pastor', label: '목사님' }] : []),
     ...(canSeeVillageTab && villageName
       ? [{ key: 'village', label: `${villageName} 마을` }]
       : []),
@@ -208,11 +205,10 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               existingImages={myPrayer?.images || []}
               existingId={myPrayer?.id}
               existingIsCellOnly={myPrayer?.is_cell_only}
-              existingIsPastorOnly={myPrayer?.is_pastor_only}
-              onSaved={(content, images, isCellOnly, isPastorOnly) => {
+              onSaved={(content, images, isCellOnly) => {
                 setMyPrayer((prev) =>
                   prev
-                    ? { ...prev, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly }
+                    ? { ...prev, content, images, is_cell_only: isCellOnly }
                     : ({
                         id: `temp-${Date.now()}`,
                         user_id: user.userId,
@@ -221,14 +217,13 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         content,
                         images,
                         is_cell_only: isCellOnly,
-                        is_pastor_only: isPastorOnly,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                       } as any)
                 );
                 setPrayers((prev) =>
                   prev.map((p) =>
-                    p.user_id === user.userId ? { ...p, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly } : p
+                    p.user_id === user.userId ? { ...p, content, images, is_cell_only: isCellOnly } : p
                   )
                 );
               }}
@@ -312,15 +307,15 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                             prayer={prayer}
                             session={user}
                             weekStart={weekStart}
-                            onUpdated={(content, images, isCellOnly, isPastorOnly) => {
+                            onUpdated={(content, images, isCellOnly) => {
                               setPrayers((prev) =>
                                 prev.map((p) =>
-                                  p.id === prayer.id ? { ...p, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly } : p
+                                  p.id === prayer.id ? { ...p, content, images, is_cell_only: isCellOnly } : p
                                 )
                               );
                               if (prayer.user_id === user.userId) {
                                 setMyPrayer((prev) =>
-                                  prev ? { ...prev, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly } : prev
+                                  prev ? { ...prev, content, images, is_cell_only: isCellOnly } : prev
                                 );
                               }
                             }}
@@ -485,52 +480,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                 </div>
               )}
             </>
-          )}
-        </>
-      )}
-
-      {/* ===== PASTOR (목사님) TAB — 사역자 전용 ===== */}
-      {activeTab === 'pastor' && isMinister && (
-        <>
-          {isLoading && !swrData ? (
-            <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
-          ) : pastorPrayers.length === 0 ? (
-            <div className="text-center py-12 text-stone-400">
-              <Crown size={40} className="mx-auto mb-3 opacity-40" />
-              <p className="text-sm font-medium">목사님께 공개된 기도제목이 없습니다.</p>
-              <p className="text-xs mt-1">‘목사님’ 공개로 작성된 기도제목만 이곳에 표시됩니다.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-stone-500 px-1">목사님 공개 기도제목</h2>
-              <div className="flex flex-col gap-3">
-                {pastorPrayers.map((prayer) => (
-                  <PrayerCard
-                    key={prayer.id}
-                    prayer={prayer}
-                    session={effectiveSession as any}
-                    weekStart={weekStart}
-                    onUpdated={(content, images, isCellOnly, isPastorOnly) => {
-                      setPastorPrayers((prev) =>
-                        prev
-                          .map((p) =>
-                            p.id === prayer.id
-                              ? { ...p, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly }
-                              : p
-                          )
-                          // 목사님 공개를 해제하면 목록에서 제거
-                          .filter((p) => p.is_pastor_only)
-                      );
-                      if (prayer.user_id === user.userId) {
-                        setMyPrayer((prev) =>
-                          prev ? { ...prev, content, images, is_cell_only: isCellOnly, is_pastor_only: isPastorOnly } : prev
-                        );
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
           )}
         </>
       )}

@@ -28,13 +28,18 @@ export async function GET(
 
   // 가시성 검사
   //  - 'all' 은 모두
-  //  - 사역자/마을장은 전부 읽기 가능
-  //  - 'village' 는 해당 마을 소속자
+  //  - 사역자는 전부 읽기 가능
+  //  - 작성자 본인은 항상 읽기 가능
+  //  - 'village' 는 해당 마을 소속자 + 마을장
+  //  - 'pastor' 는 사역자(+작성자)만
+  const isAuthor = post.author_id === session.userId;
   const canView =
-    post.visibility === 'all' ||
+    isAuthor ||
     session.role === 'minister' ||
-    session.role === 'village_leader' ||
-    (post.visibility === 'village' && post.village_id && post.village_id === session.villageId);
+    post.visibility === 'all' ||
+    (post.visibility === 'village' &&
+      (session.role === 'village_leader' ||
+        (post.village_id && post.village_id === session.villageId)));
   if (!canView) {
     return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
   }
@@ -83,10 +88,12 @@ export async function PATCH(
   const { title, content, categoryId, gatheringType, images, visibility, villageId: targetVillageId } = await request.json();
 
   const canPickAnyVillage = session.role === 'minister' || session.role === 'village_leader';
-  let finalVisibility: 'all' | 'village' = 'all';
+  let finalVisibility: 'all' | 'village' | 'pastor' = 'all';
   let finalVillageId: string | null = null;
 
-  if (visibility === 'village') {
+  if (visibility === 'pastor') {
+    finalVisibility = 'pastor';
+  } else if (visibility === 'village') {
     const chosen = canPickAnyVillage ? targetVillageId : session.villageId;
     if (chosen) {
       finalVisibility = 'village';

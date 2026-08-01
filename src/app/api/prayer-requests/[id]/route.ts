@@ -9,7 +9,7 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { content, images, isCellOnly, isPastorOnly } = await request.json();
+  const { content, images, isCellOnly } = await request.json();
   if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
 
   const supabase = createClient();
@@ -19,14 +19,7 @@ export async function PATCH(
     images: Array.isArray(images) ? images : [],
     updated_at: new Date().toISOString(),
   };
-  if (typeof isPastorOnly === 'boolean') {
-    updates.is_pastor_only = isPastorOnly;
-    // 목사님 공개와 소그룹 공개는 상호 배타
-    if (isPastorOnly) updates.is_cell_only = false;
-    else if (typeof isCellOnly === 'boolean') updates.is_cell_only = isCellOnly;
-  } else if (typeof isCellOnly === 'boolean') {
-    updates.is_cell_only = isCellOnly;
-  }
+  if (typeof isCellOnly === 'boolean') updates.is_cell_only = isCellOnly;
 
   const { error } = await supabase
     .from('prayer_requests')

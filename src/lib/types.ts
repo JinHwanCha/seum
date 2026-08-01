@@ -93,7 +93,6 @@ export interface PrayerRequest {
   content: string;
   images: string[];
   is_cell_only: boolean;
-  is_pastor_only: boolean;
   created_at: string;
   updated_at: string;
   user?: User;
@@ -117,7 +116,7 @@ export interface Post {
   content: string;
   images: string[];
   gathering_type: string | null;
-  visibility: 'all' | 'village';
+  visibility: 'all' | 'village' | 'pastor';
   village_id: string | null;
   is_pinned: boolean;
   created_at: string;
