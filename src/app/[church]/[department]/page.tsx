@@ -7,6 +7,8 @@ import { UsersRound, BookOpen, MessageSquare, Users, Heart, Shield } from 'lucid
 import Link from 'next/link';
 import { GatheringBoard } from '@/components/gathering/gathering-board';
 import { WorshipGuide } from '@/components/worship/worship-guide';
+import { DashboardFallback } from '@/components/dashboard-fallback';
+import { loadGatherings, loadWorshipItems } from '@/lib/dashboard-data';
 
 
 function getQuickLinks(session: any) {
@@ -44,6 +46,16 @@ export default async function DashboardPage({ params }: PageProps) {
     ? MINISTER_RANK_LABELS[session.ministerRank]
     : ROLE_LABELS_DEFAULT[session.role];
 
+  // 예배 안내/모임 데이터를 서버에서 미리 조회해 SWR fallback 으로 주입한다.
+  // 클라이언트 페칭 워터폴(마운트→요청→스켈레톤→표시)을 제거해 즉시 렌더한다.
+  const [worship, gatherings] = await Promise.all([
+    loadWorshipItems(session).catch(() => null),
+    loadGatherings(session).catch(() => null),
+  ]);
+  const fallback: Record<string, unknown> = {};
+  if (worship) fallback['/api/worship-guide'] = worship;
+  if (gatherings) fallback['/api/gatherings'] = gatherings;
+
   return (
     <div className="space-y-6">
       {/* Welcome */}
@@ -59,31 +71,13 @@ export default async function DashboardPage({ params }: PageProps) {
         </div>
       </Card>
 
-      {/* Worship Guide */}
-      <WorshipGuide />
+      <DashboardFallback fallback={fallback}>
+        {/* Worship Guide */}
+        <WorshipGuide />
 
-      {/* Quick Links */}
-      {/* <div>
-        <h2 className="text-sm font-semibold text-stone-500 mb-3 px-1">바로가기</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {getQuickLinks(session).map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link key={link.href} href={`${basePath}${link.href}`} className="h-full">
-                <Card className="flex h-full flex-col items-center justify-center text-center hover:shadow-md transition-shadow cursor-pointer">
-                  <div className={`w-10 h-10 rounded-xl ${link.color} flex items-center justify-center mx-auto mb-2`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className="text-sm font-medium text-stone-700">{link.label}</span>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      </div> */}
-
-      {/* Gathering Board */}
-      <GatheringBoard />
+        {/* Gathering Board */}
+        <GatheringBoard />
+      </DashboardFallback>
     </div>
   );
 }

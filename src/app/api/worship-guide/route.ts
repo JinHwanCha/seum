@@ -3,12 +3,10 @@ import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canManageWorship } from '@/lib/permissions';
 import {
-  WORSHIP_FIXED_DEFS,
   WORSHIP_FIXED_MAP,
-  defaultFixedWorship,
   normalizeWorshipInput,
-  rowToWorship,
 } from '@/lib/worship';
+import { loadWorshipItems } from '@/lib/dashboard-data';
 import type { SessionPayload } from '@/lib/types';
 
 function mayManage(session: SessionPayload): boolean {
@@ -23,38 +21,8 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = createClient();
-  const { data } = await supabase
-    .from('worship_announcements')
-    .select('*')
-    .eq('department_id', session.departmentId);
-
-  const rows = (data || []) as Record<string, unknown>[];
-  const byKey = new Map<string, Record<string, unknown>>();
-  rows.forEach((r) => {
-    if (r.key) byKey.set(String(r.key), r);
-  });
-
-  const fixedItems = WORSHIP_FIXED_DEFS.map((def) => {
-    const row = byKey.get(def.key);
-    return row ? rowToWorship(row) : defaultFixedWorship(def);
-  });
-
-  const specialItems = rows
-    .filter((r) => !r.key)
-    .map((r) => rowToWorship(r))
-    .sort(
-      (a, b) => Number(b.pinned) - Number(a.pinned) || a.sortOrder - b.sortOrder
-    );
-
-  // 특별 광고를 앞에, 그 다음 고정 버튼. 이미지는 목록에서 제외(용량 최소화).
-  const items = [...specialItems, ...fixedItems].map((it) => ({
-    ...it,
-    imageCount: it.images.length,
-    images: [],
-  }));
-
-  return NextResponse.json({ items, canManage: mayManage(session) });
+  const payload = await loadWorshipItems(session);
+  return NextResponse.json(payload);
 }
 
 // 특별 광고 생성

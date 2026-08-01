@@ -18,7 +18,8 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
   const params = useParams();
   const basePath = `/${params.church}/${params.department}`;
   const firstImage = post.images && post.images.length > 0 ? post.images[0] : null;
-  const extraCount = post.images && post.images.length > 1 ? post.images.length - 1 : 0;
+  const totalImages = (post as any)._imageCount ?? (post.images?.length ?? 0);
+  const extraCount = totalImages > 1 ? totalImages - 1 : 0;
   const authorVillageName = villageMap[(post.author as any)?.village_id] || null;
 
   return (
@@ -43,7 +44,7 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
           {firstImage && (
             <div className="relative shrink-0 h-14 w-14 rounded-lg overflow-hidden border border-stone-200 bg-stone-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={firstImage} alt="" className="h-full w-full object-cover" />
+              <img src={firstImage} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               {extraCount > 0 && (
                 <span className="absolute bottom-0 right-0 bg-stone-900/70 text-white text-[10px] px-1 rounded-tl-md">
                   +{extraCount}

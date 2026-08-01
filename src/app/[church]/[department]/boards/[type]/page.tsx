@@ -57,13 +57,19 @@ async function PostListServer({
 
   const { data: posts } = await query;
 
-  const enrichedPosts = (posts || []).map((post: any) => ({
-    ...post,
-    _count: {
-      comments: (post.comments as any[])?.[0]?.count ?? 0,
-      reactions: (post.reactions as any[])?.[0]?.count ?? 0,
-    },
-  }));
+  // 목록에서는 썸네일용 첫 이미지만 전달한다(대용량 base64 페이로드 축소).
+  const enrichedPosts = (posts || []).map((post: any) => {
+    const imgs = Array.isArray(post.images) ? post.images : [];
+    return {
+      ...post,
+      images: imgs.slice(0, 1),
+      _imageCount: imgs.length,
+      _count: {
+        comments: (post.comments as any[])?.[0]?.count ?? 0,
+        reactions: (post.reactions as any[])?.[0]?.count ?? 0,
+      },
+    };
+  });
 
   // 서버에서 id→이름 맵 생성—클라이언트 추가 쿼리 없이 작성자 마을명 표기 용
   const villageMap: Record<string, string> = {};

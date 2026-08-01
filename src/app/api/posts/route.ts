@@ -38,13 +38,21 @@ export async function GET(request: Request) {
 
   const { data: posts } = await query;
 
-  const postsWithCounts = (posts || []).map((post: any) => ({
-    ...post,
-    _count: {
-      comments: (post.comments as any[])?.[0]?.count ?? 0,
-      reactions: (post.reactions as any[])?.[0]?.count ?? 0,
-    },
-  }));
+  // 목록에서는 첫 이미지(썸네일)만 전송한다. 게시글마다 최대 10장의 base64
+  // 이미지를 모두 내려보내면 페이로드가 수 MB로 커져 로딩이 느려지므로
+  // 여기서 잘라내고 전체 장수는 _imageCount 로만 전달한다.
+  const postsWithCounts = (posts || []).map((post: any) => {
+    const imgs = Array.isArray(post.images) ? post.images : [];
+    return {
+      ...post,
+      images: imgs.slice(0, 1),
+      _imageCount: imgs.length,
+      _count: {
+        comments: (post.comments as any[])?.[0]?.count ?? 0,
+        reactions: (post.reactions as any[])?.[0]?.count ?? 0,
+      },
+    };
+  });
 
   return NextResponse.json({ posts: postsWithCounts });
 }
