@@ -113,7 +113,12 @@ export async function GET(request: Request) {
     visibleIds.add(session.userId);
   }
 
-  const prayers = allPrayers.filter((p) => visibleIds.has(p.user_id));
+  // 목사님 공개(is_pastor_only) 글은 사역자 또는 본인만 열람 가능
+  const prayers = allPrayers.filter(
+    (p) =>
+      visibleIds.has(p.user_id) &&
+      (!p.is_pastor_only || session.role === 'minister' || p.user_id === session.userId)
+  );
 
   return NextResponse.json({ prayers, myPrayer, villages, cells });
 }
@@ -122,7 +127,7 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { content, images, weekStart, targetUserId, isCellOnly } = await request.json();
+  const { content, images, weekStart, targetUserId, isCellOnly, isPastorOnly } = await request.json();
   if (!content || !weekStart) {
     return NextResponse.json({ error: 'content and weekStart required' }, { status: 400 });
   }
@@ -131,7 +136,9 @@ export async function POST(request: Request) {
   const supabase = createClient();
 
   const safeImages = Array.isArray(images) ? images : [];
-  const safeIsCellOnly = !!isCellOnly;
+  const safeIsPastorOnly = !!isPastorOnly;
+  // 목사님 공개와 소그룹 공개는 상호 배타
+  const safeIsCellOnly = !safeIsPastorOnly && !!isCellOnly;
 
   // Check if already exists (upsert)
   const { data: existing } = await supabase
@@ -148,6 +155,7 @@ export async function POST(request: Request) {
         content,
         images: safeImages,
         is_cell_only: safeIsCellOnly,
+        is_pastor_only: safeIsPastorOnly,
         updated_at: new Date().toISOString(),
       })
       .eq('id', existing.id);
@@ -165,6 +173,7 @@ export async function POST(request: Request) {
       content,
       images: safeImages,
       is_cell_only: safeIsCellOnly,
+      is_pastor_only: safeIsPastorOnly,
     })
     .select('id')
     .single();

@@ -93,6 +93,7 @@ export interface PrayerRequest {
   content: string;
   images: string[];
   is_cell_only: boolean;
+  is_pastor_only: boolean;
   created_at: string;
   updated_at: string;
   user?: User;
