@@ -8,7 +8,7 @@ import { canAccessAdmin } from '@/lib/permissions';
 import {
   Home,
   UsersRound,
-  Users,
+  HeartHandshake,
   Heart,
   Megaphone,
   Settings,
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { href: '', label: '홈', icon: Home },
   { href: '/boards/notice', label: '공지', icon: Megaphone },
   { href: '/prayer', label: '소그룹', icon: UsersRound },
-  { href: '/boards/gathering', label: '모임', icon: Users },
+  { href: '/boards/gathering', label: '모임', icon: HeartHandshake },
   { href: '/boards/intercession', label: '기도제목', icon: Heart },
 ];
 
