@@ -24,7 +24,7 @@ function useGridColumns(): number {
       const w = window.innerWidth;
       if (w >= 1024) setColumns(4);
       else if (w >= 640) setColumns(3);
-      else setColumns(2);
+      else setColumns(1);
     };
     compute();
     window.addEventListener('resize', compute);
@@ -36,11 +36,14 @@ function useGridColumns(): number {
 
 function GatheringSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="animate-pulse rounded-xl border border-stone-200/80 bg-white p-3">
-          <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-stone-100" />
-          <div className="mx-auto h-3 w-3/4 rounded bg-stone-100" />
+        <div
+          key={i}
+          className="flex animate-pulse items-center gap-3 rounded-xl border border-stone-200/80 bg-white p-3 sm:flex-col sm:gap-0"
+        >
+          <div className="h-12 w-12 shrink-0 rounded-xl bg-stone-100 sm:mb-2" />
+          <div className="h-3 w-3/4 rounded bg-stone-100" />
         </div>
       ))}
     </div>
@@ -160,8 +163,8 @@ export function GatheringBoard() {
   const detail = selected;
   const detailName = detail ? splitName(detail.name) : { tag: '', title: '' };
 
-  // 접힌 상태에서는 2줄(열 수 × 2)까지만 노출한다.
-  const collapsedCount = columns * 2;
+  // 접힌 상태에서는 2줄(열 수 × 2)까지만 노출한다. (모바일 1열은 한 줄 리스트라 더 많이 노출)
+  const collapsedCount = columns === 1 ? 6 : columns * 2;
   const canCollapse = gatherings.length > collapsedCount;
   const visible = expanded || !canCollapse ? gatherings : gatherings.slice(0, collapsedCount);
 
@@ -179,7 +182,7 @@ export function GatheringBoard() {
           모임을 추가해보세요
         </button>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {visible.map((g) => {
             const { tag, title } = splitName(g.name);
             return (
@@ -187,9 +190,9 @@ export function GatheringBoard() {
                 key={`${g.source}-${g.id}`}
                 type="button"
                 onClick={() => setSelected(g)}
-                className="warm-surface group flex flex-col items-center rounded-xl border border-stone-200/80 p-3 text-center shadow-sm transition-shadow hover:shadow-md"
+                className="warm-surface group flex flex-row items-center gap-3 rounded-xl border border-stone-200/80 p-3 text-left shadow-sm transition-shadow hover:shadow-md sm:flex-col sm:gap-0 sm:text-center"
               >
-                <div className="relative mb-2 h-12 w-12 overflow-hidden rounded-xl bg-stone-50">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-stone-50 sm:mb-2">
                   <GatheringThumb imageUrl={g.imageUrl} alt={g.name} />
                   {g.disabled && (
                     <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-stone-900/55 text-[10px] font-semibold text-white">
@@ -197,14 +200,16 @@ export function GatheringBoard() {
                     </span>
                   )}
                 </div>
-                {tag && (
-                  <span className="mb-0.5 line-clamp-1 text-[10px] font-semibold text-sky-600">
-                    {tag}
+                <div className="flex min-w-0 flex-1 flex-col sm:w-full sm:flex-none sm:items-center">
+                  {tag && (
+                    <span className="mb-0.5 line-clamp-1 text-[10px] font-semibold text-sky-600">
+                      {tag}
+                    </span>
+                  )}
+                  <span className="line-clamp-2 text-sm font-medium leading-snug text-stone-700 sm:text-xs">
+                    {title}
                   </span>
-                )}
-                <span className="line-clamp-2 text-xs font-medium leading-snug text-stone-700">
-                  {title}
-                </span>
+                </div>
               </button>
             );
           })}
