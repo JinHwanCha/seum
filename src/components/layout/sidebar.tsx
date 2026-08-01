@@ -8,19 +8,17 @@ import { canAccessAdmin } from '@/lib/permissions';
 import {
   Home,
   UsersRound,
-  BookOpen,
   MessageSquare,
-  Users,
   Heart,
+  Megaphone,
   Settings,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '', label: '홈', icon: Home },
-  { href: '/bible', label: '성경', icon: BookOpen },
+  { href: '/boards/notice', label: '공지', icon: Megaphone },
   { href: '/prayer', label: '소그룹', icon: UsersRound },
   { href: '/boards/sharing', label: '나눔', icon: MessageSquare },
-  { href: '/boards/gathering', label: '모임', icon: Users },
   { href: '/boards/intercession', label: '기도제목', icon: Heart },
 ];
 
