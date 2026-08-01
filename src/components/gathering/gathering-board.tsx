@@ -237,16 +237,6 @@ export function GatheringBoard() {
       <Modal isOpen={!!detail} onClose={() => setSelected(null)}>
         {detail && (
           <div className="relative space-y-4">
-            {/* 닫기 버튼 */}
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              aria-label="닫기"
-              className="absolute -right-1 -top-1 z-10 rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-            >
-              <X size={20} />
-            </button>
-
             {/* 헤더: 아이콘 + 제목 */}
             <div className="flex items-start gap-3 pr-8">
               <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-50">
@@ -329,6 +319,16 @@ export function GatheringBoard() {
                 {detail.buttonLabel}
               </div>
             ) : null}
+
+            {/* 닫기 버튼 (absolute: 마지막에 두어 space-y margin-top 방지) */}
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="닫기"
+              className="absolute -right-1 -top-1 z-10 rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+            >
+              <X size={20} />
+            </button>
           </div>
         )}
       </Modal>

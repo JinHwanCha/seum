@@ -278,15 +278,6 @@ export function WorshipGuide() {
       <Modal isOpen={!!selected} onClose={() => setSelected(null)} className={selIsCalendar ? 'max-w-2xl' : undefined}>
         {selected && selDisplay && (
           <div className="relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              aria-label="닫기"
-              className="absolute -right-1 -top-1 z-10 rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-            >
-              <X size={20} />
-            </button>
-
             <div className="pr-8">
               <div className="flex items-center gap-2">
                 <span className="text-2xl leading-none">{isImageSrc(selDisplay.icon) ? '📌' : selDisplay.icon}</span>
@@ -298,6 +289,16 @@ export function WorshipGuide() {
             </div>
 
             <WorshipDetail item={selected} />
+
+            {/* 닫기 버튼 (absolute: 마지막에 두어 space-y margin-top 방지) */}
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="닫기"
+              className="absolute -right-1 -top-1 z-10 rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+            >
+              <X size={20} />
+            </button>
           </div>
         )}
       </Modal>
