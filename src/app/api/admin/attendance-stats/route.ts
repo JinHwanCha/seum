@@ -10,11 +10,30 @@ interface StatCounts {
   online: number; // 온라인
   departmentMeeting: number;
   smallGroup: number;
+  wedOnsite: number;
+  wedOnline: number;
+  friOnsite: number;
+  friOnline: number;
+  dawnOnsite: number;
+  dawnOnline: number;
   checked: number; // 출석 기록이 하나라도 있는 인원
 }
 
 function emptyCounts(): StatCounts {
-  return { memberCount: 0, onsite: 0, online: 0, departmentMeeting: 0, smallGroup: 0, checked: 0 };
+  return {
+    memberCount: 0,
+    onsite: 0,
+    online: 0,
+    departmentMeeting: 0,
+    smallGroup: 0,
+    wedOnsite: 0,
+    wedOnline: 0,
+    friOnsite: 0,
+    friOnline: 0,
+    dawnOnsite: 0,
+    dawnOnline: 0,
+    checked: 0,
+  };
 }
 
 // GET: 특정 주(weekStart)의 출석 통계 (부서 전체 + 마을/소그룹별)
@@ -65,7 +84,7 @@ export async function GET(request: Request) {
   if (memberIds.length > 0) {
     const { data: attendance } = await supabase
       .from('attendance')
-      .select('user_id, worship_service, department_meeting, small_group')
+      .select('user_id, worship_service, wednesday_worship, friday_worship, dawn_prayer, department_meeting, small_group')
       .eq('week_start', weekStart)
       .in('user_id', memberIds);
     (attendance || []).forEach((a) => {
@@ -93,6 +112,12 @@ export async function GET(request: Request) {
       counts.smallGroup += 1;
       touched = true;
     }
+    if (a.wednesday_worship === '현장') { counts.wedOnsite += 1; touched = true; }
+    else if (a.wednesday_worship === '온라인') { counts.wedOnline += 1; touched = true; }
+    if (a.friday_worship === '현장') { counts.friOnsite += 1; touched = true; }
+    else if (a.friday_worship === '온라인') { counts.friOnline += 1; touched = true; }
+    if (a.dawn_prayer === '현장') { counts.dawnOnsite += 1; touched = true; }
+    else if (a.dawn_prayer === '온라인') { counts.dawnOnline += 1; touched = true; }
     if (touched) counts.checked += 1;
   };
 

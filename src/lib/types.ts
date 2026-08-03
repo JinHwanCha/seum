@@ -167,6 +167,7 @@ export interface Notification {
 
 // ─── Attendance ───
 export type WorshipService = '1부' | '2부' | '3부' | '온라인';
+export type WorshipMode = '현장' | '온라인';
 
 export interface Attendance {
   id: string;
@@ -174,6 +175,9 @@ export interface Attendance {
   department_id: string;
   week_start: string;
   worship_service: WorshipService | null;
+  wednesday_worship: WorshipMode | null;
+  friday_worship: WorshipMode | null;
+  dawn_prayer: WorshipMode | null;
   department_meeting: boolean;
   small_group: boolean;
   prayer_count: number;

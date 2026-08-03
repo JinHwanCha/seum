@@ -68,12 +68,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  const allowedFields = ['worship_service', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
+  const allowedFields = ['worship_service', 'wednesday_worship', 'friday_worship', 'dawn_prayer', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
   if (!allowedFields.includes(field)) {
     return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
   }
 
   if (field === 'worship_service' && value !== null && !['1부', '2부', '3부', '온라인'].includes(value)) {
+    return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
+  }
+
+  if (['wednesday_worship', 'friday_worship', 'dawn_prayer'].includes(field) && value !== null && !['현장', '온라인'].includes(value)) {
     return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
   }
 

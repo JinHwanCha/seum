@@ -14,6 +14,12 @@ interface CellStat {
   online: number;
   departmentMeeting: number;
   smallGroup: number;
+  wedOnsite: number;
+  wedOnline: number;
+  friOnsite: number;
+  friOnline: number;
+  dawnOnsite: number;
+  dawnOnline: number;
   checked: number;
 }
 
@@ -32,6 +38,13 @@ const METRICS = [
   { key: 'online', label: '온라인 예배', icon: Wifi, color: 'text-sky-600', bg: 'bg-sky-50' },
   { key: 'departmentMeeting', label: '부서집회', icon: Users, color: 'text-amber-600', bg: 'bg-amber-50' },
   { key: 'smallGroup', label: '소그룹', icon: UsersRound, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+] as const;
+
+// 추가 예배 (현장/온라인 별도 계수)
+const EXTRA_WORSHIP_METRICS = [
+  { label: '수요예배', onsiteKey: 'wedOnsite', onlineKey: 'wedOnline' },
+  { label: '센터워십', onsiteKey: 'friOnsite', onlineKey: 'friOnline' },
+  { label: '새벽기도', onsiteKey: 'dawnOnsite', onlineKey: 'dawnOnline' },
 ] as const;
 
 export function AttendanceStats() {
@@ -116,6 +129,29 @@ export function AttendanceStats() {
                 </div>
               );
             })}
+          </div>
+
+          {/* 추가 예배 — 수요/센터워십/새벽기도 (현장/온라인) */}
+          <div className="space-y-2 pt-1">
+            <p className="px-1 text-xs font-semibold text-stone-500">추가 예배 현황</p>
+            <div className="grid grid-cols-3 gap-2">
+              {EXTRA_WORSHIP_METRICS.map((m) => {
+                const onsite = data.summary[m.onsiteKey as keyof CellStat] as number;
+                const online = data.summary[m.onlineKey as keyof CellStat] as number;
+                return (
+                  <div key={m.label} className="rounded-xl border border-stone-200/80 bg-white p-3">
+                    <p className="text-xs text-stone-500">{m.label}</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                      {onsite + online}
+                      <span className="text-xs font-normal text-stone-400">명</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-stone-400">
+                      현장 {onsite} · <span className="text-sky-600">온라인 {online}</span>
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* 마을/소그룹별 */}

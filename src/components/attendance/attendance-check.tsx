@@ -33,6 +33,19 @@ const WORSHIP_OPTIONS = [
   { value: '온라인', label: '온라인', short: 'O' },
 ] as const;
 
+// 수요/센터워십/새벽기도 공통 옵션 (현장/온라인)
+const MODE_OPTIONS = [
+  { value: null, label: '미참석' },
+  { value: '현장', label: '현장' },
+  { value: '온라인', label: '온라인' },
+] as const;
+
+const EXTRA_WORSHIP: { field: string; label: string }[] = [
+  { field: 'wednesday_worship', label: '수요예배' },
+  { field: 'friday_worship', label: '센터워십' },
+  { field: 'dawn_prayer', label: '새벽기도' },
+];
+
 const birthYearLabel = (birthDate?: string | null) => {
   if (!birthDate) return '';
   return ` (${birthDate.substring(2, 4)})`;
@@ -159,6 +172,46 @@ export function AttendanceCheck({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* 추가 예배: 수요/센터워십/새벽기도 — 한 줄 컴팩트 행 */}
+              <div className="space-y-1.5 pt-2 border-t border-stone-100">
+                {EXTRA_WORSHIP.map((svc) => {
+                  const current = (att as any)?.[svc.field] ?? null;
+                  return (
+                    <div key={svc.field} className="flex items-center gap-2">
+                      <span className="text-xs text-stone-500 font-medium w-14 shrink-0">
+                        {svc.label}
+                      </span>
+                      <div className="flex gap-1">
+                        {MODE_OPTIONS.map((opt) => {
+                          const isActive =
+                            opt.value === null ? !current : current === opt.value;
+                          return (
+                            <button
+                              key={opt.label}
+                              disabled={!canEdit}
+                              onClick={() => handleToggle(member.id, svc.field, opt.value)}
+                              className={cn(
+                                'px-2 py-1 rounded-lg text-xs font-medium transition-colors',
+                                isActive
+                                  ? opt.value === null
+                                    ? 'bg-stone-200 text-stone-600'
+                                    : opt.value === '온라인'
+                                      ? 'bg-sky-500 text-white shadow-sm'
+                                      : 'bg-primary-500 text-white shadow-sm'
+                                  : 'bg-stone-100 text-stone-400 hover:bg-stone-200',
+                                !canEdit && 'opacity-60 cursor-default'
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Department Meeting & Small Group - inline toggles */}
