@@ -177,7 +177,11 @@ export interface Attendance {
   worship_service: WorshipService | null;
   wednesday_worship: WorshipMode | null;
   friday_worship: WorshipMode | null;
-  dawn_prayer: WorshipMode | null;
+  dawn_mon: WorshipMode | null;
+  dawn_tue: WorshipMode | null;
+  dawn_wed: WorshipMode | null;
+  dawn_thu: WorshipMode | null;
+  dawn_fri: WorshipMode | null;
   department_meeting: boolean;
   small_group: boolean;
   prayer_count: number;

@@ -63,8 +63,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  // 특별예배(수요/센터워십/새벽기도)는 본인이 스스로 체크 가능. 그 외 항목은 목자 이상만.
-  const specialFields = ['wednesday_worship', 'friday_worship', 'dawn_prayer'];
+  // 특별예배(수요/센터워십/새벽기도 월~금)는 본인이 스스로 체크 가능. 그 외 항목은 목자 이상만.
+  const specialFields = ['wednesday_worship', 'friday_worship', 'dawn_mon', 'dawn_tue', 'dawn_wed', 'dawn_thu', 'dawn_fri'];
   const isLeaderish =
     session.isAdmin ||
     session.role === 'minister' ||
@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
-  const allowedFields = ['worship_service', 'wednesday_worship', 'friday_worship', 'dawn_prayer', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
+  const allowedFields = ['worship_service', 'wednesday_worship', 'friday_worship', 'dawn_mon', 'dawn_tue', 'dawn_wed', 'dawn_thu', 'dawn_fri', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
   if (!allowedFields.includes(field)) {
     return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
   }
@@ -84,7 +84,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
   }
 
-  if (['wednesday_worship', 'friday_worship', 'dawn_prayer'].includes(field) && value !== null && !['현장', '온라인'].includes(value)) {
+  const modeFields = ['wednesday_worship', 'friday_worship', 'dawn_mon', 'dawn_tue', 'dawn_wed', 'dawn_thu', 'dawn_fri'];
+  if (modeFields.includes(field) && value !== null && !['현장', '온라인'].includes(value)) {
     return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
   }
 

@@ -6,6 +6,11 @@ import { cn } from '@/lib/utils';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 
+interface DawnDay {
+  onsite: number;
+  online: number;
+}
+
 interface CellStat {
   id: string;
   name: string;
@@ -18,8 +23,7 @@ interface CellStat {
   wedOnline: number;
   friOnsite: number;
   friOnline: number;
-  dawnOnsite: number;
-  dawnOnline: number;
+  dawn: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri', DawnDay>;
   checked: number;
 }
 
@@ -44,8 +48,15 @@ const METRICS = [
 const EXTRA_WORSHIP_METRICS = [
   { label: '수요예배', onsiteKey: 'wedOnsite', onlineKey: 'wedOnline' },
   { label: '센터워십', onsiteKey: 'friOnsite', onlineKey: 'friOnline' },
-  { label: '새벽기도', onsiteKey: 'dawnOnsite', onlineKey: 'dawnOnline' },
 ] as const;
+
+const DAWN_DAY_LABELS: { key: 'mon' | 'tue' | 'wed' | 'thu' | 'fri'; label: string }[] = [
+  { key: 'mon', label: '월' },
+  { key: 'tue', label: '화' },
+  { key: 'wed', label: '수' },
+  { key: 'thu', label: '목' },
+  { key: 'fri', label: '금' },
+];
 
 export function AttendanceStats() {
   const [currentSunday, setCurrentSunday] = useState<Date>(() => getCurrentWeekSunday());
@@ -131,10 +142,10 @@ export function AttendanceStats() {
             })}
           </div>
 
-          {/* 추가 예배 — 수요/센터워십/새벽기도 (현장/온라인) */}
+          {/* 추가 예배 — 수요/센터워십 (현장/온라인) */}
           <div className="space-y-2 pt-1">
             <p className="px-1 text-xs font-semibold text-stone-500">추가 예배 현황</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {EXTRA_WORSHIP_METRICS.map((m) => {
                 const onsite = data.summary[m.onsiteKey as keyof CellStat] as number;
                 const online = data.summary[m.onlineKey as keyof CellStat] as number;
@@ -151,6 +162,36 @@ export function AttendanceStats() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* 새벽기도 — 월~금 일별 현장/온라인 */}
+          <div className="space-y-2 pt-1">
+            <p className="px-1 text-xs font-semibold text-stone-500">새벽기도 (월~금)</p>
+            <div className="overflow-hidden rounded-xl border border-stone-200/80 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-stone-50 text-[11px] text-stone-500">
+                    <th className="px-3 py-2 text-left font-medium">요일</th>
+                    <th className="px-1 py-2 text-center font-medium">현장</th>
+                    <th className="px-1 py-2 text-center font-medium">온라인</th>
+                    <th className="px-3 py-2 text-center font-medium">합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DAWN_DAY_LABELS.map((d) => {
+                    const day = data.summary.dawn[d.key];
+                    return (
+                      <tr key={d.key} className="border-t border-stone-50 text-stone-700">
+                        <td className="px-3 py-2 text-left font-medium">{d.label}</td>
+                        <td className="px-1 py-2 text-center">{day.onsite}</td>
+                        <td className="px-1 py-2 text-center text-sky-600">{day.online}</td>
+                        <td className="px-3 py-2 text-center font-semibold">{day.onsite + day.online}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
