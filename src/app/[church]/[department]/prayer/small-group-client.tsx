@@ -6,6 +6,7 @@ import { WeekSelector } from '@/components/prayer/week-selector';
 import { PrayerForm } from '@/components/prayer/prayer-form';
 import { PrayerCard } from '@/components/prayer/prayer-card';
 import { AttendanceCheck } from '@/components/attendance/attendance-check';
+import { SpecialWorshipCheck } from '@/components/attendance/special-worship-check';
 import { Tabs } from '@/components/ui/tabs';
 import { PillTabs } from '@/components/ui/pill-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -53,7 +54,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('sharing');
-  const [attSubTab, setAttSubTab] = useState<'mine' | 'village'>('mine');
+  const [attSubTab, setAttSubTab] = useState<'mine' | 'special' | 'village'>('mine');
   const [praySubTab, setPraySubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
   const [prayerVillageFilter, setPrayerVillageFilter] = useState<string>('__all__');
@@ -147,7 +148,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const hasCell = !!effectiveCellId;
 
   const isCellLeader = effectiveRole === 'cell_leader';
-  const canCheckAtt = isCellLeader || hasOversight || user.isAdmin;
+  // 경건생활 탭: 소그룹이 있거나 감독권한이 있으면 노출(일반 목원 포함 — 특버예배 자가체크)
+  const canSeeAttTab = hasCell || hasOversight;
   // 마을 탭은 마을에 속한 모든 멤버(셀원/셀장/마을장/사역자)에게 노출
   // 셀원이 다른 셀의 "소그룹에만 공개" 글을 보지 못하도록 서버에서 이미 필터됨
   const canSeeVillageTab = !!effectiveVillageId && (hasCell || hasOversight);
@@ -157,6 +159,20 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     : [];
   // 기도제목 탭 하위 탭(내 소그룹/마을) 노출 — 감독권한자는 통합 뷰이므로 제외
   const showPraySubTabs = !hasOversight && canSeeVillageTab && !!villageName;
+
+  // 경건생활 하위 탭: 내 소그룹 / 특별예배 / (마을) — (마을)은 목자 이상만
+  const attVillageSource = hasOversight ? villageCells : myVillageCells;
+  const showAttVillage =
+    (isCellLeader && myVillageCells.length > 0 && !!villageName) ||
+    (hasOversight && villageCells.length > 0);
+  const attTabs = [
+    ...(hasCell ? [{ key: 'mine', label: '내 소그룹' }] : []),
+    { key: 'special', label: '특별예배' },
+    ...(showAttVillage
+      ? [{ key: 'village', label: villageName ? `${villageName} 마을` : '마을' }]
+      : []),
+  ];
+  const attSub = attTabs.some((t) => t.key === attSubTab) ? attSubTab : attTabs[0].key;
 
   // AttendanceCheck에 전달할 최신 세션 (JWT stale 보정)
   const effectiveSession = {
@@ -168,7 +184,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const TABS = [
     { key: 'sharing', label: '나눔지' },
-    ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
+    ...(canSeeAttTab ? [{ key: 'attendance', label: '경건생활' }] : []),
     { key: 'prayer', label: '기도제목' },
     ...(hasCell || hasOversight ? [{ key: 'tree', label: '🌱 나무' }] : []),
   ];
@@ -679,119 +695,17 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>
-              {/* Cell Leader: sub-tabs (내 소그룹 / OO 마을) */}
-              {isCellLeader && hasCell && (
-                <div className="space-y-3">
-                  {myVillageCells.length > 0 && villageName && (
-                    <PillTabs
-                      tabs={[
-                        { key: 'mine', label: '내 소그룹' },
-                        { key: 'village', label: `${villageName} 마을` },
-                      ]}
-                      activeKey={attSubTab}
-                      onChange={(k) => setAttSubTab(k as 'mine' | 'village')}
-                    />
-                  )}
-
-                  {attSubTab === 'mine' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 px-1">
-                        <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>
-                        {villageName && <Badge variant="default">{villageName}</Badge>}
-                      </div>
-                      <AttendanceCheck
-                        members={members}
-                        attendance={attendanceMap}
-                        weekStart={weekStart}
-                        session={effectiveSession}
-                        cellId={effectiveCellId}
-                        cellVillageId={effectiveVillageId}
-                        onAttendanceChange={handleAttendanceChange}
-                      />
-                    </div>
-                  )}
-
-                  {attSubTab === 'village' && myVillageCells.length > 0 && (
-                    <div className="space-y-2">
-                      {myVillageCells.map((village) => (
-                        <div key={village.id} className="space-y-2">
-                          {village.cells.map((cell) => {
-                            const isExpanded = expandedCells.has(`att-${cell.id}`);
-                            const memberCount = cell.members.length;
-                            const wsCount = cell.members.filter((m) => attendanceMap[m.id]?.worship_service).length;
-                            const dmCount = cell.members.filter((m) => attendanceMap[m.id]?.department_meeting).length;
-                            const sgCount = cell.members.filter((m) => attendanceMap[m.id]?.small_group).length;
-                            return (
-                              <div
-                                key={cell.id}
-                                className="warm-surface rounded-xl border border-stone-200/80 overflow-hidden"
-                              >
-                                <button
-                                  onClick={() => {
-                                    setExpandedCells((prev) => {
-                                      const next = new Set(prev);
-                                      const key = `att-${cell.id}`;
-                                      if (next.has(key)) next.delete(key);
-                                      else next.add(key);
-                                      return next;
-                                    });
-                                  }}
-                                  className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {isExpanded ? (
-                                      <ChevronDown size={16} className="text-stone-400" />
-                                    ) : (
-                                      <ChevronRight size={16} className="text-stone-400" />
-                                    )}
-                                    <span className="font-medium text-stone-900 text-sm">
-                                      {cell.name || '소그룹'}
-                                    </span>
-                                    {cell.leader_name && (
-                                      <span className="text-xs text-stone-500">
-                                        목자: {cell.leader_name}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                                    <Badge variant="default">{memberCount}명</Badge>
-                                    <Badge variant={wsCount === memberCount ? 'success' : 'warning'}>
-                                      예배 {wsCount}/{memberCount}
-                                    </Badge>
-                                    <Badge variant={dmCount === memberCount ? 'success' : 'warning'}>
-                                      부서 {dmCount}/{memberCount}
-                                    </Badge>
-                                    <Badge variant={sgCount === memberCount ? 'success' : 'warning'}>
-                                      소그룹 {sgCount}/{memberCount}
-                                    </Badge>
-                                  </div>
-                                </button>
-
-                                {isExpanded && (
-                                  <div className="border-t border-stone-100 p-4">
-                                    <AttendanceCheck
-                                      members={cell.members}
-                                      attendance={attendanceMap}
-                                      weekStart={weekStart}
-                                      session={effectiveSession}
-                                      cellId={cell.id}
-                                      cellVillageId={village.id}
-                                      onAttendanceChange={handleAttendanceChange}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {/* 하위 탭: 내 소그룹 / 특별예배 / (마을) */}
+              {attTabs.length > 1 && (
+                <PillTabs
+                  tabs={attTabs}
+                  activeKey={attSub}
+                  onChange={(k) => setAttSubTab(k as 'mine' | 'special' | 'village')}
+                />
               )}
 
-              {/* Cell Member (non-leader): own cell attendance */}
-              {hasCell && !hasOversight && !isCellLeader && (
+              {/* === 내 소그룹 === */}
+              {attSub === 'mine' && hasCell && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>
@@ -809,8 +723,18 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                 </div>
               )}
 
-              {/* Minister / Village Leader: all cells */}
-              {hasOversight && villageCells.length > 0 && (
+              {/* === 특별예배 (수요/센터워십/새벽기도) — 본인 자가 체크 === */}
+              {attSub === 'special' && (
+                <SpecialWorshipCheck
+                  weekStart={weekStart}
+                  userId={user.userId}
+                  attendance={attendanceMap[user.userId]}
+                  onChange={(field, value) => handleAttendanceChange(user.userId, field, value)}
+                />
+              )}
+
+              {/* === 마을 출석현황 (목자 이상) === */}
+              {attSub === 'village' && (isCellLeader || hasOversight) && (
                 <div className="space-y-2">
                   {isMinister && villageCells.length > 1 && (
                     <PillTabs
@@ -822,7 +746,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                       onChange={setAttVillageFilter}
                     />
                   )}
-                  {villageCells
+                  {attVillageSource
                     .filter(
                       (v) =>
                         !isMinister ||
@@ -909,19 +833,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {hasOversight && villageCells.length === 0 && (
-                <div className="text-center py-8 text-stone-400 text-sm">
-                  소그룹 데이터가 없습니다.
-                </div>
-              )}
-
-              {!hasCell && !hasOversight && (
-                <div className="text-center py-12 text-stone-400">
-                  <Users size={40} className="mx-auto mb-3 opacity-40" />
-                  <p className="text-sm font-medium">소그룹이 아직 배정되지 않았습니다.</p>
                 </div>
               )}
             </>

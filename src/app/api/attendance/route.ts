@@ -56,16 +56,23 @@ export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // 최소 권한: cell_leader 이상만 가능
-  if (!session.isAdmin && session.role !== 'minister' && session.role !== 'village_leader' && session.role !== 'cell_leader') {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
-
   const body = await request.json();
   const { userId, weekStart, field, value } = body;
 
   if (!userId || !weekStart || !field) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
+
+  // 특별예배(수요/센터워십/새벽기도)는 본인이 스스로 체크 가능. 그 외 항목은 목자 이상만.
+  const specialFields = ['wednesday_worship', 'friday_worship', 'dawn_prayer'];
+  const isLeaderish =
+    session.isAdmin ||
+    session.role === 'minister' ||
+    session.role === 'village_leader' ||
+    session.role === 'cell_leader';
+  const isSelfSpecial = userId === session.userId && specialFields.includes(field);
+  if (!isLeaderish && !isSelfSpecial) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
   const allowedFields = ['worship_service', 'wednesday_worship', 'friday_worship', 'dawn_prayer', 'department_meeting', 'small_group', 'prayer_count', 'qt_count', 'bible_reading'];
