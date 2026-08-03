@@ -53,20 +53,20 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
-          <div className="flex items-center gap-2 text-xs text-stone-400">
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-stone-100">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 text-xs text-stone-400">
             {authorVillageName && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[10px] font-medium border border-primary-100">
+              <span className="inline-flex items-center shrink-0 px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[10px] font-medium border border-primary-100 whitespace-nowrap">
                 {authorVillageName}
               </span>
             )}
-            <span className="font-medium text-stone-600">
+            <span className="font-medium text-stone-600 whitespace-nowrap">
               {post.author?.name}
               {birthYearTag((post.author as any)?.birth_date)}
             </span>
-            <span>{formatDateTime(post.created_at)}</span>
+            <span className="whitespace-nowrap">{formatDateTime(post.created_at)}</span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-stone-400">
+          <div className="flex items-center gap-3 shrink-0 text-xs text-stone-400">
             <span className="flex items-center gap-1">
               <MessageSquare size={12} />
               {post._count?.comments || 0}
