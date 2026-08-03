@@ -66,9 +66,9 @@ export default function PostDetailClient({
       </button>
 
       <Card>
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               {post.is_pinned && <Badge variant="danger">고정</Badge>}
               {post.category && <Badge>{post.category.name}</Badge>}
               {post.gathering_type && <Badge variant="primary">{post.gathering_type}</Badge>}
@@ -79,22 +79,22 @@ export default function PostDetailClient({
                 <Badge variant="primary">⛪ 목사님</Badge>
               )}
             </div>
-            <h1 className="text-xl font-bold text-stone-900">{post.title}</h1>
-            <div className="flex items-center gap-2 mt-2 text-sm text-stone-500">
+            <h1 className="text-xl font-bold text-stone-900 break-words">{post.title}</h1>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-stone-500">
               {(post.author as any)?.village?.name && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[11px] font-medium border border-primary-100">
+                <span className="inline-flex items-center shrink-0 px-1.5 py-0.5 rounded-md bg-primary-50 text-primary-700 text-[11px] font-medium border border-primary-100 whitespace-nowrap">
                   {(post.author as any).village.name}
                 </span>
               )}
-              <span className="font-medium text-stone-700">
+              <span className="font-medium text-stone-700 whitespace-nowrap">
                 {post.author?.name}
                 {birthYearTag((post.author as any)?.birth_date)}
               </span>
-              <span>{formatDateTime(post.created_at)}</span>
-              {post.updated_at !== post.created_at && <span>(수정됨)</span>}
+              <span className="whitespace-nowrap">{formatDateTime(post.created_at)}</span>
+              {post.updated_at !== post.created_at && <span className="whitespace-nowrap">(수정됨)</span>}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {canEdit && (
               <button
                 onClick={() => router.push(`${basePath}/boards/${boardType}/${postId}/edit`)}
