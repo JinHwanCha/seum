@@ -54,6 +54,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('sharing');
   const [attSubTab, setAttSubTab] = useState<'mine' | 'village'>('mine');
+  const [praySubTab, setPraySubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
   const [prayerVillageFilter, setPrayerVillageFilter] = useState<string>('__all__');
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
@@ -151,6 +152,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const myVillageCells = canSeeVillageTab
     ? villageCells.filter((v) => v.id === effectiveVillageId)
     : [];
+  // 기도제목 탭 하위 탭(내 소그룹/마을) 노출 — 감독권한자는 통합 뷰이므로 제외
+  const showPraySubTabs = !hasOversight && canSeeVillageTab && !!villageName;
 
   // AttendanceCheck에 전달할 최신 세션 (JWT stale 보정)
   const effectiveSession = {
@@ -164,9 +167,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     { key: 'sharing', label: '나눔지' },
     ...(canCheckAtt ? [{ key: 'attendance', label: '경건생활' }] : []),
     { key: 'prayer', label: '기도제목' },
-    ...(canSeeVillageTab && villageName
-      ? [{ key: 'village', label: `${villageName} 마을` }]
-      : []),
     ...(hasCell || hasOversight ? [{ key: 'tree', label: '🌱 나무' }] : []),
   ];
 
@@ -196,6 +196,19 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       {/* ===== PRAYER TAB ===== */}
       {activeTab === 'prayer' && (
         <>
+          {showPraySubTabs && (
+            <PillTabs
+              tabs={[
+                { key: 'mine', label: '내 소그룹' },
+                { key: 'village', label: `${villageName} 마을` },
+              ]}
+              activeKey={praySubTab}
+              onChange={(k) => setPraySubTab(k as 'mine' | 'village')}
+            />
+          )}
+
+          {(!showPraySubTabs || praySubTab === 'mine') && (
+            <>
           {/* My Prayer Request */}
           <Card>
             <CardTitle className="text-base">나의 기도제목</CardTitle>
@@ -510,6 +523,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               )}
             </>
           )}
+            </>
+          )}
         </>
       )}
 
@@ -535,8 +550,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
         </div>
       )}
 
-      {/* ===== VILLAGE TAB ===== */}
-      {activeTab === 'village' && canSeeVillageTab && (
+      {/* ===== VILLAGE (기도제목 하위 탭) ===== */}
+      {activeTab === 'prayer' && showPraySubTabs && praySubTab === 'village' && (
         <>
           {isLoading && !swrData ? (
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
