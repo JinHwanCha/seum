@@ -169,7 +169,7 @@ export function VillagePrayerCells({
                   >
                     <button
                       onClick={() => toggle(cell.id)}
-                      className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
+                      className="w-full flex flex-wrap items-center justify-between gap-2 p-4 hover:bg-primary-50/30 transition-colors text-left"
                     >
                       <div className="flex items-center gap-2">
                         {isExpanded ? (
