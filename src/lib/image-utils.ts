@@ -1,7 +1,7 @@
 // 클라이언트 사이드 이미지 압축 유틸리티
 // 모바일/데스크탑 모두 지원하며 결과물은 10KB 이하의 JPEG base64 data URL
 
-export const MAX_IMAGE_BYTES = 10 * 1024; // 10KB
+export const MAX_IMAGE_BYTES = 100 * 1024; // 100KB
 export const MAX_IMAGES_PER_POST = 10;
 
 /**
