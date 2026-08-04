@@ -7,6 +7,7 @@ import { PrayerForm } from '@/components/prayer/prayer-form';
 import { PrayerCard } from '@/components/prayer/prayer-card';
 import { AttendanceCheck } from '@/components/attendance/attendance-check';
 import { SpecialWorshipCheck } from '@/components/attendance/special-worship-check';
+import { NewFamilyManager } from '@/components/attendance/new-family-manager';
 import { Tabs } from '@/components/ui/tabs';
 import { PillTabs } from '@/components/ui/pill-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -146,8 +147,11 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const hasCell = !!effectiveCellId;
 
   const isCellLeader = effectiveRole === 'cell_leader';
+  const isNewFamilyTeam = !!fresh?.isNewFamilyTeam;
+  const isNewFamilyLeader =
+    isNewFamilyTeam && (isCellLeader || isVillageLeader || isMinister || !!user.isAdmin);
   // 경건생활 탭: 소그룹이 있거나 감독권한이 있으면 노출(일반 목원 포함 — 특버예배 자가체크)
-  const canSeeAttTab = hasCell || hasOversight;
+  const canSeeAttTab = hasCell || hasOversight || isNewFamilyLeader;
   // 마을 탭은 마을에 속한 모든 멤버(셀원/셀장/마을장/사역자)에게 노출
   // 셀원이 다른 셀의 "소그룹에만 공개" 글을 보지 못하도록 서버에서 이미 필터됨
   const canSeeVillageTab = !!effectiveVillageId && (hasCell || hasOversight);
@@ -164,7 +168,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     (isCellLeader && myVillageCells.length > 0 && !!villageName) ||
     (hasOversight && villageCells.length > 0);
   const attTabs = [
-    ...(hasCell ? [{ key: 'mine', label: '내 소그룹' }] : []),
+    ...(hasCell || isNewFamilyLeader
+      ? [{ key: 'mine', label: isNewFamilyLeader ? '새가족' : '내 소그룹' }]
+      : []),
     { key: 'special', label: '특별예배' },
     ...(showAttVillage
       ? [{ key: 'village', label: villageName ? `${villageName} 마을` : '마을' }]
@@ -522,7 +528,10 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               )}
 
               {/* === 내 소그룹 === */}
-              {attSub === 'mine' && hasCell && (
+              {attSub === 'mine' && isNewFamilyLeader && (
+                <NewFamilyManager weekStart={weekStart} />
+              )}
+              {attSub === 'mine' && !isNewFamilyLeader && hasCell && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>

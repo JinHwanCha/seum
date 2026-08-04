@@ -118,6 +118,28 @@ CREATE TABLE prayer_requests (
   UNIQUE(user_id, week_start)
 );
 
+-- ─── New Family Members (새가족반 출석 관리) ─────────────────
+-- 새가족반(villages.is_new_member_team=true) 리더가 회원가입 없이
+-- 새로 오신 분을 직접 등록하고 1~6주차 출석을 관리한다.
+CREATE TABLE new_family_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+  leader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL DEFAULT '',
+  birth_date DATE,
+  note TEXT NOT NULL DEFAULT '',
+  prayer_request TEXT NOT NULL DEFAULT '',
+  week1_date DATE,
+  week2_date DATE,
+  week3_date DATE,
+  week4_date DATE,
+  week5_date DATE,
+  week6_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ─── Board Categories (게시판 카테고리) ──────────────────────
 CREATE TABLE board_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -191,6 +213,8 @@ CREATE INDEX idx_bureau_members_user ON bureau_members(user_id);
 CREATE INDEX idx_bureau_members_bureau_type ON bureau_members(bureau_type_id);
 CREATE INDEX idx_board_categories_dept ON board_categories(department_id, board_type);
 CREATE INDEX idx_group_years_dept_active ON group_years(department_id, is_active);
+CREATE INDEX idx_new_family_members_leader ON new_family_members(leader_id);
+CREATE INDEX idx_new_family_members_dept ON new_family_members(department_id);
 
 -- ─── Password Reset Requests (비밀번호 초기화 요청) ──────────
 CREATE TABLE password_reset_requests (

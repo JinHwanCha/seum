@@ -98,6 +98,25 @@ export interface PrayerRequest {
   user?: User;
 }
 
+export interface NewFamilyMember {
+  id: string;
+  department_id: string;
+  leader_id: string;
+  name: string;
+  phone: string;
+  birth_date: string | null;
+  note: string;
+  prayer_request: string;
+  week1_date: string | null;
+  week2_date: string | null;
+  week3_date: string | null;
+  week4_date: string | null;
+  week5_date: string | null;
+  week6_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BoardCategory {
   id: string;
   department_id: string;

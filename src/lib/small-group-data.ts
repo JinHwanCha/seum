@@ -22,7 +22,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       ? supabase.from('cells').select('id, name, village_id').eq('id', cellId).single()
       : Promise.resolve({ data: null }),
     villageId
-      ? supabase.from('villages').select('name').eq('id', villageId).single()
+      ? supabase.from('villages').select('name, is_new_member_team').eq('id', villageId).single()
       : Promise.resolve({ data: null }),
     cellId
       ? supabase.from('users').select('id, name, role, minister_rank, phone, birth_date').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
@@ -73,6 +73,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
   const cell = cellResult.data;
   const villageName = villageResult.data?.name || null;
+  const isNewFamilyTeam = !!villageResult.data?.is_new_member_team;
   const members = (cellMembersResult.data || []) as any[];
   const leader = members.find((m: any) => m.role === 'cell_leader');
   const leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
@@ -196,6 +197,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       role,
       cellId,
       villageId,
+      isNewFamilyTeam,
     },
   };
 }
