@@ -21,7 +21,9 @@ interface PostListProps {
 }
 
 // 마을 카테고리를 보여줄 게시판
-const VILLAGE_TAB_BOARDS = ['sharing', 'gathering', 'intercession'];
+const VILLAGE_TAB_BOARDS = ['sharing', 'intercession'];
+// 게시글 카테고리를 탭으로 보여줄 게시판
+const CATEGORY_TAB_BOARDS = ['gathering'];
 
 export function PostList({
   posts,
@@ -29,29 +31,54 @@ export function PostList({
   villages = [],
   villageMap = {},
 }: PostListProps) {
-  const showTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
+  const showVillageTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
+  const useCategoryTabs = CATEGORY_TAB_BOARDS.includes(boardType);
 
   // 모든 사용자에게 전체 마을 탭을 노출 (권한없는 village-private 글은 서버에서 이미 걸러짐)
   const visibleVillages = useMemo(() => {
-    if (!showTabs) return [];
+    if (!showVillageTabs) return [];
     return villages;
-  }, [showTabs, villages]);
+  }, [showVillageTabs, villages]);
 
-  // 'all' or villageId
+  // 게시글에 사용된 카테고리 목록(중복 제거, 등장 순서 유지)
+  const categories = useMemo(() => {
+    if (!useCategoryTabs) return [];
+    const seen = new Map<string, string>();
+    posts.forEach((p) => {
+      if (p.category) seen.set(p.category.id, p.category.name);
+    });
+    return Array.from(seen, ([id, name]) => ({ id, name }));
+  }, [useCategoryTabs, posts]);
+
+  const showCategoryTabs = useCategoryTabs && categories.length > 0;
+
+  // 'all' or villageId or categoryId
   const [activeTab, setActiveTab] = useState<string>('all');
 
-  // 마을 탭 = 작성자가 속한 마을 기준으로 그룹핑 (visibility 무관)
   const filteredPosts = useMemo(() => {
-    if (!showTabs || activeTab === 'all') return posts;
-    return posts.filter((p) => p.author?.village_id === activeTab);
-  }, [showTabs, activeTab, posts]);
+    if (activeTab === 'all') return posts;
+    // 카테고리 탭 = 게시글 카테고리 기준으로 그룹핑
+    if (showCategoryTabs) return posts.filter((p) => p.category?.id === activeTab);
+    // 마을 탭 = 작성자가 속한 마을 기준으로 그룹핑 (visibility 무관)
+    if (showVillageTabs) return posts.filter((p) => p.author?.village_id === activeTab);
+    return posts;
+  }, [activeTab, posts, showCategoryTabs, showVillageTabs]);
 
   const pinned = filteredPosts.filter((p) => p.is_pinned);
   const regular = filteredPosts.filter((p) => !p.is_pinned);
 
   return (
     <div className="space-y-3">
-      {showTabs && (
+      {showCategoryTabs ? (
+        <PillTabs
+          tabs={[
+            { key: 'all', label: '전체' },
+            ...categories.map((c) => ({ key: c.id, label: c.name })),
+          ]}
+          activeKey={activeTab}
+          onChange={setActiveTab}
+        />
+      ) : showVillageTabs ? (
         <PillTabs
           tabs={[
             { key: 'all', label: '전체' },
@@ -60,7 +87,7 @@ export function PostList({
           activeKey={activeTab}
           onChange={setActiveTab}
         />
-      )}
+      ) : null}
 
       {filteredPosts.length === 0 ? (
         <div className="text-center py-12 text-stone-400">
