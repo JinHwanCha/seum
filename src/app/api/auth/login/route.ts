@@ -5,9 +5,14 @@ import { COOKIE_NAME } from '@/lib/constants';
 import { maskPhone } from '@/lib/utils';
 import type { SessionPayload } from '@/lib/types';
 
+// 생년월일 비교용 정규화: 숫자만 남겨 "2000-01-15" / "20000115" 등 형식 차이를 흡수
+function normalizeBirth(value?: string | null): string {
+  return (value ?? '').replace(/\D/g, '');
+}
+
 export async function POST(request: Request) {
   try {
-    const { churchName, name, password, selectedUserId, rememberMe } = await request.json();
+    const { churchName, name, password, selectedUserId, rememberMe, birthDate } = await request.json();
 
     if (!churchName || !name || !password) {
       return NextResponse.json({ error: '모든 필드를 입력해주세요.' }, { status: 400 });
@@ -76,18 +81,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Multiple matches - ask user to select
+    // Multiple matches (동명이인 + 동일 비밀번호) - 생년월일로 우선 구분
+    let user = matchedUsers[0];
     if (matchedUsers.length > 1 && !selectedUserId) {
-      return NextResponse.json({
-        multipleMatches: true,
-        users: matchedUsers.map((u) => ({
-          id: u.id,
-          phone: maskPhone(u.phone),
-        })),
-      });
+      const inputBirth = normalizeBirth(birthDate);
+
+      if (!inputBirth) {
+        // 생년월일 입력을 먼저 요청
+        return NextResponse.json({ requireBirthDate: true });
+      }
+
+      const byBirth = matchedUsers.filter(
+        (u) => normalizeBirth(u.birth_date) === inputBirth
+      );
+
+      if (byBirth.length === 1) {
+        user = byBirth[0];
+      } else if (byBirth.length === 0) {
+        return NextResponse.json(
+          { error: '생년월일이 일치하지 않습니다.', requireBirthDate: true },
+          { status: 401 }
+        );
+      } else {
+        // 생년월일까지 동일한 경우에만 전화번호로 최종 선택
+        return NextResponse.json({
+          multipleMatches: true,
+          users: byBirth.map((u) => ({
+            id: u.id,
+            phone: maskPhone(u.phone),
+          })),
+        });
+      }
     }
 
-    const user = matchedUsers[0];
     const dept = user.department as any;
 
     // Check bureau membership

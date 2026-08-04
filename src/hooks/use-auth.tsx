@@ -19,8 +19,9 @@ interface AuthContextType {
     name: string,
     password: string,
     selectedUserId?: string,
-    rememberMe?: boolean
-  ) => Promise<{ error?: string; multipleMatches?: boolean; users?: { id: string; phone: string }[] }>;
+    rememberMe?: boolean,
+    birthDate?: string
+  ) => Promise<{ error?: string; multipleMatches?: boolean; requireBirthDate?: boolean; users?: { id: string; phone: string }[] }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -49,15 +50,16 @@ export function AuthProvider({
       name: string,
       password: string,
       selectedUserId?: string,
-      rememberMe?: boolean
+      rememberMe?: boolean,
+      birthDate?: string
     ) => {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe }),
+        body: JSON.stringify({ churchName, name, password, selectedUserId, rememberMe, birthDate }),
       });
       const resData = await res.json();
-      if (res.ok && !resData.multipleMatches) {
+      if (res.ok && !resData.multipleMatches && !resData.requireBirthDate) {
         // 하드 네비게이션: 쿠키가 확실히 포함된 새 요청으로 Server Component를 렌더링
         window.location.href = `/${resData.churchSlug}/${resData.departmentSlug}`;
       }

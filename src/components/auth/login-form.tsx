@@ -14,6 +14,8 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [multipleUsers, setMultipleUsers] = useState<{ id: string; phone: string }[] | null>(null);
+  const [requireBirthDate, setRequireBirthDate] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
 
   // 비밀번호 찾기
   const [showReset, setShowReset] = useState(false);
@@ -27,9 +29,12 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await login(churchName, name, password, selectedUserId, rememberMe);
+      const result = await login(churchName, name, password, selectedUserId, rememberMe, birthDate);
       if (result.error) {
         setError(result.error);
+      }
+      if (result.requireBirthDate) {
+        setRequireBirthDate(true);
       }
       if (result.multipleMatches && result.users) {
         setMultipleUsers(result.users);
@@ -118,6 +123,20 @@ export function LoginForm() {
           />
           <span className="text-sm text-stone-600">로그인 유지</span>
         </label>
+
+        {requireBirthDate && (
+          <div className="bg-amber-50 rounded-lg p-3 space-y-2">
+            <p className="text-sm text-amber-800 font-medium">
+              동명이인이 존재합니다. 본인 확인을 위해 생년월일을 입력해주세요.
+            </p>
+            <Input
+              label="생년월일"
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+            />
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3">{error}</div>
