@@ -44,8 +44,8 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 공지 게시판은 항상 전체공개
-  const showVisibility = boardType !== 'notice';
+  // 공지/모임 게시판은 항상 전체공개
+  const showVisibility = boardType !== 'notice' && boardType !== 'gathering';
   const canPickAnyVillage = user?.role === 'minister' || user?.role === 'village_leader';
   // 마을공개 가능: 본인 마을 있거나, 사역자/마을장 (마을 선택 가능)
   const canPickVillage = !!user?.villageId || canPickAnyVillage;

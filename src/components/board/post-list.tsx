@@ -47,15 +47,34 @@ export function PostList({
     return villages;
   }, [showVillageTabs, villages]);
 
-  const showCategoryTabs = useCategoryTabs && categories.length > 0;
+  // 카테고리 탭 = 등록 카테고리 + 작성자가 직접 입력한 카테고리(gathering_type) 이름 기준
+  const categoryNames = useMemo(() => {
+    if (!useCategoryTabs) return [];
+    const names: string[] = [];
+    const seen = new Set<string>();
+    const add = (name?: string | null) => {
+      const n = (name ?? '').trim();
+      if (n && !seen.has(n)) {
+        seen.add(n);
+        names.push(n);
+      }
+    };
+    categories.forEach((c) => add(c.name));
+    posts.forEach((p) => add(p.category?.name ?? p.gathering_type));
+    return names;
+  }, [useCategoryTabs, categories, posts]);
 
-  // 'all' or villageId or categoryId
+  const showCategoryTabs = useCategoryTabs && categoryNames.length > 0;
+
+  // 'all' or villageId or categoryName
   const [activeTab, setActiveTab] = useState<string>('all');
 
   const filteredPosts = useMemo(() => {
     if (activeTab === 'all') return posts;
-    // 카테고리 탭 = 게시글 카테고리 기준으로 그룹핑
-    if (showCategoryTabs) return posts.filter((p) => p.category?.id === activeTab);
+    // 카테고리 탭 = 게시글 카테고리 이름 기준으로 그룹핑 (등록/직접입력 모두 포함)
+    if (showCategoryTabs) {
+      return posts.filter((p) => (p.category?.name ?? p.gathering_type ?? '').trim() === activeTab);
+    }
     // 마을 탭 = 작성자가 속한 마을 기준으로 그룹핑 (visibility 무관)
     if (showVillageTabs) return posts.filter((p) => p.author?.village_id === activeTab);
     return posts;
@@ -70,7 +89,7 @@ export function PostList({
         <PillTabs
           tabs={[
             { key: 'all', label: '전체' },
-            ...categories.map((c) => ({ key: c.id, label: c.name })),
+            ...categoryNames.map((name) => ({ key: name, label: name })),
           ]}
           activeKey={activeTab}
           onChange={setActiveTab}
