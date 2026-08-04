@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Trash2, Edit3, ChevronDown, ChevronRight } from 'lucide-react';
+import { ResetAssignmentsButton } from '@/components/admin/reset-assignments-button';
 import type { Village, Cell } from '@/lib/types';
 
 interface VillageWithCells extends Village {
@@ -105,7 +106,8 @@ export function VillageManager() {
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <ResetAssignmentsButton />
         <Button size="sm" onClick={() => setShowAddVillage(true)}>
           <Plus size={14} className="mr-1" /> 마을 추가
         </Button>

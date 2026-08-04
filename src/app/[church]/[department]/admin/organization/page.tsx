@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { AdminBackButton } from '@/components/admin/back-button';
-import { ResetAssignmentsButton } from '@/components/admin/reset-assignments-button';
 
 const VillageManager = dynamic(
   () => import('@/components/admin/village-manager').then((m) => m.VillageManager),
@@ -17,10 +16,7 @@ export default function OrganizationPage() {
         <h1 className="text-lg font-bold text-stone-900">조직 관리</h1>
       </div>
       <p className="text-sm text-stone-500">마을과 소그룹을 생성, 수정, 삭제할 수 있습니다.</p>
-      <div className="flex justify-end gap-2">
-        <ResetAssignmentsButton />
-        <VillageManager />
-      </div>
+      <VillageManager />
     </div>
   );
 }
