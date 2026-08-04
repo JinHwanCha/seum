@@ -16,6 +16,7 @@ import { TreeGrowth } from '@/components/prayer/tree-growth';
 import { TreeOverview } from '@/components/prayer/tree-overview';
 import { SharingSheet } from '@/components/prayer/sharing-sheet';
 import { MonthlyPrayerView } from '@/components/prayer/monthly-prayer-view';
+import { VillagePrayerCells } from '@/components/prayer/village-prayer-cells';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
@@ -95,15 +96,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       setAttendanceMap(swrData.attendanceMap || {});
     }
   }, [swrData]);
-
-  const toggleCell = (cellId: string) => {
-    setExpandedCells((prev) => {
-      const next = new Set(prev);
-      if (next.has(cellId)) next.delete(cellId);
-      else next.add(cellId);
-      return next;
-    });
-  };
 
   // Optimistic attendance update (no refetch)
   const handleAttendanceChange = useCallback(
@@ -446,128 +438,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                       onChange={setPrayerVillageFilter}
                     />
                   )}
-                  {villageCells
-                    .filter(
+                  <VillagePrayerCells
+                    villages={villageCells.filter(
                       (v) =>
                         !isMinister ||
                         prayerVillageFilter === '__all__' ||
                         v.id === prayerVillageFilter
-                    )
-                    .map((village) => (
-                    <div key={village.id}>
-                      {isMinister && (
-                        <h2 className="text-sm font-semibold text-stone-700 mb-2 px-1">
-                          {village.name} 마을
-                        </h2>
-                      )}
-                      <div className="space-y-2">
-                        {village.cells.map((cell) => {
-                          const isExpanded = expandedCells.has(cell.id);
-                          const prayerCount = cell.prayers.length;
-                          const memberCount = cell.members.length;
-
-                          return (
-                            <div
-                              key={cell.id}
-                              className="warm-surface rounded-xl border border-stone-200/80 overflow-hidden"
-                            >
-                              {/* Cell Header - Clickable */}
-                              <button
-                                onClick={() => toggleCell(cell.id)}
-                                className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
-                              >
-                                <div className="flex items-center gap-2">
-                                  {isExpanded ? (
-                                    <ChevronDown size={16} className="text-stone-400" />
-                                  ) : (
-                                    <ChevronRight size={16} className="text-stone-400" />
-                                  )}
-                                  <span className="font-medium text-stone-900 text-sm">
-                                    {cell.name || '소그룹'}
-                                  </span>
-                                  {cell.leader_name && (
-                                    <span className="text-xs text-stone-500">
-                                      목자: {cell.leader_name}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="default">
-                                    {memberCount}명
-                                  </Badge>
-                                  <Badge variant={prayerCount === memberCount ? 'success' : 'warning'}>
-                                    기도 {prayerCount}/{memberCount}
-                                  </Badge>
-                                </div>
-                              </button>
-
-                              {/* Expanded Content */}
-                              {isExpanded && (
-                                <div className="border-t border-stone-100 p-4 space-y-3">
-                                  {/* Members + their prayers */}
-                                  {cell.members.map((m) => {
-                                    const prayer = cell.prayers.find(
-                                      (p) => p.user_id === m.id
-                                    );
-                                    return (
-                                      <div key={m.id} className="space-y-1">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          {m.role === 'cell_leader' ? (
-                                            <Crown size={14} className="text-amber-500" />
-                                          ) : (
-                                            <User size={14} className="text-stone-400" />
-                                          )}
-                                          <span className="text-sm font-medium text-stone-900">
-                                            {m.name}{birthYearLabel(m.birth_date)}
-                                          </span>
-                                          <Badge
-                                            variant={
-                                              m.role === 'cell_leader' ? 'success' : 'default'
-                                            }
-                                          >
-                                            {ROLE_LABELS_DEFAULT[m.role]}
-                                          </Badge>
-                                          {prayer?.is_cell_only && (
-                                            <Badge variant="warning">소그룹공개</Badge>
-                                          )}
-                                        </div>
-                                        {prayer ? (
-                                          <div className="ml-6 bg-primary-50/30 rounded-lg p-3">
-                                            <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
-                                              {prayer.content}
-                                            </p>
-                                            {(prayer.images || []).length > 0 && (
-                                              <div className="mt-2 flex flex-wrap gap-2">
-                                                {(prayer.images as string[]).map((src, idx) => (
-                                                  <button
-                                                    key={idx}
-                                                    type="button"
-                                                    onClick={() => setLightbox({ images: prayer.images as string[], index: idx })}
-                                                    className="block rounded-md overflow-hidden border border-stone-200 hover:opacity-90 transition-opacity"
-                                                  >
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img src={src} alt="" className="h-16 w-16 object-cover" />
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <p className="ml-6 text-xs text-stone-400 italic">
-                                            기도제목 미작성
-                                          </p>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+                    )}
+                    showVillageHeader={isMinister}
+                    onImageClick={(images, index) => setLightbox({ images, index })}
+                  />
                 </div>
               )}
 
@@ -616,110 +496,11 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               <p className="text-sm font-medium">마을 소그룹 데이터가 없습니다.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {myVillageCells.map((village) =>
-                village.cells.map((cell) => {
-                  const isExpanded = expandedCells.has(`vil-${cell.id}`);
-                  const prayerCount = cell.prayers.length;
-                  const memberCount = cell.members.length;
-                  return (
-                    <div
-                      key={cell.id}
-                      className="warm-surface rounded-xl border border-stone-200/80 overflow-hidden"
-                    >
-                      <button
-                        onClick={() => {
-                          setExpandedCells((prev) => {
-                            const next = new Set(prev);
-                            const key = `vil-${cell.id}`;
-                            if (next.has(key)) next.delete(key);
-                            else next.add(key);
-                            return next;
-                          });
-                        }}
-                        className="w-full flex flex-wrap items-center justify-between p-4 hover:bg-primary-50/30 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          {isExpanded ? (
-                            <ChevronDown size={16} className="text-stone-400" />
-                          ) : (
-                            <ChevronRight size={16} className="text-stone-400" />
-                          )}
-                          <span className="font-medium text-stone-900 text-sm">
-                            {cell.name || '소그룹'}
-                          </span>
-                          {cell.leader_name && (
-                            <span className="text-xs text-stone-500">
-                              목자: {cell.leader_name}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">{memberCount}명</Badge>
-                          <Badge variant={prayerCount === memberCount ? 'success' : 'warning'}>
-                            기도 {prayerCount}/{memberCount}
-                          </Badge>
-                        </div>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="border-t border-stone-100 p-4 space-y-3">
-                          {cell.members.map((m) => {
-                            const prayer = cell.prayers.find((p) => p.user_id === m.id);
-                            return (
-                              <div key={m.id} className="space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {m.role === 'cell_leader' ? (
-                                    <Crown size={14} className="text-amber-500" />
-                                  ) : (
-                                    <User size={14} className="text-stone-400" />
-                                  )}
-                                  <span className="text-sm font-medium text-stone-900">
-                                    {m.name}{birthYearLabel(m.birth_date)}
-                                  </span>
-                                  <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
-                                    {ROLE_LABELS_DEFAULT[m.role]}
-                                  </Badge>
-                                  {prayer?.is_cell_only && (
-                                    <Badge variant="warning">소그룹공개</Badge>
-                                  )}
-                                </div>
-                                {prayer ? (
-                                  <div className="ml-6 bg-primary-50/30 rounded-lg p-3">
-                                    <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
-                                      {prayer.content}
-                                    </p>
-                                    {(prayer.images || []).length > 0 && (
-                                      <div className="mt-2 flex flex-wrap gap-2">
-                                        {(prayer.images as string[]).map((src, idx) => (
-                                          <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => setLightbox({ images: prayer.images as string[], index: idx })}
-                                            className="block rounded-md overflow-hidden border border-stone-200 hover:opacity-90 transition-opacity"
-                                          >
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={src} alt="" className="h-16 w-16 object-cover" />
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="ml-6 text-xs text-stone-400 italic">
-                                    기도제목 미작성
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <VillagePrayerCells
+              villages={myVillageCells}
+              expandKeyPrefix="vil-"
+              onImageClick={(images, index) => setLightbox({ images, index })}
+            />
           )}
         </>
       )}
