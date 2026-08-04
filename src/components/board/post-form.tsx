@@ -182,6 +182,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
       <div>
         <label className="block text-sm font-medium text-stone-700 mb-1.5">사진 첨부 (선택)</label>
         <ImageUploader images={images} onChange={setImages} />
+        <p className="text-[11px] text-stone-400 mt-1">한 게시글에 최대 10장 업로드 가능</p>
       </div>
 
       {showVisibility && (
