@@ -15,6 +15,7 @@ import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { TreeGrowth } from '@/components/prayer/tree-growth';
 import { TreeOverview } from '@/components/prayer/tree-overview';
 import { SharingSheet } from '@/components/prayer/sharing-sheet';
+import { MonthlyPrayerView } from '@/components/prayer/monthly-prayer-view';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
@@ -58,6 +59,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [praySubTab, setPraySubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
   const [prayerVillageFilter, setPrayerVillageFilter] = useState<string>('__all__');
+  const [cellPrayerView, setCellPrayerView] = useState<'week' | 'month'>('week');
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   // Optimistic local state (updated by callbacks, synced from SWR)
@@ -340,9 +342,39 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                   </div>
 
                   {/* Cell Prayers */}
-                  <h2 className="text-sm font-semibold text-stone-500 px-1">소그룹 기도제목</h2>
+                  <div className="flex items-center justify-between px-1">
+                    <h2 className="text-sm font-semibold text-stone-500">소그룹 기도제목</h2>
+                    <div className="flex gap-1 rounded-full bg-stone-100 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setCellPrayerView('week')}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          cellPrayerView === 'week'
+                            ? 'bg-white text-primary-600 shadow-sm'
+                            : 'text-stone-500 hover:text-stone-700'
+                        }`}
+                      >
+                        이번주
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCellPrayerView('month')}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          cellPrayerView === 'month'
+                            ? 'bg-white text-primary-600 shadow-sm'
+                            : 'text-stone-500 hover:text-stone-700'
+                        }`}
+                      >
+                        월별
+                      </button>
+                    </div>
+                  </div>
 
-                  {members.length === 0 ? (
+                  {cellPrayerView === 'month' ? (
+                    <MonthlyPrayerView
+                      onImageClick={(images, index) => setLightbox({ images, index })}
+                    />
+                  ) : members.length === 0 ? (
                     <div className="text-center py-8 text-stone-400 text-sm">
                       소그룹이 배정되지 않았습니다.
                     </div>

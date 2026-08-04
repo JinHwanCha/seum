@@ -6,6 +6,60 @@ export function getCurrentWeekSunday(date: Date = new Date()): Date {
   return startOfWeek(date, { weekStartsOn: 0 });
 }
 
+/** 해당 주(일요일)가 속한 달 안에서의 주차(1~5). formatWeekLabel과 동일 규칙. */
+export function getWeekNumberInMonth(sunday: Date): number {
+  return Math.ceil(sunday.getDate() / 7);
+}
+
+/** 'YYYY-MM' 형태의 월 키 반환 */
+export function formatMonthKey(date: Date): string {
+  return format(date, 'yyyy-MM');
+}
+
+/** 'YYYY년 M월' 형태의 월 라벨 반환 */
+export function formatMonthLabel(date: Date): string {
+  return `${format(date, 'yyyy', { locale: ko })}년 ${getMonth(date) + 1}월`;
+}
+
+export function getPreviousMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+}
+
+export function getNextMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 1);
+}
+
+export function isFutureMonth(date: Date): boolean {
+  const now = new Date();
+  return (
+    date.getFullYear() > now.getFullYear() ||
+    (date.getFullYear() === now.getFullYear() && date.getMonth() > now.getMonth())
+  );
+}
+
+/**
+ * 해당 월에 속한 각 주(일요일 기준)의 목록을 반환한다.
+ * 주는 일요일의 날짜가 속한 달로 귀속된다(formatWeekLabel 규칙과 동일).
+ * 미래 주는 제외한다.
+ */
+export function getMonthWeeks(date: Date): { weekNum: number; sunday: string }[] {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const currentSunday = getCurrentWeekSunday();
+
+  const weeks: { weekNum: number; sunday: string }[] = [];
+  let d = getCurrentWeekSunday(new Date(year, month, 1));
+  if (d.getMonth() !== month) d = addWeeks(d, 1); // 달의 첫 일요일로 이동
+
+  while (d.getMonth() === month && d.getFullYear() === year) {
+    if (d <= currentSunday) {
+      weeks.push({ weekNum: getWeekNumberInMonth(d), sunday: formatWeekDate(d) });
+    }
+    d = addWeeks(d, 1);
+  }
+  return weeks;
+}
+
 export function formatWeekLabel(sunday: Date): string {
   const month = getMonth(sunday) + 1;
   const weekNum = Math.ceil(sunday.getDate() / 7);
