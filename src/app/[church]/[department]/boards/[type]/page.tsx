@@ -38,6 +38,19 @@ async function PostListServer({
   const villages = (((groupYear as any)?.villages || []) as { id: string; name: string; sort_order: number }[])
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
+  // 1-2) 게시판 카테고리 목록 (카테고리 탭용)
+  const { data: categoryRows } = await supabase
+    .from('board_categories')
+    .select('id, name, sort_order')
+    .eq('department_id', departmentId)
+    .eq('board_type', type)
+    .order('sort_order', { ascending: true });
+
+  const categories = ((categoryRows || []) as { id: string; name: string }[]).map((c) => ({
+    id: c.id,
+    name: c.name,
+  }));
+
   // 2) 게시글 (가시성 필터 포함)
   let query = supabase
     .from('posts')
@@ -80,6 +93,7 @@ async function PostListServer({
       posts={enrichedPosts}
       boardType={type}
       villages={villages}
+      categories={categories}
       villageMap={villageMap}
       currentVillageId={villageId}
       canSeeAll={canSeeAll}

@@ -10,10 +10,16 @@ interface VillageOpt {
   name: string;
 }
 
+interface CategoryOpt {
+  id: string;
+  name: string;
+}
+
 interface PostListProps {
   posts: Post[];
   boardType: string;
   villages?: VillageOpt[];
+  categories?: CategoryOpt[];
   villageMap?: Record<string, string>;
   currentVillageId?: string | null;
   /** 사역자 또는 마을장 — 모든 마을 글 열람 가능 */
@@ -29,6 +35,7 @@ export function PostList({
   posts,
   boardType,
   villages = [],
+  categories = [],
   villageMap = {},
 }: PostListProps) {
   const showVillageTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
@@ -39,16 +46,6 @@ export function PostList({
     if (!showVillageTabs) return [];
     return villages;
   }, [showVillageTabs, villages]);
-
-  // 게시글에 사용된 카테고리 목록(중복 제거, 등장 순서 유지)
-  const categories = useMemo(() => {
-    if (!useCategoryTabs) return [];
-    const seen = new Map<string, string>();
-    posts.forEach((p) => {
-      if (p.category) seen.set(p.category.id, p.category.name);
-    });
-    return Array.from(seen, ([id, name]) => ({ id, name }));
-  }, [useCategoryTabs, posts]);
 
   const showCategoryTabs = useCategoryTabs && categories.length > 0;
 
