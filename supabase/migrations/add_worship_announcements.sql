@@ -2,7 +2,8 @@
 -- 홈 상단 [주일 예배 안내] 섹션의 버튼들을 저장한다. 부서별로 관리한다.
 --
 --   고정 버튼(key IS NOT NULL): 'assembly'(집회 안내), 'intercession'(중보기도회),
---                               'youth_ad'(청년부 광고), 'kakao'(카카오 채널)
+--                               'youth_ad'(청년부 광고), 'calendar'(캘린더),
+--                               'kakao'(SNS - Instagram/카카오톡/YouTube)
 --     → 삭제 불가, 사역자/국장단/관리자가 내용만 수정. DB에 행이 없으면 앱이
 --        기본값을 보여주고, 처음 저장할 때 행이 생성된다.
 --   특별 광고(key IS NULL): 매주 새로 생기는 이벤트 광고. 여러 개 가능하며
@@ -12,7 +13,8 @@
 --   'timetable'  → content.rows[] (소요/프로그램/내용/인도자/특이사항) + images
 --   'prayer'     → content.sections[] (번호형 기도제목) + images
 --   'slideshow'  → images(슬라이드) + content.sections[](선택 광고 텍스트)
---   'link'       → link (카카오 채널 등)
+--   'link'       → link (단일 링크)
+--   'sns'        → content.sns { instagram, kakao, youtube } (SNS 3버튼)
 --
 -- 이미지는 앱의 다른 게시물과 동일하게 압축된 data URL 문자열 배열로 저장한다.
 -- 앱은 service_role 키로만 접근하므로 RLS 정책은 두지 않는다(deny-all).

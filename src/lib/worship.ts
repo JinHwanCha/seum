@@ -6,8 +6,12 @@ import type {
   WorshipTimetableRow,
 } from '@/lib/types';
 
-// 카카오 채널 기본 URL (변경 가능)
-export const DEFAULT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_xibZxhC';
+// SNS 버튼 기본 URL (관리에서 변경 가능)
+export const DEFAULT_SNS_URLS = {
+  instagram: 'https://www.instagram.com/naesoofishermen/',
+  kakao: 'https://pf.kakao.com/_xibZxhC',
+  youtube: 'https://www.youtube.com/@naesoofishermen',
+};
 
 // 부서 캘린더 기본 URL (구글 캘린더 embed, 사역자/국장단/관리자가 언제든 교체 가능)
 export const DEFAULT_CALENDAR_URL =
@@ -28,14 +32,14 @@ export const WORSHIP_FIXED_DEFS: WorshipFixedDef[] = [
   { key: 'intercession', kind: 'prayer',    label: '중보기도회',  icon: '🙏', color: 'bg-indigo-50 text-indigo-600', order: 2 },
   { key: 'youth_ad',     kind: 'slideshow', label: '청년부 광고', icon: '📢', color: 'bg-sky-50 text-sky-600',       order: 3 },
   { key: 'calendar',     kind: 'calendar',  label: '어부들 캘린더', icon: '📅', color: 'bg-emerald-50 text-emerald-600', order: 4 },
-  { key: 'kakao',        kind: 'link',      label: '카카오 채널', icon: '💬', color: 'bg-yellow-50 text-yellow-600', order: 5 },
+  { key: 'kakao',        kind: 'sns',       label: 'SNS',        icon: '🔗', color: 'bg-violet-50 text-violet-600', order: 5 },
 ];
 
 export const WORSHIP_FIXED_MAP: Record<string, WorshipFixedDef> = Object.fromEntries(
   WORSHIP_FIXED_DEFS.map((d) => [d.key, d])
 );
 
-const VALID_KINDS: WorshipKind[] = ['timetable', 'prayer', 'slideshow', 'link', 'calendar'];
+const VALID_KINDS: WorshipKind[] = ['timetable', 'prayer', 'slideshow', 'link', 'calendar', 'sns'];
 
 function str(v: unknown): string {
   return String(v ?? '').trim();
@@ -70,11 +74,20 @@ export function normalizeWorshipContent(raw: unknown): WorshipContent {
         .filter((s) => s.title !== '' || s.items.length > 0)
     : [];
 
+  const snsRaw = (obj.sns && typeof obj.sns === 'object' ? obj.sns : {}) as Record<string, unknown>;
+  const sns = {
+    instagram: str(snsRaw.instagram),
+    kakao: str(snsRaw.kakao),
+    youtube: str(snsRaw.youtube),
+  };
+  const hasSns = !!(sns.instagram || sns.kakao || sns.youtube);
+
   return {
     subtitle: str(obj.subtitle),
     note: str(obj.note),
     rows,
     sections,
+    ...(hasSns ? { sns } : {}),
   };
 }
 
@@ -110,7 +123,12 @@ export function rowToWorship(row: Record<string, unknown>): WorshipAnnouncement 
   return {
     id: row.id ? String(row.id) : null,
     key,
-    kind: (VALID_KINDS.includes(row.kind as WorshipKind) ? row.kind : fixed?.kind ?? 'slideshow') as WorshipKind,
+    // 고정 버튼은 key로 kind가 결정된다(예전에 저장된 kind는 무시).
+    kind: (fixed
+      ? fixed.kind
+      : VALID_KINDS.includes(row.kind as WorshipKind)
+      ? (row.kind as WorshipKind)
+      : 'slideshow') as WorshipKind,
     title: String(row.title ?? ''),
     icon: String(row.icon ?? ''),
     images: normalizeImages(row.images),
@@ -131,11 +149,9 @@ export function defaultFixedWorship(def: WorshipFixedDef): WorshipAnnouncement {
     title: def.label,
     icon: def.icon,
     images: [],
-    content: {},
+    content: def.key === 'kakao' ? { sns: { ...DEFAULT_SNS_URLS } } : {},
     link:
-      def.key === 'kakao'
-        ? DEFAULT_KAKAO_CHANNEL_URL
-        : def.key === 'calendar'
+      def.key === 'calendar'
         ? DEFAULT_CALENDAR_URL
         : '',
     pinned: false,

@@ -250,7 +250,14 @@ export interface GatheringItem {
 }
 
 // ─── 주일 예배 안내 (Worship Guide) ───
-export type WorshipKind = 'timetable' | 'prayer' | 'slideshow' | 'link' | 'calendar';
+export type WorshipKind = 'timetable' | 'prayer' | 'slideshow' | 'link' | 'calendar' | 'sns';
+
+// SNS 버튼 링크 묶음 (인스타그램 / 카카오톡 / 유튜브)
+export interface WorshipSnsLinks {
+  instagram?: string;
+  kakao?: string;
+  youtube?: string;
+}
 
 // 집회 안내 타임테이블 한 행
 export interface WorshipTimetableRow {
@@ -272,6 +279,7 @@ export interface WorshipContent {
   note?: string;                  // 하단 안내 문구
   rows?: WorshipTimetableRow[];   // timetable
   sections?: WorshipSection[];    // prayer / slideshow 광고 텍스트
+  sns?: WorshipSnsLinks;          // sns 버튼 링크
 }
 
 export interface WorshipAnnouncement {

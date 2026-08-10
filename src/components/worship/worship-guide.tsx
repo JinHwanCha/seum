@@ -6,8 +6,8 @@ import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { Slideshow } from '@/components/ui/slideshow';
-import { WORSHIP_FIXED_MAP } from '@/lib/worship';
-import { Settings, X, ExternalLink, Loader2 } from 'lucide-react';
+import { WORSHIP_FIXED_MAP, DEFAULT_SNS_URLS } from '@/lib/worship';
+import { Settings, X, ExternalLink, Loader2, Instagram, Youtube, MessageCircle } from 'lucide-react';
 import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
 
 const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -45,6 +45,7 @@ function tileDisplay(item: WorshipAnnouncement): { label: string; icon: string; 
 }
 
 function hasContent(item: WorshipAnnouncement): boolean {
+  if (item.kind === 'sns') return true;
   if (item.kind === 'link' || item.kind === 'calendar') return !!item.link;
   if ((item.imageCount ?? item.images.length) > 0) return true;
   const c = item.content || {};
@@ -65,6 +66,51 @@ function TileIcon({ icon, color }: { icon: string; color: string }) {
 }
 
 // ─── 팝업 내용 뷰 ───────────────────────────────────────────
+
+function SnsView({ item }: { item: WorshipAnnouncement }) {
+  const sns = item.content?.sns ?? {};
+  const links = [
+    {
+      key: 'instagram',
+      label: 'Instagram',
+      url: sns.instagram || DEFAULT_SNS_URLS.instagram,
+      icon: <Instagram size={26} />,
+      color: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white',
+    },
+    {
+      key: 'kakao',
+      label: '카카오톡',
+      url: sns.kakao || item.link || DEFAULT_SNS_URLS.kakao,
+      icon: <MessageCircle size={26} />,
+      color: 'bg-[#FEE500] text-[#3C1E1E]',
+    },
+    {
+      key: 'youtube',
+      label: 'YouTube',
+      url: sns.youtube || DEFAULT_SNS_URLS.youtube,
+      icon: <Youtube size={26} />,
+      color: 'bg-[#FF0000] text-white',
+    },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {links.map((l) => (
+        <a
+          key={l.key}
+          href={l.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-stone-200 p-4 transition-shadow hover:shadow-md"
+        >
+          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${l.color}`}>
+            {l.icon}
+          </span>
+          <span className="text-sm font-medium text-stone-700">{l.label}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
 
 function TimetableView({ content }: { content: WorshipContent }) {
   const rows = content.rows ?? [];
@@ -143,6 +189,10 @@ function WorshipDetail({ item }: { item: WorshipAnnouncement }) {
   const images = data?.item.images ?? item.images ?? [];
   const content = item.content || {};
   const loadingImages = needImages && !data;
+
+  if (item.kind === 'sns') {
+    return <SnsView item={item} />;
+  }
 
   if (item.kind === 'calendar') {
     return (

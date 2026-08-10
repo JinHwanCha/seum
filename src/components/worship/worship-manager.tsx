@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ImagesEditor } from '@/components/ui/images-editor';
-import { WORSHIP_FIXED_MAP } from '@/lib/worship';
+import { WORSHIP_FIXED_MAP, DEFAULT_SNS_URLS } from '@/lib/worship';
 import { Plus, Pencil, Trash2, ArrowLeft, ChevronUp, ChevronDown, X, Loader2 } from 'lucide-react';
 import type {
   WorshipAnnouncement,
@@ -29,6 +29,9 @@ type FormState = {
   subtitle: string;
   note: string;
   link: string;
+  snsInstagram: string;
+  snsKakao: string;
+  snsYoutube: string;
   images: string[];
   rows: WorshipTimetableRow[];
   sections: WorshipSection[];
@@ -42,6 +45,9 @@ const EMPTY_FORM: FormState = {
   subtitle: '',
   note: '',
   link: '',
+  snsInstagram: '',
+  snsKakao: '',
+  snsYoutube: '',
   images: [],
   rows: [],
   sections: [],
@@ -53,12 +59,16 @@ const EMPTY_ROW: WorshipTimetableRow = { duration: '', program: '', detail: '', 
 
 function toForm(item: WorshipAnnouncement): FormState {
   const c = item.content || {};
+  const sns = c.sns || {};
   return {
     title: item.title || '',
     icon: item.icon || '',
     subtitle: c.subtitle || '',
     note: c.note || '',
     link: item.link || '',
+    snsInstagram: sns.instagram || DEFAULT_SNS_URLS.instagram,
+    snsKakao: sns.kakao || item.link || DEFAULT_SNS_URLS.kakao,
+    snsYoutube: sns.youtube || DEFAULT_SNS_URLS.youtube,
     images: item.images || [],
     rows: c.rows || [],
     sections: c.sections || [],
@@ -68,6 +78,7 @@ function toForm(item: WorshipAnnouncement): FormState {
 }
 
 function itemHasContent(item: WorshipAnnouncement): boolean {
+  if (item.kind === 'sns') return true;
   if (item.kind === 'link' || item.kind === 'calendar') return !!item.link;
   if ((item.imageCount ?? item.images.length) > 0) return true;
   const c = item.content || {};
@@ -286,6 +297,12 @@ export function WorshipManager({ isOpen, onClose, items, onChanged }: Props) {
     const content: WorshipContent = { subtitle: form.subtitle, note: form.note };
     if (kind === 'timetable') content.rows = form.rows;
     if (kind === 'prayer' || kind === 'slideshow') content.sections = form.sections;
+    if (kind === 'sns')
+      content.sns = {
+        instagram: form.snsInstagram.trim(),
+        kakao: form.snsKakao.trim(),
+        youtube: form.snsYoutube.trim(),
+      };
     return content;
   };
 
@@ -436,6 +453,30 @@ export function WorshipManager({ isOpen, onClose, items, onChanged }: Props) {
 
           {kind === 'link' ? (
             <Input label="채널 URL" placeholder="https://pf.kakao.com/..." value={form.link} onChange={(e) => set('link', e.target.value)} />
+          ) : kind === 'sns' ? (
+            <>
+              <Input
+                label="Instagram URL"
+                placeholder="https://www.instagram.com/..."
+                value={form.snsInstagram}
+                onChange={(e) => set('snsInstagram', e.target.value)}
+              />
+              <Input
+                label="카카오톡 URL"
+                placeholder="https://pf.kakao.com/..."
+                value={form.snsKakao}
+                onChange={(e) => set('snsKakao', e.target.value)}
+              />
+              <Input
+                label="YouTube URL"
+                placeholder="https://www.youtube.com/@..."
+                value={form.snsYoutube}
+                onChange={(e) => set('snsYoutube', e.target.value)}
+              />
+              <p className="text-xs leading-relaxed text-stone-400">
+                버튼을 누르면 팝업에 Instagram · 카카오톡 · YouTube 3개 버튼이 한 줄로 표시됩니다.
+              </p>
+            </>
           ) : kind === 'calendar' ? (
             <>
               <Input
