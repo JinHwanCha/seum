@@ -83,7 +83,7 @@ function SnsView({ item }: { item: WorshipAnnouncement }) {
     {
       key: 'kakao',
       label: '카카오톡',
-      handle: '내수 어부들',
+      handle: '내수동교회 청년부 어부들',
       url: sns.kakao || item.link || DEFAULT_SNS_URLS.kakao,
       icon: <MessageCircle size={24} strokeWidth={2.2} className="fill-current" />,
       rowClass: 'bg-[#FEE500] text-[#3C1E1E]',
