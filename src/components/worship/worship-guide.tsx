@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { Slideshow } from '@/components/ui/slideshow';
 import { WORSHIP_FIXED_MAP, DEFAULT_SNS_URLS } from '@/lib/worship';
-import { Settings, X, ExternalLink, Loader2, Instagram, Youtube, MessageCircle } from 'lucide-react';
+import { Settings, X, ExternalLink, Loader2, Instagram, Youtube, MessageCircle, ChevronRight } from 'lucide-react';
 import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
 
 const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -73,39 +73,52 @@ function SnsView({ item }: { item: WorshipAnnouncement }) {
     {
       key: 'instagram',
       label: 'Instagram',
+      handle: '@naesoofishermen',
       url: sns.instagram || DEFAULT_SNS_URLS.instagram,
-      icon: <Instagram size={26} />,
-      color: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white',
+      icon: <Instagram size={24} strokeWidth={2.2} />,
+      rowClass: 'bg-gradient-to-r from-[#7C3AED] via-[#E1306C] to-[#F77737] text-white',
+      iconClass: 'bg-white/20 text-white',
+      subClass: 'text-white/80',
     },
     {
       key: 'kakao',
       label: '카카오톡',
+      handle: '내수 어부들',
       url: sns.kakao || item.link || DEFAULT_SNS_URLS.kakao,
-      icon: <MessageCircle size={26} />,
-      color: 'bg-[#FEE500] text-[#3C1E1E]',
+      icon: <MessageCircle size={24} strokeWidth={2.2} className="fill-current" />,
+      rowClass: 'bg-[#FEE500] text-[#3C1E1E]',
+      iconClass: 'bg-[#3C1E1E]/10 text-[#3C1E1E]',
+      subClass: 'text-[#3C1E1E]/60',
     },
     {
       key: 'youtube',
       label: 'YouTube',
+      handle: '@naesoofishermen',
       url: sns.youtube || DEFAULT_SNS_URLS.youtube,
-      icon: <Youtube size={26} />,
-      color: 'bg-[#FF0000] text-white',
+      icon: <Youtube size={24} strokeWidth={2.2} className="fill-current" />,
+      rowClass: 'bg-[#FF0000] text-white',
+      iconClass: 'bg-white/20 text-white',
+      subClass: 'text-white/80',
     },
   ];
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="space-y-2.5">
       {links.map((l) => (
         <a
           key={l.key}
           href={l.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center gap-2 rounded-2xl border border-stone-200 p-4 transition-shadow hover:shadow-md"
+          className={`group flex items-center gap-3.5 rounded-2xl px-4 py-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${l.rowClass}`}
         >
-          <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${l.color}`}>
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${l.iconClass}`}>
             {l.icon}
           </span>
-          <span className="text-sm font-medium text-stone-700">{l.label}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-bold leading-tight">{l.label}</span>
+            <span className={`block truncate text-xs font-medium ${l.subClass}`}>{l.handle}</span>
+          </span>
+          <ChevronRight size={20} className="shrink-0 opacity-50 transition-transform group-hover:translate-x-0.5" />
         </a>
       ))}
     </div>
