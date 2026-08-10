@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { Slideshow } from '@/components/ui/slideshow';
 import { WORSHIP_FIXED_MAP, DEFAULT_SNS_URLS } from '@/lib/worship';
-import { Settings, X, ExternalLink, Loader2, Instagram, Youtube, MessageCircle, ChevronRight } from 'lucide-react';
+import { Settings, X, ExternalLink, Loader2, Instagram, MessageCircle, ChevronRight } from 'lucide-react';
 import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
 
 const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -95,10 +95,18 @@ function SnsView({ item }: { item: WorshipAnnouncement }) {
       label: 'YouTube',
       handle: '@naesoofishermen',
       url: sns.youtube || DEFAULT_SNS_URLS.youtube,
-      icon: <Youtube size={24} strokeWidth={2.2} className="fill-current" />,
-      rowClass: 'bg-[#FF0000] text-white',
-      iconClass: 'bg-white/20 text-white',
-      subClass: 'text-white/80',
+      icon: (
+        <svg viewBox="0 0 28 20" className="h-7 w-7" aria-hidden="true">
+          <path
+            fill="#FF0000"
+            d="M27.4 3.1a3.5 3.5 0 0 0-2.46-2.48C22.77 0 14 0 14 0S5.23 0 3.06.62A3.5 3.5 0 0 0 .6 3.1 36.5 36.5 0 0 0 0 10a36.5 36.5 0 0 0 .6 6.9 3.5 3.5 0 0 0 2.46 2.48C5.23 20 14 20 14 20s8.77 0 10.94-.62a3.5 3.5 0 0 0 2.46-2.48A36.5 36.5 0 0 0 28 10a36.5 36.5 0 0 0-.6-6.9Z"
+          />
+          <path fill="#fff" d="M11.2 14.29 18.53 10 11.2 5.71v8.58Z" />
+        </svg>
+      ),
+      rowClass: 'bg-white text-stone-900 border border-stone-200',
+      iconClass: 'bg-stone-50',
+      subClass: 'text-stone-400',
     },
   ];
   return (
