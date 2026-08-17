@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const BASE_URL = 'https://seum-nu.vercel.app';
+const BASE_URL = 'https://seum.life';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
