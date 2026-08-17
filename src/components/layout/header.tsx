@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { LogOut, UserCircle, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { ThemePicker } from '@/components/theme/theme-picker';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -54,6 +55,7 @@ export function Header() {
           >
             {user.name}
           </Link>
+          <ThemePicker />
           <NotificationBell />
           <Link
             href={`/${params.church}/${params.department}/profile`}

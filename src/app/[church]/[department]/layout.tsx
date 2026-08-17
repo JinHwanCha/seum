@@ -6,7 +6,7 @@ import { AnnouncementPopup } from '@/components/notifications/announcement-popup
 // 인증은 미들웨어에서 처리 — 여기까지 도달한 요청은 유효한 세션 보장
 export default function DepartmentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#faf8f3]">
+    <div className="min-h-screen bg-page">
       <Header />
       <div className="flex">
         <Sidebar />

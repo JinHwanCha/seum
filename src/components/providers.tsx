@@ -2,6 +2,7 @@
 
 import { SWRConfig } from 'swr';
 import { AuthProvider } from '@/hooks/use-auth';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 import type { SessionPayload } from '@/lib/types';
 
 const swrFetcher = (url: string) =>
@@ -19,7 +20,9 @@ export function Providers({
 }) {
   return (
     <SWRConfig value={{ fetcher: swrFetcher, revalidateOnFocus: false, dedupingInterval: 10000, keepPreviousData: true }}>
-      <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
+      <ThemeProvider>
+        <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
+      </ThemeProvider>
     </SWRConfig>
   );
 }

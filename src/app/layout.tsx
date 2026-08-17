@@ -18,6 +18,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getSession();
   return (
     <html lang="ko">
+      <head>
+        {/* 페인트 전에 저장된 테마를 적용해 깜빡임(FOUC) 방지 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('seum-theme');if(t){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <Providers initialUser={session}>{children}</Providers>
       </body>
