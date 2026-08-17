@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Palette, Check, X } from 'lucide-react';
 import { THEMES } from '@/lib/themes';
 import { useTheme } from './theme-provider';
@@ -9,15 +10,21 @@ import { cn } from '@/lib/utils';
 export function ThemePicker() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (e: MouseEvent) => {
+      const t = e.target as Node;
       if (
-        panelRef.current?.contains(e.target as Node) ||
-        btnRef.current?.contains(e.target as Node)
+        desktopRef.current?.contains(t) ||
+        mobileRef.current?.contains(t) ||
+        btnRef.current?.contains(t)
       ) {
         return;
       }
@@ -37,6 +44,35 @@ export function ThemePicker() {
   const lightThemes = THEMES.filter((t) => t.group === 'light');
   const darkThemes = THEMES.filter((t) => t.group === 'dark');
 
+  const options = (
+    <div className="space-y-1">
+      <p className="px-1 pt-1 pb-1 text-[11px] font-medium text-stone-400">라이트</p>
+      {lightThemes.map((t) => (
+        <ThemeRow
+          key={t.id}
+          def={t}
+          active={theme === t.id}
+          onSelect={() => {
+            setTheme(t.id);
+            setOpen(false);
+          }}
+        />
+      ))}
+      <p className="px-1 pt-2 pb-1 text-[11px] font-medium text-stone-400">다크</p>
+      {darkThemes.map((t) => (
+        <ThemeRow
+          key={t.id}
+          def={t}
+          active={theme === t.id}
+          onSelect={() => {
+            setTheme(t.id);
+            setOpen(false);
+          }}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="relative">
       <button
@@ -51,69 +87,50 @@ export function ThemePicker() {
         <Palette size={18} />
       </button>
 
+      {/* 데스크톱: 버튼 기준 드롭다운 (모바일에는 숨김) */}
       {open && (
-        <>
-          {/* 배경 딤 — 모바일에서만 표시, 탭하면 닫힘 */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
-            aria-hidden="true"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            ref={panelRef}
-            role="menu"
-            className={cn(
-              'z-50 warm-surface border border-stone-200/80 shadow-xl overflow-y-auto overscroll-contain',
-              // 모바일: 하단 시트(화면 넘침 방지)
-              'fixed inset-x-0 bottom-0 max-h-[75vh] rounded-t-3xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] animate-sheet-up',
-              // 데스크톱: 우측 드롭다운
-              'sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-auto sm:mt-2 sm:w-64 sm:max-h-[70vh] sm:rounded-2xl sm:p-3 sm:animate-none'
-            )}
-          >
-            {/* 그립 핸들 (모바일 전용) */}
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300 sm:hidden" />
-
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-xs font-semibold text-stone-500">테마 색상</p>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="-mr-1 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 sm:hidden"
-                aria-label="닫기"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-1">
-              <p className="px-1 pt-1 pb-1 text-[11px] font-medium text-stone-400">라이트</p>
-              {lightThemes.map((t) => (
-                <ThemeRow
-                  key={t.id}
-                  def={t}
-                  active={theme === t.id}
-                  onSelect={() => {
-                    setTheme(t.id);
-                    setOpen(false);
-                  }}
-                />
-              ))}
-              <p className="px-1 pt-2 pb-1 text-[11px] font-medium text-stone-400">다크</p>
-              {darkThemes.map((t) => (
-                <ThemeRow
-                  key={t.id}
-                  def={t}
-                  active={theme === t.id}
-                  onSelect={() => {
-                    setTheme(t.id);
-                    setOpen(false);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </>
+        <div
+          ref={desktopRef}
+          role="menu"
+          className="hidden sm:block absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto rounded-2xl border border-stone-200/80 warm-surface shadow-xl z-50 p-3"
+        >
+          <p className="px-1 pb-2 text-xs font-semibold text-stone-500">테마 색상</p>
+          {options}
+        </div>
       )}
+
+      {/* 모바일: 하단 시트 — 헤더 stacking context 탈출을 위해 body 로 포탈 */}
+      {open &&
+        mounted &&
+        createPortal(
+          <div className="sm:hidden">
+            <div
+              className="fixed inset-0 z-[60] bg-black/40"
+              aria-hidden="true"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              ref={mobileRef}
+              role="menu"
+              className="fixed inset-x-0 bottom-0 z-[70] max-h-[80vh] overflow-y-auto overscroll-contain rounded-t-3xl border border-stone-200/80 warm-surface shadow-xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] animate-sheet-up"
+            >
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-stone-300" />
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className="text-xs font-semibold text-stone-500">테마 색상</p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="-mr-1 rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                  aria-label="닫기"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {options}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
