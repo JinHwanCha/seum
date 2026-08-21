@@ -10,6 +10,11 @@ function normalizeBirth(value?: string | null): string {
   return (value ?? '').replace(/\D/g, '');
 }
 
+// 교회 이름 정규화: 앞뒤 공백과 따옴표를 제거해 회원가입/비밀번호 찾기와 동일한 규칙을 적용
+function normalizeChurchName(value?: string | null): string {
+  return (value ?? '').trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '').trim();
+}
+
 export async function POST(request: Request) {
   try {
     const { churchName, name, password, selectedUserId, rememberMe, birthDate } = await request.json();
@@ -20,24 +25,25 @@ export async function POST(request: Request) {
 
     const supabase = createClient();
 
-    // Find church
-    const { data: church, error: churchError } = await supabase
+    // Find church(es). churches.name 은 UNIQUE 가 아니므로 동명 교회가 있어도
+    // .single() 로 실패하지 않도록 목록으로 조회한 뒤 사용자와 매칭한다.
+    const cleanChurchName = normalizeChurchName(churchName);
+    const { data: churches } = await supabase
       .from('churches')
-      .select('id, slug')
-      .eq('name', churchName)
-      .single();
+      .select('id, slug, name')
+      .eq('name', cleanChurchName);
 
-    console.log('[LOGIN] churchName:', churchName, 'church:', church, 'error:', churchError);
-
-    if (!church) {
+    if (!churches || churches.length === 0) {
       return NextResponse.json({ error: '교회를 찾을 수 없습니다.' }, { status: 401 });
     }
+
+    const churchIds = churches.map((c) => c.id);
 
     // Find matching users
     let query = supabase
       .from('users')
       .select('*, department:departments(slug)')
-      .eq('church_id', church.id)
+      .in('church_id', churchIds)
       .eq('name', name)
       .eq('is_approved', true);
 
@@ -115,6 +121,9 @@ export async function POST(request: Request) {
     }
 
     const dept = user.department as any;
+
+    // 매칭된 사용자의 실제 소속 교회를 확정(동명 교회 대비)
+    const church = churches.find((c) => c.id === user.church_id) ?? churches[0];
 
     // Check bureau membership
     const { data: bureauMembership } = await supabase
