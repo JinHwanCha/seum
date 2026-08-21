@@ -27,11 +27,22 @@ export async function POST(request: Request) {
 
     // Find church(es). churches.name 은 UNIQUE 가 아니므로 동명 교회가 있어도
     // .single() 로 실패하지 않도록 목록으로 조회한 뒤 사용자와 매칭한다.
+    // 대소문자/공백 차이를 흡수하기 위해 ilike 로 조회한다.
     const cleanChurchName = normalizeChurchName(churchName);
-    const { data: churches } = await supabase
+    const { data: churches, error: churchError } = await supabase
       .from('churches')
       .select('id, slug, name')
-      .eq('name', cleanChurchName);
+      .ilike('name', cleanChurchName);
+
+    // DB 조회 자체가 실패한 경우(일시적 네트워크/커넥션 오류 등)에는
+    // "교회를 찾을 수 없습니다"로 오인시키지 말고 서버 오류로 처리한다.
+    if (churchError) {
+      console.error('Login church lookup failed:', churchError);
+      return NextResponse.json(
+        { error: '일시적인 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' },
+        { status: 503 }
+      );
+    }
 
     if (!churches || churches.length === 0) {
       return NextResponse.json({ error: '교회를 찾을 수 없습니다.' }, { status: 401 });
@@ -51,7 +62,15 @@ export async function POST(request: Request) {
       query = query.eq('id', selectedUserId);
     }
 
-    const { data: users } = await query;
+    const { data: users, error: usersError } = await query;
+
+    if (usersError) {
+      console.error('Login user lookup failed:', usersError);
+      return NextResponse.json(
+        { error: '일시적인 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' },
+        { status: 503 }
+      );
+    }
 
     if (!users || users.length === 0) {
       return NextResponse.json(
