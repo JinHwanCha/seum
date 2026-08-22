@@ -14,15 +14,21 @@ const EXT: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-// 프로세스당 한 번만 버킷 존재를 보장한다(이미 있으면 에러 무시).
+// 프로세스당 한 번만 버킷이 존재하고 공개 상태인지 보장한다.
 let bucketEnsured = false;
 async function ensureBucket(supabase: ReturnType<typeof createClient>) {
   if (bucketEnsured) return;
-  await supabase.storage.createBucket(BUCKET, {
-    public: true,
-    fileSizeLimit: MAX_BYTES,
-    allowedMimeTypes: Object.keys(EXT),
-  });
+  const { data: existing } = await supabase.storage.getBucket(BUCKET);
+  if (!existing) {
+    await supabase.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: MAX_BYTES,
+      allowedMimeTypes: Object.keys(EXT),
+    });
+  } else if (!existing.public) {
+    // 기존 버킷이 비공개면 공개로 전환한다(이미 올라간 이미지도 즉시 접근 가능).
+    await supabase.storage.updateBucket(BUCKET, { public: true });
+  }
   bucketEnsured = true;
 }
 
