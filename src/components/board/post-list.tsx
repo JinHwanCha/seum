@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PostCard } from './post-card';
 import { PillTabs } from '@/components/ui/pill-tabs';
 import type { Post } from '@/lib/types';
@@ -24,6 +24,8 @@ interface PostListProps {
   currentVillageId?: string | null;
   /** 사역자 또는 마을장 — 모든 마을 글 열람 가능 */
   canSeeAll?: boolean;
+  /** 서버 첫 페이지 이후 더 불러올 글이 있는지 */
+  initialHasMore?: boolean;
 }
 
 // 마을 카테고리를 보여줄 게시판
@@ -32,12 +34,45 @@ const VILLAGE_TAB_BOARDS = ['sharing', 'intercession'];
 const CATEGORY_TAB_BOARDS = ['gathering'];
 
 export function PostList({
-  posts,
+  posts: initialPosts,
   boardType,
   villages = [],
   categories = [],
   villageMap = {},
+  initialHasMore = false,
 }: PostListProps) {
+  // 서버가 내려준 첫 페이지를 초기값으로, '더 보기'로 이어붙인다.
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // 게시판 전환/서버 재렌더 시 초기화
+  useEffect(() => {
+    setPosts(initialPosts);
+    setHasMore(initialHasMore);
+  }, [initialPosts, initialHasMore]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/posts?boardType=${encodeURIComponent(boardType)}&offset=${posts.length}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const more = (data.posts || []) as Post[];
+        setPosts((prev) => {
+          const seen = new Set(prev.map((p) => p.id));
+          return [...prev, ...more.filter((p) => !seen.has(p.id))];
+        });
+        setHasMore(Boolean(data.hasMore));
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [boardType, posts.length, hasMore, loadingMore]);
+
   const showVillageTabs = VILLAGE_TAB_BOARDS.includes(boardType) && villages.length > 0;
   const useCategoryTabs = CATEGORY_TAB_BOARDS.includes(boardType);
 
@@ -118,6 +153,17 @@ export function PostList({
             <PostCard key={post.id} post={post} boardType={boardType} villageMap={villageMap} />
           ))}
         </div>
+      )}
+
+      {hasMore && (
+        <button
+          type="button"
+          onClick={loadMore}
+          disabled={loadingMore}
+          className="w-full py-3 text-sm text-stone-500 hover:text-primary-600 border border-stone-200/80 rounded-xl transition-colors disabled:opacity-50"
+        >
+          {loadingMore ? '불러오는 중…' : '더 보기'}
+        </button>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient, withRetry } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { createToken, verifyPassword } from '@/lib/auth';
 import { COOKIE_NAME } from '@/lib/constants';
 import { maskPhone } from '@/lib/utils';
@@ -29,9 +29,10 @@ export async function POST(request: Request) {
     // .single() 로 실패하지 않도록 목록으로 조회한 뒤 사용자와 매칭한다.
     // 대소문자/공백 차이를 흡수하기 위해 ilike 로 조회한다.
     const cleanChurchName = normalizeChurchName(churchName);
-    const { data: churches, error: churchError } = await withRetry(() =>
-      supabase.from('churches').select('id, slug, name').ilike('name', cleanChurchName)
-    );
+    const { data: churches, error: churchError } = await supabase
+      .from('churches')
+      .select('id, slug, name')
+      .ilike('name', cleanChurchName);
 
     // DB 조회 자체가 실패한 경우(일시적 네트워크/커넥션 오류 등)에는
     // "교회를 찾을 수 없습니다"로 오인시키지 말고 서버 오류로 처리한다.
@@ -49,19 +50,19 @@ export async function POST(request: Request) {
 
     const churchIds = churches.map((c) => c.id);
 
-    // Find matching users. 재시도 시 매번 새 쿼리를 빌드해야 하므로 클로저 안에서 구성한다.
-    const { data: users, error: usersError } = await withRetry(() => {
-      let query = supabase
-        .from('users')
-        .select('*, department:departments(slug)')
-        .in('church_id', churchIds)
-        .eq('name', name)
-        .eq('is_approved', true);
-      if (selectedUserId) {
-        query = query.eq('id', selectedUserId);
-      }
-      return query;
-    });
+    // Find matching users
+    let query = supabase
+      .from('users')
+      .select('*, department:departments(slug)')
+      .in('church_id', churchIds)
+      .eq('name', name)
+      .eq('is_approved', true);
+
+    if (selectedUserId) {
+      query = query.eq('id', selectedUserId);
+    }
+
+    const { data: users, error: usersError } = await query;
 
     if (usersError) {
       console.error('Login user lookup failed:', usersError);

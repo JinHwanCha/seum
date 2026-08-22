@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canWritePost } from '@/lib/permissions';
+import { loadBoardPosts } from '@/lib/posts-data';
 import { PostList } from '@/components/board/post-list';
 import { Button } from '@/components/ui/button';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
@@ -51,37 +52,12 @@ async function PostListServer({
     name: c.name,
   }));
 
-  // 2) 게시글 (가시성 필터 포함)
-  let query = supabase
-    .from('posts')
-    .select('*, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)')
-    .eq('department_id', departmentId)
-    .eq('board_type', type)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (!canSeeAll) {
-    if (villageId) {
-      query = query.or(`visibility.eq.all,village_id.eq.${villageId}`);
-    } else {
-      query = query.eq('visibility', 'all');
-    }
-  }
-
-  const { data: posts } = await query;
-
-  // 목록에서는 썸네일용 첫 이미지만 전달한다(대용량 base64 페이로드 축소).
-  const enrichedPosts = (posts || []).map((post: any) => {
-    const imgs = Array.isArray(post.images) ? post.images : [];
-    return {
-      ...post,
-      images: imgs.slice(0, 1),
-      _imageCount: imgs.length,
-      _count: {
-        comments: (post.comments as any[])?.[0]?.count ?? 0,
-        reactions: (post.reactions as any[])?.[0]?.count ?? 0,
-      },
-    };
+  // 2) 게시글 (가시성 필터 + 첫 페이지만) — 목록은 썸네일만 조회해 페이로드 최소화
+  const { posts: enrichedPosts, hasMore } = await loadBoardPosts({
+    departmentId,
+    boardType: type,
+    canSeeAll,
+    villageId,
   });
 
   // 서버에서 id→이름 맵 생성—클라이언트 추가 쿼리 없이 작성자 마을명 표기 용
@@ -97,6 +73,7 @@ async function PostListServer({
       villageMap={villageMap}
       currentVillageId={villageId}
       canSeeAll={canSeeAll}
+      initialHasMore={hasMore}
     />
   );
 }

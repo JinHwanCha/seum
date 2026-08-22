@@ -161,9 +161,10 @@ export interface WorshipPayload {
 
 export async function loadWorshipItems(session: SessionPayload): Promise<WorshipPayload> {
   const supabase = createClient();
+  // 목록에서는 무거운 images(JSONB)를 제외하고 개수(image_count)만 조회한다.
   const { data } = await supabase
     .from('worship_announcements')
-    .select('*')
+    .select('id, department_id, key, kind, title, icon, content, link, pinned, enabled, sort_order, image_count')
     .eq('department_id', session.departmentId);
 
   const rows = (data || []) as Record<string, unknown>[];
@@ -183,11 +184,8 @@ export async function loadWorshipItems(session: SessionPayload): Promise<Worship
     .sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.sortOrder - b.sortOrder);
 
   // 특별 광고를 앞에, 그 다음 고정 버튼. 이미지는 목록에서 제외(용량 최소화).
-  const items = [...specialItems, ...fixedItems].map((it) => ({
-    ...it,
-    imageCount: it.images.length,
-    images: [],
-  }));
+  // imageCount 는 rowToWorship 에서 image_count 컬럼으로 이미 채워진다.
+  const items = [...specialItems, ...fixedItems].map((it) => ({ ...it, images: [] }));
 
   const canManage = canManageWorship(
     session.role as any,

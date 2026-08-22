@@ -120,6 +120,7 @@ export function normalizeWorshipInput(body: unknown) {
 export function rowToWorship(row: Record<string, unknown>): WorshipAnnouncement {
   const key = row.key === null || row.key === undefined ? null : String(row.key);
   const fixed = key ? WORSHIP_FIXED_MAP[key] : undefined;
+  const images = normalizeImages(row.images);
   return {
     id: row.id ? String(row.id) : null,
     key,
@@ -131,7 +132,9 @@ export function rowToWorship(row: Record<string, unknown>): WorshipAnnouncement 
       : 'slideshow') as WorshipKind,
     title: String(row.title ?? ''),
     icon: String(row.icon ?? ''),
-    images: normalizeImages(row.images),
+    images,
+    // 목록 조회 시 images 를 제외하고 image_count 만 받으므로 이를 우선 사용한다.
+    imageCount: row.image_count !== undefined ? Number(row.image_count) : images.length,
     content: normalizeWorshipContent(row.content),
     link: String(row.link ?? ''),
     pinned: Boolean(row.pinned),

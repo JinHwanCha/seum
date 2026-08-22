@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canWritePost, isMinister } from '@/lib/permissions';
 import { broadcastAnnouncement } from '@/lib/notifications';
+import { loadBoardPosts, POSTS_PAGE_SIZE } from '@/lib/posts-data';
 import type { BoardType, Role } from '@/lib/types';
 
 export async function GET(request: Request) {
@@ -13,49 +14,21 @@ export async function GET(request: Request) {
   const boardType = searchParams.get('boardType');
   if (!boardType) return NextResponse.json({ error: 'boardType required' }, { status: 400 });
 
-  const supabase = createClient();
+  const offset = Math.max(0, parseInt(searchParams.get('offset') || '0', 10) || 0);
+  const limit = Math.min(50, parseInt(searchParams.get('limit') || String(POSTS_PAGE_SIZE), 10) || POSTS_PAGE_SIZE);
 
-  let query = supabase
-    .from('posts')
-    .select('*, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)')
-    .eq('department_id', session.departmentId)
-    .eq('board_type', boardType)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false });
+  const canSeeAll = session.role === 'minister' || session.role === 'village_leader';
 
-  // Visibility 필터:
-  //  - 사역자 → 전체 열람 (목사님 공개 포함)
-  //  - 마을장 → 'all' + 모든 마을 공개, 목사님 공개는 본인 글만
-  //  - 일반 → 'all' + 본인 마을, 목사님 공개는 본인 글만
-  if (session.role === 'minister') {
-    // 필터 없음 — 전체 열람
-  } else if (session.role === 'village_leader') {
-    query = query.or(`visibility.eq.all,visibility.eq.village,author_id.eq.${session.userId}`);
-  } else if (session.villageId) {
-    query = query.or(`visibility.eq.all,village_id.eq.${session.villageId},author_id.eq.${session.userId}`);
-  } else {
-    query = query.or(`visibility.eq.all,author_id.eq.${session.userId}`);
-  }
-
-  const { data: posts } = await query;
-
-  // 목록에서는 첫 이미지(썸네일)만 전송한다. 게시글마다 최대 10장의 base64
-  // 이미지를 모두 내려보내면 페이로드가 수 MB로 커져 로딩이 느려지므로
-  // 여기서 잘라내고 전체 장수는 _imageCount 로만 전달한다.
-  const postsWithCounts = (posts || []).map((post: any) => {
-    const imgs = Array.isArray(post.images) ? post.images : [];
-    return {
-      ...post,
-      images: imgs.slice(0, 1),
-      _imageCount: imgs.length,
-      _count: {
-        comments: (post.comments as any[])?.[0]?.count ?? 0,
-        reactions: (post.reactions as any[])?.[0]?.count ?? 0,
-      },
-    };
+  const { posts, hasMore } = await loadBoardPosts({
+    departmentId: session.departmentId,
+    boardType,
+    canSeeAll,
+    villageId: session.villageId ?? null,
+    limit,
+    offset,
   });
 
-  return NextResponse.json({ posts: postsWithCounts });
+  return NextResponse.json({ posts, hasMore });
 }
 
 export async function POST(request: Request) {
