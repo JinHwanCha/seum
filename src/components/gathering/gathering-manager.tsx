@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Pencil, Trash2, ArrowLeft, ChevronUp, ChevronDown, X, ImagePlus, Loader2, ArrowDownUp } from 'lucide-react';
-import { compressImages, MAX_IMAGES_PER_POST, MAX_IMAGE_BYTES } from '@/lib/image-utils';
+import { compressAndUpload, MAX_IMAGES_PER_POST, MAX_IMAGE_BYTES } from '@/lib/image-utils';
 import { GatheringThumb, splitName } from './gathering-shared';
 import type { GatheringItem } from '@/lib/types';
 
@@ -88,8 +88,8 @@ function ImagesEditor({
     }
     setBusy(true);
     try {
-      const compressed = await compressImages(files, MAX_IMAGE_BYTES);
-      if (compressed.length > 0) onChange([...images, ...compressed]);
+      const uploaded = await compressAndUpload(files, MAX_IMAGE_BYTES);
+      if (uploaded.length > 0) onChange([...images, ...uploaded]);
       else setError('이미지를 처리하지 못했어요. 다른 사진을 시도해 주세요.');
     } catch {
       setError('이미지를 처리하지 못했어요.');

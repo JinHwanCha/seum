@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, X, ImagePlus, Loader2, ArrowDownUp, FileText } from 'lucide-react';
-import { compressImages, MAX_IMAGE_BYTES } from '@/lib/image-utils';
+import { compressAndUpload, uploadDataUrls, MAX_IMAGE_BYTES } from '@/lib/image-utils';
 import { extractPptxImages, SLIDE_MAX_BYTES, SLIDE_MAX_DIM } from '@/lib/pptx';
 
 interface ImagesEditorProps {
@@ -44,11 +44,11 @@ export function ImagesEditor({
     }
     setBusy('image');
     try {
-      const compressed = await compressImages(files, maxBytes, maxDim);
-      if (compressed.length > 0) onChange([...images, ...compressed]);
+      const uploaded = await compressAndUpload(files, maxBytes, maxDim);
+      if (uploaded.length > 0) onChange([...images, ...uploaded]);
       else setError('이미지를 처리하지 못했어요. 다른 사진을 시도해 주세요.');
     } catch {
-      setError('이미지를 처리하지 못했어요.');
+      setError('이미지를 업로드하지 못했어요.');
     } finally {
       setBusy('');
       if (inputRef.current) inputRef.current.value = '';
@@ -65,7 +65,8 @@ export function ImagesEditor({
       if (extracted.length === 0) {
         setError('PPT에서 이미지를 찾지 못했어요. 이미지로 직접 등록해 주세요.');
       } else {
-        onChange([...images, ...extracted].slice(0, max));
+        const uploaded = await uploadDataUrls(extracted);
+        onChange([...images, ...uploaded].slice(0, max));
       }
     } catch {
       setError('PPT를 읽지 못했어요. .pptx 파일인지 확인해 주세요.');

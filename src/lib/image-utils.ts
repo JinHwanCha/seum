@@ -116,3 +116,35 @@ export async function compressImages(
   }
   return out;
 }
+
+/**
+ * 압축된 base64 data URL 들을 서버(Storage)로 업로드하고 공개 URL 배열을 돌려준다.
+ * 이미 http(s) URL 인 항목은 서버에서 그대로 통과된다.
+ */
+export async function uploadDataUrls(dataUrls: string[]): Promise<string[]> {
+  if (dataUrls.length === 0) return [];
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ images: dataUrls }),
+  });
+  if (!res.ok) {
+    const msg = await res.json().catch(() => null);
+    throw new Error(msg?.error || '이미지 업로드에 실패했습니다.');
+  }
+  const data = await res.json();
+  return (data.urls as string[]) || [];
+}
+
+/**
+ * 파일들을 압축한 뒤 곧바로 Storage 에 업로드해 공개 URL 배열을 반환한다.
+ */
+export async function compressAndUpload(
+  files: File[],
+  maxBytes: number = MAX_IMAGE_BYTES,
+  maxDimCap: number = 1024
+): Promise<string[]> {
+  const compressed = await compressImages(files, maxBytes, maxDimCap);
+  if (compressed.length === 0) return [];
+  return uploadDataUrls(compressed);
+}

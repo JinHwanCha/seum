@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
-import { compressImages, MAX_IMAGES_PER_POST, MAX_IMAGE_BYTES } from '@/lib/image-utils';
+import { compressAndUpload, MAX_IMAGES_PER_POST, MAX_IMAGE_BYTES } from '@/lib/image-utils';
 
 interface ImageUploaderProps {
   images: string[];
@@ -34,14 +34,14 @@ export function ImageUploader({
     }
     setBusy(true);
     try {
-      const compressed = await compressImages(files, MAX_IMAGE_BYTES);
-      if (compressed.length === 0) {
+      const uploaded = await compressAndUpload(files, MAX_IMAGE_BYTES);
+      if (uploaded.length === 0) {
         setError('이미지를 처리하지 못했어요. 다른 사진을 시도해 주세요.');
       } else {
-        onChange([...images, ...compressed]);
+        onChange([...images, ...uploaded]);
       }
     } catch {
-      setError('이미지를 처리하지 못했어요.');
+      setError('이미지를 업로드하지 못했어요.');
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = '';
