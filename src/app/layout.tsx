@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: '세움 - 교회 공동체 나눔 플랫폼',
   description: '소그룹 관리 및 교회 공동체 커뮤니케이션 통합 플랫폼',
   keywords: ['세움', '교회', '공동체', '소그룹', '나눔', '교회 플랫폼', '셀 관리'],
+  appleWebApp: {
+    capable: true,
+    title: '세움',
+    statusBarStyle: 'default',
+  },
   robots: {
     index: true,
     follow: true,

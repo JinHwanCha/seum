@@ -52,18 +52,22 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const ctx = await getContext(session);
-  if (!ctx.canManage) return NextResponse.json({ members: [], canManage: false });
-
   const supabase = createClient();
 
-  const { data: mine } = await supabase
-    .from('new_family_members')
-    .select('*')
-    .eq('leader_id', session.userId)
-    .order('created_at', { ascending: true });
+  // 권한 컨텍스트와 명단 조회를 병렬로 실행해 왕복 지연을 줄인다.
+  // 명단은 leader_id=본인 조건이라 권한 실패 시 그냥 버리면 되어 정보 노출이 없다.
+  const [ctx, mineResult] = await Promise.all([
+    getContext(session),
+    supabase
+      .from('new_family_members')
+      .select('*')
+      .eq('leader_id', session.userId)
+      .order('created_at', { ascending: true }),
+  ]);
 
-  return NextResponse.json({ members: mine || [], canManage: true });
+  if (!ctx.canManage) return NextResponse.json({ members: [], canManage: false });
+
+  return NextResponse.json({ members: mineResult.data || [], canManage: true });
 }
 
 // POST: 새가족 추가
