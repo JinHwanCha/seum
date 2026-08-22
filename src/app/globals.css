@@ -313,6 +313,24 @@
     color: rgb(var(--c-stone-900));
     transition: background-color 0.2s ease, color 0.2s ease;
   }
+
+  /* 폼 입력창은 테마와 무관하게 항상 흰 배경 + 검정 글자로 고정(가독성).
+     :where()로 특이도 0을 주어, 컴포넌트가 직접 지정한 스타일(비활성 회색 등)은 유지됩니다. */
+  :where(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='submit']):not([type='button']):not([type='reset']),
+    textarea,
+    select
+  ) {
+    background-color: #ffffff;
+    color: #1c1917;
+  }
+  :where(input, textarea)::placeholder {
+    color: #a8a29e;
+  }
+  /* 네이티브 컨트롤(달력/스핀 등)이 다크로 반전되지 않도록 라이트 스킴 강제 */
+  :where(input, textarea, select) {
+    color-scheme: light;
+  }
 }
 
 @layer components {
