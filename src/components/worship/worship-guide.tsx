@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR, { preload } from 'swr';
 import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
@@ -12,10 +12,25 @@ import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
 
 const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// 이미지가 있는 광고는 상세(이미지 포함)를 미리 캐시에 채워둔다.
+// 실제 이미지 파일을 브라우저 캐시에 미리 받아둬 팝업 오픈 시 즉시 표시되게 한다.
+function warmImages(images: string[] | undefined) {
+  if (typeof window === 'undefined' || !images) return;
+  images.forEach((src) => {
+    if (isImageSrc(src)) {
+      const img = new window.Image();
+      img.decoding = 'async';
+      img.src = src;
+    }
+  });
+}
+
+// 이미지가 있는 광고는 상세(이미지 포함)를 미리 캐시에 채우고, 이미지 파일까지 예열한다.
 function prefetchDetail(item: WorshipAnnouncement) {
   if (item.id && (item.imageCount ?? 0) > 0) {
-    preload(`/api/worship-guide/${item.id}`, detailFetcher);
+    preload(`/api/worship-guide/${item.id}`, detailFetcher).then(
+      (res: { item?: WorshipAnnouncement } | undefined) => warmImages(res?.item?.images),
+      () => {}
+    );
   }
 }
 
@@ -266,6 +281,32 @@ export function WorshipGuide() {
   const items = data?.items ?? [];
   const canManage = !!data?.canManage;
   const visible = items.filter((it) => it.enabled && hasContent(it));
+
+  // 목록이 준비되면 유휴 시간에 이미지 상세·파일을 미리 받아둔다.
+  // → 사용자가 탭을 여는 순간 스피너 없이 이미지가 즉시 표시된다.
+  useEffect(() => {
+    const withImages = (data?.items ?? []).filter(
+      (it) => it.enabled && it.id && (it.imageCount ?? 0) > 0
+    );
+    if (withImages.length === 0) return;
+
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      withImages.forEach((it) => prefetchDetail(it));
+    };
+
+    const w = window as typeof window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const id = w.requestIdleCallback ? w.requestIdleCallback(run) : window.setTimeout(run, 200);
+    return () => {
+      cancelled = true;
+      if (w.requestIdleCallback && w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else window.clearTimeout(id as number);
+    };
+  }, [data]);
 
   if (isLoading && !data) {
     return (
