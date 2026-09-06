@@ -1,7 +1,30 @@
 import { createClient } from '@/lib/supabase';
-import type { NotificationType } from '@/lib/types';
+import type { NotificationType, Notification, SessionPayload } from '@/lib/types';
 
 type Supabase = ReturnType<typeof createClient>;
+
+export interface NotificationsPayload {
+  notifications: Notification[];
+  unreadCount: number;
+}
+
+/**
+ * 알림 페이지용 목록 조회. API 라우트와 서버 컴포넌트(SSR)에서 함께 재사용해
+ * 클라이언트 페칭 워터폴(마운트→요청→스켈레톤)을 제거한다.
+ */
+export async function loadNotifications(session: SessionPayload): Promise<NotificationsPayload> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from('notifications')
+    .select('*, actor:users!notifications_actor_id_fkey(id, name)')
+    .eq('recipient_id', session.userId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  const notifications = (data || []) as Notification[];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  return { notifications, unreadCount };
+}
 
 /**
  * 게시글에 댓글/반응이 달렸을 때 글 작성자에게 개인 알림을 생성한다.

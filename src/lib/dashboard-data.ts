@@ -161,10 +161,11 @@ export interface WorshipPayload {
 
 export async function loadWorshipItems(session: SessionPayload): Promise<WorshipPayload> {
   const supabase = createClient();
-  // 목록에서는 무거운 images(JSONB)를 제외하고 개수(image_count)만 조회한다.
+  // 이미지는 Storage 공개 URL(짧은 문자열)이라 목록에 함께 실어도 가볍다.
+  // → 팝업이 상세 API 왕복 없이 즉시 이미지를 렌더할 수 있다.
   const { data } = await supabase
     .from('worship_announcements')
-    .select('id, department_id, key, kind, title, icon, content, link, pinned, enabled, sort_order, image_count')
+    .select('id, department_id, key, kind, title, icon, content, link, pinned, enabled, sort_order, image_count, images')
     .eq('department_id', session.departmentId);
 
   const rows = (data || []) as Record<string, unknown>[];
@@ -183,9 +184,12 @@ export async function loadWorshipItems(session: SessionPayload): Promise<Worship
     .map((r) => rowToWorship(r))
     .sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.sortOrder - b.sortOrder);
 
-  // 특별 광고를 앞에, 그 다음 고정 버튼. 이미지는 목록에서 제외(용량 최소화).
-  // imageCount 는 rowToWorship 에서 image_count 컬럼으로 이미 채워진다.
-  const items = [...specialItems, ...fixedItems].map((it) => ({ ...it, images: [] }));
+  // 특별 광고를 앞에, 그 다음 고정 버튼.
+  // 목록엔 즉시 표시 가능한 Storage URL 이미지만 싣는다(레거시 base64 원본은 상세에서 로드).
+  const items = [...specialItems, ...fixedItems].map((it) => ({
+    ...it,
+    images: it.images.filter((src) => /^https?:\/\//i.test(src)),
+  }));
 
   const canManage = canManageWorship(
     session.role as any,

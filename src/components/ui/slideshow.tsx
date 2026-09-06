@@ -43,6 +43,8 @@ export function Slideshow({ images, alt = '', maxHeightClass = 'max-h-72' }: Sli
           src={images[cur]}
           alt={alt}
           decoding="async"
+          loading="eager"
+          fetchPriority="high"
           onClick={() => setLightbox(true)}
           className={`w-full ${maxHeightClass} cursor-zoom-in object-contain`}
         />

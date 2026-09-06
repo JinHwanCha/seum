@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
+import { loadNotifications } from '@/lib/notifications';
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -35,14 +36,6 @@ export async function GET(request: Request) {
   }
 
   // 전체 목록 (알림 페이지)
-  const { data } = await supabase
-    .from('notifications')
-    .select('*, actor:users!notifications_actor_id_fkey(id, name)')
-    .eq('recipient_id', session.userId)
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  const unreadCount = (data || []).filter((n: { is_read: boolean }) => !n.is_read).length;
-
-  return NextResponse.json({ notifications: data || [], unreadCount });
+  const { notifications, unreadCount } = await loadNotifications(session);
+  return NextResponse.json({ notifications, unreadCount });
 }

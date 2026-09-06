@@ -26,12 +26,16 @@ function warmImages(images: string[] | undefined) {
 
 // 이미지가 있는 광고는 상세(이미지 포함)를 미리 캐시에 채우고, 이미지 파일까지 예열한다.
 function prefetchDetail(item: WorshipAnnouncement) {
-  if (item.id && (item.imageCount ?? 0) > 0) {
-    preload(`/api/worship-guide/${item.id}`, detailFetcher).then(
-      (res: { item?: WorshipAnnouncement } | undefined) => warmImages(res?.item?.images),
-      () => {}
-    );
+  if (!item.id || (item.imageCount ?? 0) === 0) return;
+  // 목록에 이미지가 이미 실려있으면 파일만 예열하면 된다(상세 왕복 불필요).
+  if ((item.images?.length ?? 0) > 0) {
+    warmImages(item.images);
+    return;
   }
+  preload(`/api/worship-guide/${item.id}`, detailFetcher).then(
+    (res: { item?: WorshipAnnouncement } | undefined) => warmImages(res?.item?.images),
+    () => {}
+  );
 }
 
 // 관리 UI(에디터·PPT 파서 등)는 사역자만 필요 → 코드 스플릿으로 지연 로드
@@ -217,8 +221,9 @@ function SectionsView({ content }: { content: WorshipContent }) {
 }
 
 function WorshipDetail({ item }: { item: WorshipAnnouncement }) {
-  // 이미지가 있으면 상세를 불러온다(목록 응답엔 이미지가 빠져있음).
-  const needImages = !!item.id && (item.imageCount ?? 0) > 0;
+  // 목록에 이미지가 이미 실려오면 상세 왕복 없이 즉시 렌더한다.
+  const hasInlineImages = (item.images?.length ?? 0) > 0;
+  const needImages = !!item.id && (item.imageCount ?? 0) > 0 && !hasInlineImages;
   const { data } = useSWR<{ item: WorshipAnnouncement }>(
     needImages ? `/api/worship-guide/${item.id}` : null
   );
@@ -282,28 +287,34 @@ export function WorshipGuide() {
   const canManage = !!data?.canManage;
   const visible = items.filter((it) => it.enabled && hasContent(it));
 
-  // 목록이 준비되면 유휴 시간에 이미지 상세·파일을 미리 받아둔다.
+  // 목록이 준비되면 이미지를 미리 받아둔다.
   // → 사용자가 탭을 여는 순간 스피너 없이 이미지가 즉시 표시된다.
   useEffect(() => {
-    const withImages = (data?.items ?? []).filter(
+    const list = (data?.items ?? []).filter(
       (it) => it.enabled && it.id && (it.imageCount ?? 0) > 0
     );
-    if (withImages.length === 0) return;
+    if (list.length === 0) return;
+
+    // 목록에 이미 실려온 이미지는 즉시 파일을 예열한다.
+    list.forEach((it) => {
+      if ((it.images?.length ?? 0) > 0) warmImages(it.images);
+    });
+
+    // 이미지가 목록에 없는(레거시) 항목만 유휴 시간에 상세를 받아 예열한다.
+    const needFetch = list.filter((it) => (it.images?.length ?? 0) === 0);
+    if (needFetch.length === 0) return;
 
     let cancelled = false;
     const run = () => {
       if (cancelled) return;
-      withImages.forEach((it) => prefetchDetail(it));
+      needFetch.forEach((it) => prefetchDetail(it));
     };
 
-    const w = window as typeof window & {
-      requestIdleCallback?: (cb: () => void) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-    const id = w.requestIdleCallback ? w.requestIdleCallback(run) : window.setTimeout(run, 200);
+    const supportsIdle = typeof window.requestIdleCallback === 'function';
+    const id = supportsIdle ? window.requestIdleCallback(run) : window.setTimeout(run, 200);
     return () => {
       cancelled = true;
-      if (w.requestIdleCallback && w.cancelIdleCallback) w.cancelIdleCallback(id);
+      if (supportsIdle) window.cancelIdleCallback(id as number);
       else window.clearTimeout(id as number);
     };
   }, [data]);

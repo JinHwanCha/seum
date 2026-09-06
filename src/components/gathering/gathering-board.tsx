@@ -66,7 +66,9 @@ function GatheringSlideshow({ images, alt }: { images: string[]; alt: string }) 
         <img
           src={images[cur]}
           alt={alt}
-          loading="lazy"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           onClick={() => setLightbox(true)}
           className="max-h-72 w-full cursor-zoom-in object-contain"
         />
@@ -147,6 +149,35 @@ export function GatheringBoard() {
 
   const gatherings = data?.gatherings ?? [];
   const canManage = !!data?.canManage;
+
+  // 상세 이미지 파일을 유휴 시간에 미리 받아둬 팝업 오픈 시 즉시 표시되게 한다.
+  useEffect(() => {
+    const list = data?.gatherings ?? [];
+    const urls = list.flatMap((g) =>
+      g.images && g.images.length > 0 ? g.images : g.bannerUrl ? [g.bannerUrl] : []
+    );
+    if (urls.length === 0) return;
+
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      urls.forEach((src) => {
+        if (/^(https?:\/\/|data:image\/)/i.test(src)) {
+          const img = new window.Image();
+          img.decoding = 'async';
+          img.src = src;
+        }
+      });
+    };
+
+    const supportsIdle = typeof window.requestIdleCallback === 'function';
+    const id = supportsIdle ? window.requestIdleCallback(run) : window.setTimeout(run, 200);
+    return () => {
+      cancelled = true;
+      if (supportsIdle) window.cancelIdleCallback(id as number);
+      else window.clearTimeout(id as number);
+    };
+  }, [data]);
 
   if (isLoading && !data) {
     return (

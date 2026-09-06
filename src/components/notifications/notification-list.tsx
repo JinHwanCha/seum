@@ -20,11 +20,12 @@ const TYPE_STYLE = {
   announcement: 'bg-primary-50 text-primary-600',
 } as const;
 
-export function NotificationList() {
+export function NotificationList({ initialItems }: { initialItems?: Notification[] }) {
   const params = useParams();
   const basePath = `/${params.church}/${params.department}`;
-  const [items, setItems] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const hasInitial = initialItems !== undefined;
+  const [items, setItems] = useState<Notification[]>(initialItems ?? []);
+  const [loading, setLoading] = useState(!hasInitial);
 
   const load = useCallback(async () => {
     try {
@@ -37,9 +38,10 @@ export function NotificationList() {
     }
   }, []);
 
+  // SSR 초기 데이터가 없을 때만 클라이언트에서 조회한다.
   useEffect(() => {
-    load();
-  }, [load]);
+    if (!hasInitial) load();
+  }, [hasInitial, load]);
 
   // 페이지 진입 시 전체 읽음 처리 (UI 는 로컬로 갱신)
   useEffect(() => {

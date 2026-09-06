@@ -79,6 +79,7 @@ export async function POST(request: Request) {
     const path = `${session.departmentId}/${crypto.randomUUID()}.${EXT[parsed.mime]}`;
     const { error } = await supabase.storage.from(BUCKET).upload(path, parsed.buffer, {
       contentType: parsed.mime,
+      cacheControl: '31536000', // 파일명이 UUID라 불변 → 1년 캐시
       upsert: false,
     });
     if (error) {
