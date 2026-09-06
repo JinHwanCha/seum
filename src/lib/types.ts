@@ -127,6 +127,7 @@ export interface BoardCategory {
 
 export interface Post {
   id: string;
+  slug: string | null;
   department_id: string;
   board_type: BoardType;
   category_id: string | null;

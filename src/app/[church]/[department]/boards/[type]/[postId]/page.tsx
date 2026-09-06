@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
+import { postLookupColumn } from '@/lib/posts-data';
 import PostDetailClient from './post-detail-client';
 
 interface PageProps {
@@ -23,7 +24,7 @@ export default async function PostDetailPage({ params }: PageProps) {
       comments(*, author:users(id, name, role, minister_rank, birth_date)),
       reactions(*)
     `)
-    .eq('id', params.postId)
+    .eq(postLookupColumn(params.postId), params.postId)
     .single();
 
   if (!post) notFound();
@@ -39,7 +40,8 @@ export default async function PostDetailPage({ params }: PageProps) {
     <PostDetailClient
       basePath={basePath}
       boardType={params.type}
-      postId={params.postId}
+      postId={post.id}
+      postSlug={post.slug ?? post.id}
       user={session}
       post={post}
       comments={comments}

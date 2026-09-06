@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canWritePost, isMinister } from '@/lib/permissions';
 import { broadcastAnnouncement } from '@/lib/notifications';
-import { loadBoardPosts, POSTS_PAGE_SIZE } from '@/lib/posts-data';
+import { loadBoardPosts, POSTS_PAGE_SIZE, generatePostSlug } from '@/lib/posts-data';
 import type { BoardType, Role } from '@/lib/types';
 
 export async function GET(request: Request) {
@@ -63,24 +63,34 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from('posts')
-    .insert({
-      department_id: session.departmentId,
-      board_type: boardType,
-      category_id: categoryId || null,
-      author_id: session.userId,
-      title,
-      content,
-      gathering_type: gatheringType || null,
-      images: Array.isArray(images) ? images : [],
-      visibility: finalVisibility,
-      village_id: finalVillageId,
-    })
-    .select('id')
-    .single();
+  // slug 유니크 충돌(23505) 시 몇 번 재시도한다.
+  let data: { id: string; slug: string | null } | null = null;
+  let error: { code?: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await supabase
+      .from('posts')
+      .insert({
+        department_id: session.departmentId,
+        board_type: boardType,
+        category_id: categoryId || null,
+        author_id: session.userId,
+        title,
+        content,
+        gathering_type: gatheringType || null,
+        images: Array.isArray(images) ? images : [],
+        visibility: finalVisibility,
+        village_id: finalVillageId,
+        slug: generatePostSlug(),
+      })
+      .select('id, slug')
+      .single();
+    data = res.data as { id: string; slug: string | null } | null;
+    error = res.error;
+    if (!error) break;
+    if (error.code !== '23505') break; // slug 외 오류는 재시도하지 않는다.
+  }
 
-  if (error) {
+  if (error || !data) {
     console.error('Post create error:', error);
     return NextResponse.json({ error: '작성에 실패했습니다.' }, { status: 500 });
   }

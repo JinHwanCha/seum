@@ -118,7 +118,8 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
       }
 
       const data = await res.json();
-      router.push(`${basePath}/boards/${boardType}/${data.post?.id || existingPost?.id}`);
+      const target = data.post?.slug || data.post?.id || existingPost?.slug || existingPost?.id;
+      router.push(`${basePath}/boards/${boardType}/${target}`);
       router.refresh();
     } catch {
       setError('저장에 실패했습니다.');

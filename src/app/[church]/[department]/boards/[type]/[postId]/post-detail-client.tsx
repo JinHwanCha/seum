@@ -18,6 +18,7 @@ interface Props {
   basePath: string;
   boardType: string;
   postId: string;
+  postSlug: string;
   user: SessionPayload;
   post: any;
   comments: Comment[];
@@ -28,6 +29,7 @@ export default function PostDetailClient({
   basePath,
   boardType,
   postId,
+  postSlug,
   user,
   post,
   comments,
@@ -97,7 +99,7 @@ export default function PostDetailClient({
           <div className="flex items-center gap-1 shrink-0">
             {canEdit && (
               <button
-                onClick={() => router.push(`${basePath}/boards/${boardType}/${postId}/edit`)}
+                onClick={() => router.push(`${basePath}/boards/${boardType}/${postSlug}/edit`)}
                 className="p-2 text-stone-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
               >
                 <Edit3 size={16} />

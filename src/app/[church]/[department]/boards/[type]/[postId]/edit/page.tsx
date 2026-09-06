@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
+import { postLookupColumn } from '@/lib/posts-data';
 import { PostForm } from '@/components/board/post-form';
 import { Card, CardTitle } from '@/components/ui/card';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
@@ -17,7 +18,7 @@ export default async function EditPostPage({ params }: PageProps) {
   const { data: post } = await supabase
     .from('posts')
     .select('*, category:board_categories(id, name)')
-    .eq('id', params.postId)
+    .eq(postLookupColumn(params.postId), params.postId)
     .single();
 
   if (!post) notFound();

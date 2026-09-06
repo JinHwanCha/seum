@@ -7,7 +7,25 @@ export const POSTS_PAGE_SIZE = 20;
 
 // 목록에 필요한 컬럼만 조회한다. 무거운 images(base64) 대신 thumbnail/image_count 만 가져온다.
 const LIST_SELECT =
-  'id, title, content, board_type, gathering_type, is_pinned, visibility, created_at, updated_at, author_id, category_id, village_id, department_id, image_count, thumbnail, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)';
+  'id, slug, title, content, board_type, gathering_type, is_pinned, visibility, created_at, updated_at, author_id, category_id, village_id, department_id, image_count, thumbnail, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// URL 파라미터가 UUID면 id, 아니면 slug 로 조회한다(레거시 UUID 링크 호환).
+export function postLookupColumn(param: string): 'id' | 'slug' {
+  return UUID_RE.test(param) ? 'id' : 'slug';
+}
+
+const SLUG_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+// URL 표시용 짧은 랜덤 slug(기본 10자, 추측 불가). 모듈로 바이어스는 무시할 수준.
+export function generatePostSlug(len = 10): string {
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < len; i++) out += SLUG_ALPHABET[bytes[i] % SLUG_ALPHABET.length];
+  return out;
+}
 
 export interface LoadBoardPostsParams {
   departmentId: string;

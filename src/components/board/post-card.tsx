@@ -23,7 +23,7 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
   const authorVillageName = villageMap[(post.author as any)?.village_id] || null;
 
   return (
-    <Link href={`${basePath}/boards/${boardType}/${post.id}`} className="block">
+    <Link href={`${basePath}/boards/${boardType}/${post.slug ?? post.id}`} className="block">
       <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
