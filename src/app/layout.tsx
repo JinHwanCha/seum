@@ -35,6 +35,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ko">
       <head>
+        {/* 이미지가 저장된 Supabase Storage 로의 연결(DNS/TLS)을 미리 열어 다운로드를 앞당긴다 */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+          </>
+        )}
         {/* 페인트 전에 저장된 테마를 적용해 깜빡임(FOUC) 방지 */}
         <script
           dangerouslySetInnerHTML={{

@@ -70,9 +70,15 @@ export function AuthProvider({
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    // 다음 사용자가 이전 사용자의 캐시를 보지 않도록 유지된 SWR 캐시를 비운다.
+    try {
+      if (user?.userId) localStorage.removeItem(`seum-swr-cache:${user.userId}`);
+    } catch {
+      // ignore
+    }
     setUser(null);
     router.push('/login');
-  }, [router]);
+  }, [router, user]);
 
   // Server Component를 소프트 리프레시해서 세션 최신화 (프로필 업데이트 후 등)
   const refreshUser = useCallback(async () => {
