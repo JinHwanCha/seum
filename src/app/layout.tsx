@@ -1,8 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Providers } from '@/components/providers';
-import { ExtensionErrorSilencer } from '@/components/extension-error-silencer';
+import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
 import { getSession } from '@/lib/auth';
 import './globals.css';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#4a7d57',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://seum.life'),
@@ -51,7 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <ExtensionErrorSilencer />
+        <ServiceWorkerRegistrar />
         <Providers initialUser={session}>{children}</Providers>
       </body>
     </html>

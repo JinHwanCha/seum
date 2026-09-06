@@ -35,7 +35,20 @@ export default async function ProfilePage({ params }: PageProps) {
     cell_name: cellResult.data?.name ?? null,
   };
 
+  const { data: deletionRequest } = await supabase
+    .from('account_deletion_requests')
+    .select('status, requested_at')
+    .eq('user_id', session.userId)
+    .maybeSingle();
+
   const basePath = `/${params.church}/${params.department}`;
 
-  return <ProfileClient user={session} basePath={basePath} profile={profile} />;
+  return (
+    <ProfileClient
+      user={session}
+      basePath={basePath}
+      profile={profile}
+      deletionRequested={deletionRequest?.status === 'pending'}
+    />
+  );
 }

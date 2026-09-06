@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { SessionPayload } from '@/lib/types';
 
@@ -21,9 +21,10 @@ interface Props {
   user: SessionPayload;
   basePath: string;
   profile: ProfileData;
+  deletionRequested: boolean;
 }
 
-export default function ProfileClient({ user, basePath, profile }: Props) {
+export default function ProfileClient({ user, basePath, profile, deletionRequested }: Props) {
   const [form, setForm] = useState({
     birthDate: profile.birth_date || '',
     phone: profile.phone || '',
@@ -34,6 +35,9 @@ export default function ProfileClient({ user, basePath, profile }: Props) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [requestingDeletion, setRequestingDeletion] = useState(false);
+  const [deleteRequested, setDeleteRequested] = useState(deletionRequested);
 
   const villageName = profile.village_name;
   const cellName = profile.cell_name;
@@ -85,6 +89,30 @@ export default function ProfileClient({ user, basePath, profile }: Props) {
   const roleLabel = user.ministerRank
     ? MINISTER_RANK_LABELS[user.ministerRank]
     : ROLE_LABELS_DEFAULT[user.role];
+
+  const requestDeletion = async () => {
+    if (!deletePassword || !confirm('계정 삭제 요청을 접수하시겠습니까?')) return;
+    setError('');
+    setRequestingDeletion(true);
+    try {
+      const res = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '탈퇴 요청을 접수하지 못했습니다.');
+        return;
+      }
+      setDeleteRequested(true);
+      setDeletePassword('');
+    } catch {
+      setError('탈퇴 요청을 접수하지 못했습니다.');
+    } finally {
+      setRequestingDeletion(false);
+    }
+  };
 
   return (
     <div className="space-y-2 max-w-lg">
@@ -193,6 +221,43 @@ export default function ProfileClient({ user, basePath, profile }: Props) {
           저장
         </Button>
       </form>
+
+      <Card>
+        <CardTitle className="text-base mb-2">계정 삭제</CardTitle>
+        {deleteRequested ? (
+          <p className="text-sm leading-relaxed text-stone-600">
+            계정 삭제 요청이 접수되었습니다. 소속 교회 관리자가 확인한 뒤 30일 이내 처리합니다.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm leading-relaxed text-stone-500">
+              요청 후 30일 이내 계정과 개인정보가 삭제됩니다. 법령상 보관 의무가 있거나 공동체 기록의
+              무결성을 위해 필요한 게시물은 작성자 정보가 제거된 상태로 보관될 수 있습니다.
+            </p>
+            <Input
+              label="현재 비밀번호"
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="danger"
+              className="w-full"
+              loading={requestingDeletion}
+              disabled={!deletePassword}
+              onClick={requestDeletion}
+            >
+              <Trash2 size={16} className="mr-1.5" /> 계정 삭제 요청
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      <div className="flex justify-center gap-4 pb-4 text-xs text-stone-400">
+        <Link href="/privacy" className="hover:text-primary-600">개인정보 처리방침</Link>
+        <Link href="/terms" className="hover:text-primary-600">이용약관</Link>
+      </div>
     </div>
   );
 }
