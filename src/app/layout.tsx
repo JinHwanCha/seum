@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Providers } from '@/components/providers';
+import { ExtensionErrorSilencer } from '@/components/extension-error-silencer';
 import { getSession } from '@/lib/auth';
 import './globals.css';
 
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
+        <ExtensionErrorSilencer />
         <Providers initialUser={session}>{children}</Providers>
       </body>
     </html>
