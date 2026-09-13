@@ -251,7 +251,7 @@ export function VillagePrayerCells({
                                   {weeks.map((w) => {
                                     const prayer = userWeeks[w.sunday];
                                     return (
-                                      <div key={w.sunday} className="flex gap-2">
+                                      <div key={w.sunday} className="flex flex-col gap-2">
                                         <span className="shrink-0 mt-0.5 text-xs font-medium text-primary-600 w-12">
                                           {w.weekNum}주차
                                         </span>
