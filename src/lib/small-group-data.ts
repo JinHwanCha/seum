@@ -83,7 +83,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
   const memberIdSet = new Set(members.map((m: any) => m.id));
   const prayers = allDeptPrayers.filter((p: any) => memberIdSet.has(p.user_id));
-  const myPrayer = prayers.find((p: any) => p.user_id === session.userId) || null;
+  // 본인 기도제목은 소그룹 소속과 무관하게(마을장 등 셀 미배정 포함) 항상 찾는다.
+  const myPrayer = allDeptPrayers.find((p: any) => p.user_id === session.userId) || null;
 
   const attendanceMap: Record<string, any> = {};
   allDeptAttendance.forEach((a: any) => { attendanceMap[a.user_id] = a; });

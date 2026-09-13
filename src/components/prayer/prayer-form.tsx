@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +13,10 @@ interface PrayerFormProps {
   targetUserName?: string;
   targetUserId?: string;
   onSaved: (content: string, images: string[], isCellOnly: boolean) => void;
+  /** 저장 후 textarea 를 비워 '작성 완료'를 체감하게 한다. */
+  clearOnSave?: boolean;
+  /** 서버 저장이 실제로 반영된 뒤 호출(목록 재검증용). */
+  onPersisted?: () => void;
 }
 
 export function PrayerForm({
@@ -24,19 +28,36 @@ export function PrayerForm({
   targetUserName,
   targetUserId,
   onSaved,
+  clearOnSave = false,
+  onPersisted,
 }: PrayerFormProps) {
   const [content, setContent] = useState(existingContent || '');
   const [isCellOnly, setIsCellOnly] = useState<boolean>(!!existingIsCellOnly);
   // 기도제목은 텍스트만 편집 — 기존 이미지는 그대로 유지
   const images = existingImages || [];
 
+  // 방금 저장해 비운 내용이 부모/서버에서 되돌아와도 textarea 를 다시 채우지 않게 하는 가드
+  const justClearedRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (
+      clearOnSave &&
+      justClearedRef.current !== null &&
+      (existingContent || '') === justClearedRef.current
+    ) {
+      return;
+    }
     setContent(existingContent || '');
-  }, [existingContent]);
+  }, [existingContent, clearOnSave]);
 
   useEffect(() => {
     setIsCellOnly(!!existingIsCellOnly);
   }, [existingIsCellOnly]);
+
+  // 주차가 바뀌면 가드를 해제해 새 주차 내용이 정상적으로 채워지도록 한다.
+  useEffect(() => {
+    justClearedRef.current = null;
+  }, [weekStart]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +66,11 @@ export function PrayerForm({
 
     // Optimistic: notify parent immediately
     onSaved(trimmed, images, isCellOnly);
+
+    if (clearOnSave) {
+      justClearedRef.current = trimmed;
+      setContent('');
+    }
 
     // Fire-and-forget API call
     const url = existingId
@@ -62,7 +88,11 @@ export function PrayerForm({
         targetUserId: targetUserId || undefined,
         isCellOnly,
       }),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (res.ok) onPersisted?.();
+      })
+      .catch(() => {});
   };
 
   return (

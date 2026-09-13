@@ -350,6 +350,17 @@
   animation: sheet-up 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+@keyframes toast-pop {
+  0% { opacity: 0; transform: translateY(-4px); }
+  12% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+
+.animate-toast-pop {
+  animation: toast-pop 2s ease-in-out forwards;
+}
+
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);

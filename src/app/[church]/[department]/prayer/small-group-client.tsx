@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { PrayerForm } from '@/components/prayer/prayer-form';
@@ -69,10 +69,20 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [prayers, setPrayers] = useState<PrayerRequest[]>(initialData?.prayers ?? []);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, Attendance>>(initialData?.attendanceMap ?? {});
 
+  // '나의 기도제목' 저장/수정 시 제목 옆에 잠깐 나타나는 알림
+  const [prayerToast, setPrayerToast] = useState<string | null>(null);
+  const prayerToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showPrayerToast = useCallback((msg: string) => {
+    setPrayerToast(msg);
+    if (prayerToastTimer.current) clearTimeout(prayerToastTimer.current);
+    prayerToastTimer.current = setTimeout(() => setPrayerToast(null), 2000);
+  }, []);
+  useEffect(() => () => { if (prayerToastTimer.current) clearTimeout(prayerToastTimer.current); }, []);
+
   const weekStart = formatWeekDate(currentSunday);
 
   const isInitialWeek = weekStart === formatWeekDate(getCurrentWeekSunday());
-  const { data: swrData, isLoading } = useSWR(
+  const { data: swrData, isLoading, mutate } = useSWR(
     `/api/small-group?weekStart=${weekStart}`,
     {
       fallbackData: isInitialWeek ? initialData : undefined,
@@ -234,14 +244,24 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <>
           {/* My Prayer Request */}
           <Card>
-            <CardTitle className="text-base">나의 기도제목</CardTitle>
+            <div className="mb-3 flex items-center gap-2">
+              <CardTitle className="mb-0 text-base">나의 기도제목</CardTitle>
+              {prayerToast && (
+                <span className="animate-toast-pop text-xs font-semibold text-primary-600">
+                  {prayerToast}
+                </span>
+              )}
+            </div>
             <PrayerForm
               weekStart={weekStart}
+              clearOnSave
+              onPersisted={() => mutate()}
               existingContent={myPrayer?.content}
               existingImages={myPrayer?.images || []}
               existingId={myPrayer?.id}
               existingIsCellOnly={myPrayer?.is_cell_only}
               onSaved={(content, images, isCellOnly) => {
+                showPrayerToast(myPrayer ? '수정되었습니다' : '기도제목 작성완료!');
                 setMyPrayer((prev) =>
                   prev
                     ? { ...prev, content, images, is_cell_only: isCellOnly }
@@ -294,6 +314,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               }}
             />
           </Card>
+
+          {/* 감독권한자(마을장/사역자)는 개인 목록이 없으므로 방금 작성한 기도제목을 바로 보여준다 */}
+          {hasOversight && myPrayer?.content && (
+            <Card>
+              <p className="mb-1 text-xs font-medium text-stone-400">작성한 기도제목</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-700">
+                {myPrayer.content}
+              </p>
+            </Card>
+          )}
 
           {isLoading && !swrData ? (
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
