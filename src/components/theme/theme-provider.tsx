@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { DEFAULT_THEME, isValidTheme, THEME_STORAGE_KEY, type ThemeId } from '@/lib/themes';
+import { DEFAULT_THEME, isValidTheme, THEME_PAGE_BG, THEME_STORAGE_KEY, type ThemeId } from '@/lib/themes';
 
 interface ThemeContextValue {
   theme: ThemeId;
@@ -18,6 +18,18 @@ function readInitialTheme(): ThemeId {
   return DEFAULT_THEME;
 }
 
+// 모바일 상태표시줄(theme-color) 색을 현재 테마 배경에 맞춘다.
+function updateThemeColorMeta(theme: ThemeId) {
+  if (typeof document === 'undefined') return;
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', THEME_PAGE_BG[theme]);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(readInitialTheme);
   const syncedFromServer = useRef(false);
@@ -27,6 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', next);
     }
+    updateThemeColorMeta(next);
     if (persist) {
       try {
         localStorage.setItem(THEME_STORAGE_KEY, next);

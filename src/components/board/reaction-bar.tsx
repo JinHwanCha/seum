@@ -39,7 +39,7 @@ export function ReactionBar({ postId, reactions, session, onRefresh }: ReactionB
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="relative flex items-center gap-2 flex-wrap">
       {Object.entries(grouped).map(([emoji, { count, hasReacted }]) => (
         <button
           key={emoji}
@@ -56,27 +56,26 @@ export function ReactionBar({ postId, reactions, session, onRefresh }: ReactionB
         </button>
       ))}
 
-      <div className="relative">
-        <button
-          onClick={() => setShowPicker(!showPicker)}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-stone-50 border border-stone-200 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors text-sm"
-        >
-          +
-        </button>
-        {showPicker && (
-          <div className="absolute bottom-full left-0 mb-2 warm-surface rounded-xl shadow-lg border border-stone-200 p-2 flex flex-wrap gap-1 z-10 w-max max-w-[min(18rem,calc(100vw-2rem))]">
-            {EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => toggleReaction(emoji)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-50 transition-colors text-lg shrink-0"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <button
+        onClick={() => setShowPicker(!showPicker)}
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-stone-50 border border-stone-200 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors text-sm"
+      >
+        +
+      </button>
+
+      {showPicker && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 warm-surface rounded-xl shadow-lg border border-stone-200 p-2 flex flex-wrap justify-center gap-1 z-10 mx-auto max-w-[calc(100vw-2rem)]">
+          {EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => toggleReaction(emoji)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-primary-50 transition-colors text-lg shrink-0"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

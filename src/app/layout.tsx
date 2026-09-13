@@ -2,13 +2,14 @@ import type { Metadata, Viewport } from 'next';
 import { Providers } from '@/components/providers';
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
 import { getSession } from '@/lib/auth';
+import { DEFAULT_THEME, THEME_PAGE_BG } from '@/lib/themes';
 import './globals.css';
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#4a7d57',
+  themeColor: THEME_PAGE_BG[DEFAULT_THEME],
 };
 
 export const metadata: Metadata = {
@@ -50,10 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
           </>
         )}
-        {/* 페인트 전에 저장된 테마를 적용해 깜빡임(FOUC) 방지 */}
+        {/* 페인트 전에 저장된 테마를 적용해 깜빡임(FOUC) 방지 + 상태표시줄 색을 테마 배경에 맞춤 */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('seum-theme');if(t){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
+            __html: `(function(){try{var m=${JSON.stringify(THEME_PAGE_BG)};var t=localStorage.getItem('seum-theme');if(!m[t])t='${DEFAULT_THEME}';document.documentElement.setAttribute('data-theme',t);var e=document.querySelector('meta[name="theme-color"]');if(!e){e=document.createElement('meta');e.setAttribute('name','theme-color');document.head.appendChild(e);}e.setAttribute('content',m[t]);}catch(e){}})();`,
           }}
         />
       </head>

@@ -45,3 +45,18 @@ export function isValidTheme(value: unknown): value is ThemeId {
 }
 
 export const THEME_STORAGE_KEY = 'seum-theme';
+
+// 각 테마의 페이지 배경색(--c-page)과 1:1 대응. 모바일 상태표시줄(theme-color)에 사용됩니다.
+export const THEME_PAGE_BG: Record<ThemeId, string> = {
+  green: '#faf8f3',
+  light: '#f9fafb',
+  ocean: '#f0f9ff',
+  forest: '#f0f9f4',
+  sunset: '#fff8f0',
+  cherry: '#fff5f5',
+  royal: '#f9f7ff',
+  retro: '#ede3cd',
+  dark: '#18181b',
+  midnight: '#0f172a',
+  amoled: '#000000',
+};

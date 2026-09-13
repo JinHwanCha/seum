@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { DEFAULT_THEME, THEME_PAGE_BG } from '@/lib/themes';
 
 // Android/Chrome '홈 화면에 추가' 및 PWA 설치 시 사용하는 매니페스트.
 export default function manifest(): MetadataRoute.Manifest {
@@ -10,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     scope: '/',
     display: 'standalone',
-    background_color: '#4a7d57',
-    theme_color: '#4a7d57',
+    background_color: THEME_PAGE_BG[DEFAULT_THEME],
+    theme_color: THEME_PAGE_BG[DEFAULT_THEME],
     lang: 'ko',
     categories: ['social', 'productivity'],
     icons: [
