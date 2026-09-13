@@ -32,7 +32,7 @@ interface SpecialWorshipCheckProps {
   onChange: (field: string, value: unknown) => void;
 }
 
-// 특별예배(수요/센터워십/새벽기도) 본인 출석 자가 체크
+// 주중예배(수요/센터워십/새벽기도) 본인 출석 자가 체크
 export function SpecialWorshipCheck({
   weekStart,
   userId,

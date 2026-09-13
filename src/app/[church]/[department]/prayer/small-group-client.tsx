@@ -172,7 +172,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   // 기도제목 탭 하위 탭(내 소그룹/마을) 노출 — 감독권한자는 통합 뷰이므로 제외
   const showPraySubTabs = !hasOversight && canSeeVillageTab && !!villageName;
 
-  // 경건생활 하위 탭: 내 소그룹 / 특별예배 / (마을) — (마을)은 목자 이상만
+  // 경건생활 하위 탭: 내 소그룹 / 주중예배 / (마을) — (마을)은 목자 이상만
   const attVillageSource = hasOversight ? villageCells : myVillageCells;
   const showAttVillage =
     (isCellLeader && myVillageCells.length > 0 && !!villageName) ||
@@ -181,7 +181,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     ...(hasCell || isNewFamilyLeader
       ? [{ key: 'mine', label: isNewFamilyLeader ? '새가족' : '내 소그룹' }]
       : []),
-    { key: 'special', label: '특별예배' },
+    { key: 'special', label: '주중예배' },
     ...(showAttVillage
       ? [{ key: 'village', label: villageName ? `${villageName} 마을` : '마을' }]
       : []),
@@ -548,7 +548,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>
-              {/* 하위 탭: 내 소그룹 / 특별예배 / (마을) */}
+              {/* 하위 탭: 내 소그룹 / 주중예배 / (마을) */}
               {attTabs.length > 1 && (
                 <PillTabs
                   tabs={attTabs}
@@ -579,7 +579,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                 </div>
               )}
 
-              {/* === 특별예배 (수요/센터워십/새벽기도) — 본인 자가 체크 === */}
+              {/* === 주중예배 (수요/센터워십/새벽기도) — 본인 자가 체크 === */}
               {attSub === 'special' && (
                 <SpecialWorshipCheck
                   weekStart={weekStart}

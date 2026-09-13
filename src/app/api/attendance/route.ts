@@ -63,7 +63,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  // 특별예배(수요/센터워십/새벽기도 월~금)는 본인이 스스로 체크 가능. 그 외 항목은 목자 이상만.
+  // 주중예배(수요/센터워십/새벽기도 월~금)는 본인이 스스로 체크 가능. 그 외 항목은 목자 이상만.
   const specialFields = ['wednesday_worship', 'friday_worship', 'dawn_mon', 'dawn_tue', 'dawn_wed', 'dawn_thu', 'dawn_fri'];
   const isLeaderish =
     session.isAdmin ||
