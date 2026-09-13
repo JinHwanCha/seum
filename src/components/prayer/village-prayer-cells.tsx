@@ -221,7 +221,7 @@ export function VillagePrayerCells({
 
                               {view === 'week' ? (
                                 weekPrayer ? (
-                                  <div className="ml-6 bg-primary-50/30 rounded-lg p-3">
+                                  <div className="bg-primary-50/30 rounded-lg">
                                     <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
                                       {weekPrayer.content}
                                     </p>
@@ -242,12 +242,12 @@ export function VillagePrayerCells({
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="ml-6 text-xs text-stone-400 italic">기도제목 미작성</p>
+                                  <p className="text-xs text-stone-400 italic">기도제목 미작성</p>
                                 )
                               ) : weeks.length === 0 ? (
-                                <p className="ml-6 text-xs text-stone-400 italic">해당 월 데이터 없음</p>
+                                <p className="text-xs text-stone-400 italic">해당 월 데이터 없음</p>
                               ) : (
-                                <div className="ml-6 space-y-1.5">
+                                <div className="space-y-1.5">
                                   {weeks.map((w) => {
                                     const prayer = userWeeks[w.sunday];
                                     return (

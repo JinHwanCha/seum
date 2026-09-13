@@ -64,7 +64,7 @@ export function SpecialWorshipCheck({
         return (
           <div
             key={svc.field as string}
-            className="warm-surface rounded-xl border border-stone-200/80 p-4 space-y-3"
+            className="space-y-3"
           >
             <div className="flex items-center gap-2">
               {current === '온라인' ? (
@@ -103,7 +103,7 @@ export function SpecialWorshipCheck({
       })}
 
       {/* 새벽기도 (월~금 일별) */}
-      <div className="warm-surface rounded-xl border border-stone-200/80 p-4 space-y-3">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Sunrise size={16} className="text-amber-500" />
           <span className="text-sm font-semibold text-stone-800">새벽기도</span>

@@ -88,8 +88,8 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
     const replies = getReplies(comment.id);
 
     return (
-      <div key={comment.id} className={isReply ? 'ml-8 mt-2' : 'mt-3'}>
-        <div>
+      <div key={comment.id} className={isReply ? 'mt-2' : 'mt-3'}>
+        <div className="pt-3">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               {isReply && <CornerDownRight size={12} className="text-stone-400" />}
