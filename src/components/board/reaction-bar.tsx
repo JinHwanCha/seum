@@ -64,12 +64,12 @@ export function ReactionBar({ postId, reactions, session, onRefresh }: ReactionB
           +
         </button>
         {showPicker && (
-          <div className="absolute bottom-full left-0 mb-2 warm-surface rounded-xl shadow-lg border border-stone-200 p-2 flex gap-1 z-10">
+          <div className="absolute bottom-full left-0 mb-2 warm-surface rounded-xl shadow-lg border border-stone-200 p-2 flex flex-wrap gap-1 z-10 w-max max-w-[min(18rem,calc(100vw-2rem))]">
             {EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => toggleReaction(emoji)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-50 transition-colors text-lg"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-50 transition-colors text-lg shrink-0"
               >
                 {emoji}
               </button>
