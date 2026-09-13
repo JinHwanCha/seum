@@ -280,7 +280,7 @@ function Counter({
           disabled={disabled || value <= 0}
           onClick={() => onChange(Math.max(0, value - 1))}
           className={cn(
-            'px-1.5 py-1 text-xs transition-colors',
+            'px-1.5 py-1.5 text-xs transition-colors',
             value > 0 ? 'text-primary-500 hover:bg-primary-100' : 'text-stone-300',
             (disabled || value <= 0) && 'opacity-50 cursor-default'
           )}
