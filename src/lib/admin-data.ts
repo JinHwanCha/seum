@@ -47,7 +47,11 @@ export async function getVillagesWithCells(session: SessionPayload): Promise<Vil
     .map((v: any) => ({
       ...v,
       cells: ((v.cells || []) as any[])
-        .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+        .sort((a: any, b: any) => {
+          const an = a.name || leaderByCell[a.id] || '';
+          const bn = b.name || leaderByCell[b.id] || '';
+          return an.localeCompare(bn, 'ko');
+        })
         .map((c: any) => ({ ...c, village_id: v.id, leader_name: leaderByCell[c.id] || null })),
     }));
 }

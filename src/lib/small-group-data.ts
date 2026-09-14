@@ -130,14 +130,16 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
         id: v.id,
         name: v.name,
         sort_order: v.sort_order,
-        // 마을장 소속 셀을 최상단, 그다음 셀 이름순
+        // 마을장 소속 셀을 최상단, 그다음 셀 표시 이름(셀 이름 또는 목자 이름)순
         cells: ((v.cells || []) as any[])
           .sort((a: any, b: any) => {
             if (vLeaderCellId) {
               if (a.id === vLeaderCellId) return -1;
               if (b.id === vLeaderCellId) return 1;
             }
-            return (a.name || '').localeCompare(b.name || '', 'ko');
+            const an = a.name || leaderMap[a.id] || '';
+            const bn = b.name || leaderMap[b.id] || '';
+            return an.localeCompare(bn, 'ko');
           })
           .map((c: any) => ({
             ...c,
@@ -189,14 +191,16 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     villageCells = [{
       id: villageId,
       name: villageName,
-      // 마을장 소속 셀을 최상단, 그다음 셀 이름순
+      // 마을장 소속 셀을 최상단, 그다음 셀 표시 이름(셀 이름 또는 목자 이름)순
       cells: [...vCells]
         .sort((a: any, b: any) => {
           if (vLeaderCellId) {
             if (a.id === vLeaderCellId) return -1;
             if (b.id === vLeaderCellId) return 1;
           }
-          return (a.name || '').localeCompare(b.name || '', 'ko');
+          const an = a.name || leaderMap[a.id] || '';
+          const bn = b.name || leaderMap[b.id] || '';
+          return an.localeCompare(bn, 'ko');
         })
         .map((c: any) => ({
         ...c,

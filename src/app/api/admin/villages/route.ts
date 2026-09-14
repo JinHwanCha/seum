@@ -37,8 +37,13 @@ export async function GET() {
     .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
     .map((v: any) => ({
       ...v,
+      // 소그룹은 이름순(셀 이름 없으면 목자 이름 기준)
       cells: ((v.cells || []) as any[])
-        .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+        .sort((a: any, b: any) => {
+          const an = a.name || leaderByCell[a.id] || '';
+          const bn = b.name || leaderByCell[b.id] || '';
+          return an.localeCompare(bn, 'ko');
+        })
         .map((c: any) => ({ ...c, leader_name: leaderByCell[c.id] || null })),
     }));
 
