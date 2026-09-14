@@ -79,7 +79,10 @@ export async function getMembers(
   }
 
   const { data } = await query;
-  return (data as unknown as User[]) || [];
+  // 이름순 정렬은 서버에서 확정(클라이언트 재정렬 시 hydration 불일치 방지).
+  const list = ((data as unknown as User[]) || []).slice();
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+  return list;
 }
 
 export async function getResetRequests(session: SessionPayload) {

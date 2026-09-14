@@ -92,12 +92,8 @@ export function AttendanceCheck({
     [canEdit, weekStart, onAttendanceChange]
   );
 
-  // Sort: leader first, then by name
-  const sorted = [...members].sort((a, b) => {
-    if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
-    if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
-    return (a.name || '').localeCompare(b.name || '', 'ko');
-  });
+  // 정렬은 서버(getSmallGroupData)에서 확정 — 클라이언트 재정렬 시 hydration 불일치 발생.
+  const sorted = members;
 
   return (
     <div className="space-y-3">

@@ -182,14 +182,13 @@ export function MemberList({
       : cell.name || '소그룹';
   };
 
-  // Separate unassigned vs assigned members
-  const byName = (a: User, b: User) => (a.name || '').localeCompare(b.name || '', 'ko');
+  // Separate unassigned vs assigned members (이름순 정렬은 서버에서 확정됨)
   // 배정 그룹 판정을 위한 실효 마을 id (마을 직접 지정 또는 소그룹의 소속 마을)
   const villageOfMember = (m: User): string | null =>
     m.village_id || cells.find((c) => c.id === m.cell_id)?.village_id || null;
 
-  const unassigned = members.filter((m) => !m.village_id && !m.cell_id).sort(byName);
-  const assignedAll = members.filter((m) => m.village_id || m.cell_id).sort(byName);
+  const unassigned = members.filter((m) => !m.village_id && !m.cell_id);
+  const assignedAll = members.filter((m) => m.village_id || m.cell_id);
 
   // 마을별 인원수 (탭 라벨용) — 배정 완료 회원 기준
   const villageCounts = new Map<string, number>();
@@ -400,10 +399,10 @@ export function MemberList({
             </div>
           )}
 
-          {/* 승인 대기 탭 - 단순 리스트 (이름순) */}
+          {/* 승인 대기 탭 - 단순 리스트 (이름순은 서버에서 확정) */}
           {showPending && (
             <div className="space-y-2">
-              {[...members].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko')).map(renderMemberCard)}
+              {members.map(renderMemberCard)}
             </div>
           )}
         </div>

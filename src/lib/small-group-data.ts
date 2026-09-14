@@ -1,6 +1,14 @@
 import { createClient } from '@/lib/supabase';
 import type { SessionPayload } from '@/lib/types';
 
+// 멤버 정렬: 목자 우선, 그다음 이름순. 서버에서만 정렬해 SSR/CSR 순서를 일치시킨다
+// (localeCompare 결과가 Node/브라우저 간 다를 수 있어 클라이언트 정렬은 hydration 불일치를 유발).
+const byLeaderThenName = (a: any, b: any) => {
+  if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
+  if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
+  return (a.name || '').localeCompare(b.name || '', 'ko');
+};
+
 export async function getSmallGroupData(session: SessionPayload, weekStart: string) {
   const supabase = createClient();
 
@@ -74,7 +82,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   const cell = cellResult.data;
   const villageName = villageResult.data?.name || null;
   const isNewFamilyTeam = !!villageResult.data?.is_new_member_team;
-  const members = (cellMembersResult.data || []) as any[];
+  const members = ((cellMembersResult.data || []) as any[]).sort(byLeaderThenName);
   const leader = members.find((m: any) => m.role === 'cell_leader');
   const leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
 
@@ -82,7 +90,10 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   const allDeptAttendance = (deptAttendanceResult.data || []) as any[];
 
   const memberIdSet = new Set(members.map((m: any) => m.id));
-  const prayers = allDeptPrayers.filter((p: any) => memberIdSet.has(p.user_id));
+  // 내 소그룹 기도제목은 작성자 이름순으로 정렬(서버에서 확정).
+  const prayers = allDeptPrayers
+    .filter((p: any) => memberIdSet.has(p.user_id))
+    .sort((a: any, b: any) => (a.user?.name || '').localeCompare(b.user?.name || '', 'ko'));
   // 본인 기도제목은 소그룹 소속과 무관하게(마을장 등 셀 미배정 포함) 항상 찾는다.
   const myPrayer = allDeptPrayers.find((p: any) => p.user_id === session.userId) || null;
 
@@ -144,11 +155,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .map((c: any) => ({
             ...c,
             leader_name: leaderMap[c.id] || null,
-            members: (cellMembersMap[c.id] || []).sort((a: any, b: any) => {
-              if (a.role === 'cell_leader') return -1;
-              if (b.role === 'cell_leader') return 1;
-              return 0;
-            }),
+            members: (cellMembersMap[c.id] || []).sort(byLeaderThenName),
             prayers: (cellMembersMap[c.id] || [])
               .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
               .filter(Boolean),
@@ -205,11 +212,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
         .map((c: any) => ({
         ...c,
         leader_name: leaderMap[c.id] || null,
-        members: (cellMembersMap[c.id] || []).sort((a: any, b: any) => {
-          if (a.role === 'cell_leader') return -1;
-          if (b.role === 'cell_leader') return 1;
-          return 0;
-        }),
+        members: (cellMembersMap[c.id] || []).sort(byLeaderThenName),
         prayers: (cellMembersMap[c.id] || [])
           .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
           .filter(Boolean),

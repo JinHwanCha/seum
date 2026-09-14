@@ -20,10 +20,8 @@ export function PrayerList({ prayers, session, weekStart, onUpdated, groupByVill
     );
   }
 
-  // 멤버(작성자) 이름순으로 정렬해 보여준다.
-  const sorted = [...prayers].sort((a, b) =>
-    ((a.user as any)?.name || '').localeCompare((b.user as any)?.name || '', 'ko')
-  );
+  // 정렬은 서버(getSmallGroupData)에서 확정 — 클라이언트 재정렬 시 hydration 불일치 발생.
+  const sorted = prayers;
 
   return (
     <div className="flex flex-col gap-3">
