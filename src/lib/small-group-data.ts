@@ -103,6 +103,12 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
 
+    // 마을별 마을장의 소속 셀(최상단 배치용)
+    const vLeaderCellByVillage: Record<string, string> = {};
+    allDeptMembers
+      .filter((u: any) => u.role === 'village_leader')
+      .forEach((u: any) => { if (u.village_id && u.cell_id) vLeaderCellByVillage[u.village_id] = u.cell_id; });
+
     const cellMembersMap: Record<string, any[]> = {};
     allDeptMembers.forEach((m: any) => {
       if (m.cell_id) {
@@ -118,12 +124,21 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
     villageCells = villages
       .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
-      .map((v: any) => ({
+      .map((v: any) => {
+        const vLeaderCellId = vLeaderCellByVillage[v.id];
+        return {
         id: v.id,
         name: v.name,
         sort_order: v.sort_order,
+        // 마을장 소속 셀을 최상단, 그다음 셀 이름순
         cells: ((v.cells || []) as any[])
-          .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+          .sort((a: any, b: any) => {
+            if (vLeaderCellId) {
+              if (a.id === vLeaderCellId) return -1;
+              if (b.id === vLeaderCellId) return 1;
+            }
+            return (a.name || '').localeCompare(b.name || '', 'ko');
+          })
           .map((c: any) => ({
             ...c,
             leader_name: leaderMap[c.id] || null,
@@ -136,7 +151,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
               .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
               .filter(Boolean),
           })),
-      }));
+        };
+      });
   } else if ((role === 'village_leader' || role === 'cell_leader' || role === 'cell_member') && villageId) {
     const [vCellsResult, villageMembersResult] = roleResults as any[];
 
@@ -147,6 +163,9 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     allVillageMembers
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
+
+    // 마을장의 소속 셀(최상단 배치용)
+    const vLeaderCellId = allVillageMembers.find((u: any) => u.role === 'village_leader')?.cell_id || null;
 
     const cellMembersMap: Record<string, any[]> = {};
     allVillageMembers.forEach((m: any) => {
@@ -170,7 +189,16 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     villageCells = [{
       id: villageId,
       name: villageName,
-      cells: vCells.map((c: any) => ({
+      // 마을장 소속 셀을 최상단, 그다음 셀 이름순
+      cells: [...vCells]
+        .sort((a: any, b: any) => {
+          if (vLeaderCellId) {
+            if (a.id === vLeaderCellId) return -1;
+            if (b.id === vLeaderCellId) return 1;
+          }
+          return (a.name || '').localeCompare(b.name || '', 'ko');
+        })
+        .map((c: any) => ({
         ...c,
         leader_name: leaderMap[c.id] || null,
         members: (cellMembersMap[c.id] || []).sort((a: any, b: any) => {
