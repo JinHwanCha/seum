@@ -32,6 +32,7 @@ interface CellLike {
   id: string;
   name: string | null;
   leader_name?: string | null;
+  leader_role?: string | null;
   members: CellMemberLike[];
   prayers: CellPrayerLike[];
 }
@@ -181,7 +182,9 @@ export function VillagePrayerCells({
                           {cell.name || '소그룹'}
                         </span>
                         {cell.leader_name && (
-                          <span className="text-xs text-stone-500">목자: {cell.leader_name}</span>
+                          <span className="text-xs text-stone-500">
+                            {cell.leader_role === 'village_leader' ? '마을장' : '목자'}: {cell.leader_name}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">

@@ -110,13 +110,14 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     const allDeptMembers = (deptMembersResult.data || []) as any[];
 
     const leaderMap: Record<string, string> = {};
+    const vlLedCells = new Set<string>();
     allDeptMembers
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
     // 마을장도 자기 셀의 리더로 표시(목자 없는 셀 한정).
     allDeptMembers
       .filter((u: any) => u.role === 'village_leader')
-      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) leaderMap[u.cell_id] = u.name; });
+      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) { leaderMap[u.cell_id] = u.name; vlLedCells.add(u.cell_id); } });
 
     // 마을별 마을장의 소속 셀(최상단 배치용)
     const vLeaderCellByVillage: Record<string, string> = {};
@@ -159,6 +160,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .map((c: any) => ({
             ...c,
             leader_name: leaderMap[c.id] || null,
+            leader_role: leaderMap[c.id] ? (vlLedCells.has(c.id) ? 'village_leader' : 'cell_leader') : null,
             members: (cellMembersMap[c.id] || []).sort(byLeaderThenName),
             prayers: (cellMembersMap[c.id] || [])
               .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])
@@ -173,13 +175,14 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     const allVillageMembers = (villageMembersResult.data || []) as any[];
 
     const leaderMap: Record<string, string> = {};
+    const vlLedCells = new Set<string>();
     allVillageMembers
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
     // 마을장도 자기 셀의 리더로 표시(목자 없는 셀 한정).
     allVillageMembers
       .filter((u: any) => u.role === 'village_leader')
-      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) leaderMap[u.cell_id] = u.name; });
+      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) { leaderMap[u.cell_id] = u.name; vlLedCells.add(u.cell_id); } });
 
     // 마을장의 소속 셀(최상단 배치용)
     const vLeaderCellId = allVillageMembers.find((u: any) => u.role === 'village_leader')?.cell_id || null;
@@ -220,6 +223,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
         .map((c: any) => ({
         ...c,
         leader_name: leaderMap[c.id] || null,
+        leader_role: leaderMap[c.id] ? (vlLedCells.has(c.id) ? 'village_leader' : 'cell_leader') : null,
         members: (cellMembersMap[c.id] || []).sort(byLeaderThenName),
         prayers: (cellMembersMap[c.id] || [])
           .map((m: any) => prayerByCellUser[`${c.id}:${m.id}`])

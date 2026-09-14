@@ -41,6 +41,7 @@ interface CellInfo {
   name: string | null;
   sort_order: number;
   leader_name: string | null;
+  leader_role?: string | null;
   members: CellMember[];
   prayers: PrayerRequest[];
 }
@@ -655,7 +656,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                                   </span>
                                   {cell.leader_name && (
                                     <span className="text-xs text-stone-500">
-                                      목자: {cell.leader_name}
+                                      {cell.leader_role === 'village_leader' ? '마을장' : '목자'}: {cell.leader_name}
                                     </span>
                                   )}
                                 </div>
