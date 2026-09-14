@@ -255,6 +255,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
             <PrayerForm
               weekStart={weekStart}
               clearOnSave
+              initialBlank
               onPersisted={() => mutate()}
               existingContent={myPrayer?.content}
               existingImages={myPrayer?.images || []}

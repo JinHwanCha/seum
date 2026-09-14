@@ -15,6 +15,8 @@ interface PrayerFormProps {
   onSaved: (content: string, images: string[], isCellOnly: boolean) => void;
   /** 저장 후 textarea 를 비워 '작성 완료'를 체감하게 한다. */
   clearOnSave?: boolean;
+  /** 진입 시 기존 내용을 채우지 않고 항상 공백으로 시작(작성한 글은 하단 목록에 노출됨). */
+  initialBlank?: boolean;
   /** 서버 저장이 실제로 반영된 뒤 호출(목록 재검증용). */
   onPersisted?: () => void;
 }
@@ -29,9 +31,10 @@ export function PrayerForm({
   targetUserId,
   onSaved,
   clearOnSave = false,
+  initialBlank = false,
   onPersisted,
 }: PrayerFormProps) {
-  const [content, setContent] = useState(existingContent || '');
+  const [content, setContent] = useState(initialBlank ? '' : (existingContent || ''));
   const [isCellOnly, setIsCellOnly] = useState<boolean>(!!existingIsCellOnly);
   // 기도제목은 텍스트만 편집 — 기존 이미지는 그대로 유지
   const images = existingImages || [];
@@ -40,6 +43,8 @@ export function PrayerForm({
   const justClearedRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // 항상 공백으로 시작하는 폼은 기존 내용을 다시 채우지 않는다.
+    if (initialBlank) return;
     if (
       clearOnSave &&
       justClearedRef.current !== null &&
@@ -48,7 +53,7 @@ export function PrayerForm({
       return;
     }
     setContent(existingContent || '');
-  }, [existingContent, clearOnSave]);
+  }, [existingContent, clearOnSave, initialBlank]);
 
   useEffect(() => {
     setIsCellOnly(!!existingIsCellOnly);
