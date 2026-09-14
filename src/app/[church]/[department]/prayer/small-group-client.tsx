@@ -96,12 +96,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const cellName = swrData?.cell?.name || null;
   const villageName = swrData?.villageName || null;
   const leader = swrData?.leader || null;
-  // 멤버는 목자 우선, 그다음 이름순으로 정렬해 보여준다.
-  const members: CellMember[] = [...(swrData?.members || [])].sort((a, b) => {
-    if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
-    if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
-    return (a.name || '').localeCompare(b.name || '', 'ko');
-  });
+  const members: CellMember[] = swrData?.members || [];
   const villageCells: VillageGroup[] = swrData?.villageCells || [];
 
   // Sync optimistic state from SWR data
