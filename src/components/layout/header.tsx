@@ -15,7 +15,7 @@ export function Header() {
   if (!user) {
     return (
       <header className="warm-surface border-b border-stone-200/80 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-3 h-14 flex items-center justify-between">
           <div className="text-xl font-bold text-primary-700 tracking-tight">세움</div>
           <div className="w-20 h-5 bg-stone-200 rounded-md animate-pulse" />
         </div>
@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="warm-surface border-b border-stone-200/80 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
-      <div className="px-4 h-14 flex items-center justify-between">
+      <div className="px-3 h-14 flex items-center justify-between">
         <Link
           href={`/${params.church}/${params.department}`}
           className="text-xl font-bold text-primary-700 tracking-tight"
