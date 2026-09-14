@@ -48,7 +48,11 @@ export function MonthlyPrayerView({
     { keepPreviousData: true }
   );
 
-  const members = data?.members || [];
+  const members = [...(data?.members || [])].sort((a, b) => {
+    if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
+    if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
+    return (a.name || '').localeCompare(b.name || '', 'ko');
+  });
   const prayers = data?.prayers || [];
   const weeks = getMonthWeeks(month);
 

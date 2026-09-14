@@ -20,9 +20,14 @@ export function PrayerList({ prayers, session, weekStart, onUpdated, groupByVill
     );
   }
 
+  // 멤버(작성자) 이름순으로 정렬해 보여준다.
+  const sorted = [...prayers].sort((a, b) =>
+    ((a.user as any)?.name || '').localeCompare((b.user as any)?.name || '', 'ko')
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      {prayers.map((prayer) => (
+      {sorted.map((prayer) => (
         <PrayerCard
           key={prayer.id}
           prayer={prayer}

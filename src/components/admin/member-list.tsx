@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
+import { PillTabs } from '@/components/ui/pill-tabs';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS, MINISTER_HIERARCHY } from '@/lib/constants';
 import { Check, X, UserCog, AlertCircle, GraduationCap, RotateCcw, Trash2 } from 'lucide-react';
 import type { User } from '@/lib/types';
@@ -43,10 +44,13 @@ export function MemberList({
   const [editCellId, setEditCellId] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
+  // 배정 완료 목록의 마을별 카테고리 탭 ('all' 또는 village id)
+  const [activeVillageTab, setActiveVillageTab] = useState('all');
 
   // 탭 변경 시 selection 초기화
   useEffect(() => {
     setSelectedIds(new Set());
+    setActiveVillageTab('all');
   }, [showPending, showGraduated, initialMembers]);
 
   const fetchMembers = () => {
@@ -179,8 +183,33 @@ export function MemberList({
   };
 
   // Separate unassigned vs assigned members
-  const unassigned = members.filter((m) => !m.village_id && !m.cell_id);
-  const assigned = members.filter((m) => m.village_id || m.cell_id);
+  const byName = (a: User, b: User) => (a.name || '').localeCompare(b.name || '', 'ko');
+  // 배정 그룹 판정을 위한 실효 마을 id (마을 직접 지정 또는 소그룹의 소속 마을)
+  const villageOfMember = (m: User): string | null =>
+    m.village_id || cells.find((c) => c.id === m.cell_id)?.village_id || null;
+
+  const unassigned = members.filter((m) => !m.village_id && !m.cell_id).sort(byName);
+  const assignedAll = members.filter((m) => m.village_id || m.cell_id).sort(byName);
+
+  // 마을별 인원수 (탭 라벨용) — 배정 완료 회원 기준
+  const villageCounts = new Map<string, number>();
+  assignedAll.forEach((m) => {
+    const vid = villageOfMember(m) || 'etc';
+    villageCounts.set(vid, (villageCounts.get(vid) || 0) + 1);
+  });
+
+  const villageTabs = [
+    { key: 'all', label: `전체 ${assignedAll.length}` },
+    ...villages
+      .filter((v) => (villageCounts.get(v.id) || 0) > 0)
+      .map((v) => ({ key: v.id, label: `${v.name} ${villageCounts.get(v.id) || 0}` })),
+    ...(villageCounts.get('etc') ? [{ key: 'etc', label: `기타 ${villageCounts.get('etc')}` }] : []),
+  ];
+
+  const assigned =
+    activeVillageTab === 'all'
+      ? assignedAll
+      : assignedAll.filter((m) => (villageOfMember(m) || 'etc') === activeVillageTab);
 
   const roleOptions = [
     { value: 'cell_member', label: '목원' },
@@ -348,14 +377,21 @@ export function MemberList({
             </div>
           )}
 
-          {/* 배정된 회원 (마을별 그룹) */}
-          {!showPending && assigned.length > 0 && (
+          {/* 배정된 회원 (마을별 탭) */}
+          {!showPending && assignedAll.length > 0 && (
             <div>
-              {unassigned.length > 0 && (
-                <div className="flex items-center gap-2 mb-2 px-1 mt-4">
-                  <span className="text-sm font-semibold text-stone-700">
-                    배정 완료 ({assigned.length}명)
-                  </span>
+              <div className="flex items-center gap-2 mb-2 px-1 mt-4">
+                <span className="text-sm font-semibold text-stone-700">
+                  배정 완료 ({assignedAll.length}명)
+                </span>
+              </div>
+              {villageTabs.length > 1 && (
+                <div className="mb-3">
+                  <PillTabs
+                    tabs={villageTabs}
+                    activeKey={activeVillageTab}
+                    onChange={setActiveVillageTab}
+                  />
                 </div>
               )}
               <div className="space-y-2">
@@ -364,10 +400,10 @@ export function MemberList({
             </div>
           )}
 
-          {/* 승인 대기 탭 - 단순 리스트 */}
+          {/* 승인 대기 탭 - 단순 리스트 (이름순) */}
           {showPending && (
             <div className="space-y-2">
-              {members.map(renderMemberCard)}
+              {[...members].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko')).map(renderMemberCard)}
             </div>
           )}
         </div>

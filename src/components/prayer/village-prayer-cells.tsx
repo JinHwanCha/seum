@@ -196,7 +196,13 @@ export function VillagePrayerCells({
 
                     {isExpanded && (
                       <div className="border-t border-stone-100 p-4 space-y-3">
-                        {cell.members.map((m) => {
+                        {[...cell.members]
+                          .sort((a, b) => {
+                            if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
+                            if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
+                            return (a.name || '').localeCompare(b.name || '', 'ko');
+                          })
+                          .map((m) => {
                           const userWeeks = byUserWeek[m.id] || {};
                           const weekPrayer = cell.prayers.find((p) => p.user_id === m.id);
                           return (

@@ -137,6 +137,8 @@ export async function GET(request: Request) {
       totalWeeks: weekKeys.length,
     };
   });
+  // 멤버는 이름순으로 정렬해 보여준다.
+  memberScores.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
 
   // 월 전체 점수
   const totalMonthMax = memberList.length * weekKeys.length * MAX_PER_WEEK;

@@ -92,11 +92,11 @@ export function AttendanceCheck({
     [canEdit, weekStart, onAttendanceChange]
   );
 
-  // Sort: leader first
+  // Sort: leader first, then by name
   const sorted = [...members].sort((a, b) => {
     if (a.role === 'cell_leader' && b.role !== 'cell_leader') return -1;
     if (a.role !== 'cell_leader' && b.role === 'cell_leader') return 1;
-    return 0;
+    return (a.name || '').localeCompare(b.name || '', 'ko');
   });
 
   return (
