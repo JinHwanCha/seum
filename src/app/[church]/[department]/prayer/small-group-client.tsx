@@ -155,6 +155,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const isVillageLeader = effectiveRole === 'village_leader';
   const hasOversight = isMinister || isVillageLeader;
   const hasCell = !!effectiveCellId;
+  // 마을장의 '내 소그룹'(경건생활) = 마을의 목자들(서버 members)
+  const hasLeaderGroup = isVillageLeader && members.length > 0;
 
   const isCellLeader = effectiveRole === 'cell_leader';
   const isNewFamilyTeam = !!fresh?.isNewFamilyTeam;
@@ -178,7 +180,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     (isCellLeader && myVillageCells.length > 0 && !!villageName) ||
     (hasOversight && villageCells.length > 0);
   const attTabs = [
-    ...(hasCell || isNewFamilyLeader
+    ...(hasCell || isNewFamilyLeader || hasLeaderGroup
       ? [{ key: 'mine', label: isNewFamilyLeader ? '새가족' : '내 소그룹' }]
       : []),
     { key: 'special', label: '주중예배' },
@@ -562,7 +564,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
               {attSub === 'mine' && isNewFamilyLeader && (
                 <NewFamilyManager weekStart={weekStart} />
               )}
-              {attSub === 'mine' && !isNewFamilyLeader && hasCell && (
+              {attSub === 'mine' && !isNewFamilyLeader && (hasCell || hasLeaderGroup) && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <h2 className="text-sm font-semibold text-stone-700">{cellName || '소그룹'} 출석</h2>

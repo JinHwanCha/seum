@@ -79,12 +79,12 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
 
   const [cellResult, villageResult, cellMembersResult, deptPrayersResult, deptAttendanceResult] = baseResults;
 
-  const cell = cellResult.data;
+  let cell = cellResult.data;
   const villageName = villageResult.data?.name || null;
   const isNewFamilyTeam = !!villageResult.data?.is_new_member_team;
-  const members = ((cellMembersResult.data || []) as any[]).sort(byLeaderThenName);
+  let members = ((cellMembersResult.data || []) as any[]).sort(byLeaderThenName);
   const leader = members.find((m: any) => m.role === 'cell_leader');
-  const leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
+  let leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
 
   const allDeptPrayers = (deptPrayersResult.data || []) as any[];
   const allDeptAttendance = (deptAttendanceResult.data || []) as any[];
@@ -113,6 +113,10 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     allDeptMembers
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
+    // 마을장도 자기 셀의 리더로 표시(목자 없는 셀 한정).
+    allDeptMembers
+      .filter((u: any) => u.role === 'village_leader')
+      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) leaderMap[u.cell_id] = u.name; });
 
     // 마을별 마을장의 소속 셀(최상단 배치용)
     const vLeaderCellByVillage: Record<string, string> = {};
@@ -172,6 +176,10 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     allVillageMembers
       .filter((u: any) => u.role === 'cell_leader')
       .forEach((l: any) => { if (l.cell_id) leaderMap[l.cell_id] = l.name; });
+    // 마을장도 자기 셀의 리더로 표시(목자 없는 셀 한정).
+    allVillageMembers
+      .filter((u: any) => u.role === 'village_leader')
+      .forEach((u: any) => { if (u.cell_id && !leaderMap[u.cell_id]) leaderMap[u.cell_id] = u.name; });
 
     // 마을장의 소속 셀(최상단 배치용)
     const vLeaderCellId = allVillageMembers.find((u: any) => u.role === 'village_leader')?.cell_id || null;
@@ -218,6 +226,19 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .filter(Boolean),
       })),
     }];
+
+    // 마을장의 '내 소그룹'(경건생활) = 마을의 목자들. 마을장이 소그룹장이 된다.
+    if (role === 'village_leader') {
+      members = allVillageMembers
+        .filter((u: any) => u.role === 'cell_leader')
+        .sort(byLeaderThenName);
+      const me = allVillageMembers.find((u: any) => u.id === session.userId);
+      if (me) leaderInfo = { id: me.id, name: me.name };
+      cell = {
+        id: cellId || `village-leaders-${villageId}`,
+        name: villageName ? `${villageName} 리더` : '마을 리더',
+      } as any;
+    }
   }
 
   return {
