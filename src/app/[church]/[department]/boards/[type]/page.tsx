@@ -28,37 +28,34 @@ async function PostListServer({
 }) {
   const supabase = createClient();
 
-  // 1) 현재 활성 group_year 의 마을 목록 (탭용)
-  const { data: groupYear } = await supabase
-    .from('group_years')
-    .select('villages(id, name, sort_order)')
-    .eq('department_id', departmentId)
-    .eq('is_active', true)
-    .single();
+  const [{ data: groupYear }, { data: categoryRows }, { posts: enrichedPosts, hasMore }] = await Promise.all([
+    supabase
+      .from('group_years')
+      .select('villages(id, name, sort_order)')
+      .eq('department_id', departmentId)
+      .eq('is_active', true)
+      .single(),
+    supabase
+      .from('board_categories')
+      .select('id, name, sort_order')
+      .eq('department_id', departmentId)
+      .eq('board_type', type)
+      .order('sort_order', { ascending: true }),
+    loadBoardPosts({
+      departmentId,
+      boardType: type,
+      canSeeAll,
+      villageId,
+    }),
+  ]);
 
   const villages = (((groupYear as any)?.villages || []) as { id: string; name: string; sort_order: number }[])
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-  // 1-2) 게시판 카테고리 목록 (카테고리 탭용)
-  const { data: categoryRows } = await supabase
-    .from('board_categories')
-    .select('id, name, sort_order')
-    .eq('department_id', departmentId)
-    .eq('board_type', type)
-    .order('sort_order', { ascending: true });
 
   const categories = ((categoryRows || []) as { id: string; name: string }[]).map((c) => ({
     id: c.id,
     name: c.name,
   }));
-
-  // 2) 게시글 (가시성 필터 + 첫 페이지만) — 목록은 썸네일만 조회해 페이로드 최소화
-  const { posts: enrichedPosts, hasMore } = await loadBoardPosts({
-    departmentId,
-    boardType: type,
-    canSeeAll,
-    villageId,
-  });
 
   // 서버에서 id→이름 맵 생성—클라이언트 추가 쿼리 없이 작성자 마을명 표기 용
   const villageMap: Record<string, string> = {};

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { Card } from '@/components/ui/card';
@@ -9,6 +10,8 @@ import { GatheringBoard } from '@/components/gathering/gathering-board';
 import { WorshipGuide } from '@/components/worship/worship-guide';
 import { DashboardFallback } from '@/components/dashboard-fallback';
 import { loadGatherings, loadWorshipItems } from '@/lib/dashboard-data';
+import type { SessionPayload } from '@/lib/types';
+import DepartmentLoading from './loading';
 
 
 function getQuickLinks(session: any) {
@@ -37,15 +40,7 @@ interface PageProps {
   params: { church: string; department: string };
 }
 
-export default async function DashboardPage({ params }: PageProps) {
-  const session = await getSession();
-  if (!session) redirect('/login');
-
-  const basePath = `/${params.church}/${params.department}`;
-  const roleLabel = session.ministerRank
-    ? MINISTER_RANK_LABELS[session.ministerRank]
-    : ROLE_LABELS_DEFAULT[session.role];
-
+async function DashboardContent({ session }: { session: SessionPayload }) {
   // 예배 안내/모임 데이터를 서버에서 미리 조회해 SWR fallback 으로 주입한다.
   // 클라이언트 페칭 워터폴(마운트→요청→스켈레톤→표시)을 제거해 즉시 렌더한다.
   const [worship, gatherings] = await Promise.all([
@@ -55,6 +50,23 @@ export default async function DashboardPage({ params }: PageProps) {
   const fallback: Record<string, unknown> = {};
   if (worship) fallback['/api/worship-guide'] = worship;
   if (gatherings) fallback['/api/gatherings'] = gatherings;
+
+  return (
+    <DashboardFallback fallback={fallback}>
+      <WorshipGuide />
+      <GatheringBoard />
+    </DashboardFallback>
+  );
+}
+
+export default async function DashboardPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
+  const basePath = `/${params.church}/${params.department}`;
+  const roleLabel = session.ministerRank
+    ? MINISTER_RANK_LABELS[session.ministerRank]
+    : ROLE_LABELS_DEFAULT[session.role];
 
   return (
     <div className="space-y-6">
@@ -71,13 +83,9 @@ export default async function DashboardPage({ params }: PageProps) {
         </div>
       </Card>
 
-      <DashboardFallback fallback={fallback}>
-        {/* Worship Guide */}
-        <WorshipGuide />
-
-        {/* Gathering Board */}
-        <GatheringBoard />
-      </DashboardFallback>
+      <Suspense fallback={<DepartmentLoading />}>
+        <DashboardContent session={session} />
+      </Suspense>
     </div>
   );
 }
