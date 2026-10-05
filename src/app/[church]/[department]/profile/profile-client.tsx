@@ -9,6 +9,7 @@ import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { SessionPayload } from '@/lib/types';
+import { NativePushSettings } from '@/components/notifications/native-push-provider';
 
 interface ProfileData {
   birth_date: string | null;
@@ -158,6 +159,8 @@ export default function ProfileClient({ user, basePath, profile, deletionRequest
           </div>
         )}
       </Card>
+
+      <NativePushSettings />
 
       <form onSubmit={handleSubmit} className="space-y-2">
         <Card>

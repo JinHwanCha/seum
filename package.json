@@ -11,6 +11,8 @@
     "mobile:icons": "powershell -NoProfile -File scripts\\generate-native-icons.ps1",
     "mobile:android:debug": "node scripts/android-preview.cjs build",
     "mobile:android:install": "node scripts/android-preview.cjs install",
+    "mobile:push:configure": "node scripts/configure-push.cjs",
+    "mobile:push:dispatch": "node scripts/push-dispatch.cjs",
     "mobile:open:android": "cap open android",
     "mobile:open:ios": "cap open ios"
   },
@@ -18,6 +20,8 @@
     "@capacitor/android": "7.6.9",
     "@capacitor/core": "7.6.9",
     "@capacitor/ios": "7.6.9",
+    "@capacitor/preferences": "7.0.4",
+    "@capacitor/push-notifications": "7.0.7",
     "@supabase/supabase-js": "^2.47.10",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",

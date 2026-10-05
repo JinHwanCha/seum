@@ -34,7 +34,9 @@ export async function POST(
     actorName: session.name,
     type: 'comment',
     snippet: content,
-  }).catch(() => {});
+  }).catch((error: unknown) => {
+    console.error('Comment saved but author notification failed:', error);
+  });
 
   return NextResponse.json({ success: true, comment: data });
 }

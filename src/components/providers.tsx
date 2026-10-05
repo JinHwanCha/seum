@@ -5,6 +5,7 @@ import { SWRConfig } from 'swr';
 import { AuthProvider } from '@/hooks/use-auth';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import type { SessionPayload } from '@/lib/types';
+import { NativePushProvider } from '@/components/notifications/native-push-provider';
 
 const swrFetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -68,7 +69,9 @@ export function Providers({
       }}
     >
       <ThemeProvider>
-        <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
+        <AuthProvider initialUser={initialUser}>
+          <NativePushProvider>{children}</NativePushProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SWRConfig>
   );

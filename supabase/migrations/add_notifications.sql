@@ -26,11 +26,9 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread
   ON notifications(recipient_id, is_read);
 
 -- ============================================================
--- (미래) 모바일 앱 전환 대비 — 웹푸시/FCM 구독 정보 저장용 스텁 테이블
---   현재 코드에서는 사용하지 않음. 앱 전환 시:
---     1) 기기에서 푸시 구독 → POST /api/notifications/subscribe 로 저장
---     2) 알림 생성 시 lib/notifications.ts 의 sendPush() 에서
---        해당 recipient 의 구독을 조회해 web-push / FCM 로 발송
+-- 레거시 웹푸시 구독 예약 테이블(현재 코드에서는 사용하지 않음).
+-- 네이티브 Push는 add_native_push.sql의 push_devices/push_jobs와
+-- /api/push/devices, /api/push/dispatch를 사용한다. 이 테이블은 유지한다.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

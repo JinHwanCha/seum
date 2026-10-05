@@ -213,7 +213,7 @@ src/
 - [로컬 웹 폴더](mobile-web/)는 Capacitor 동기화를 위한 안내 파일입니다. Next.js 빌드 결과나 오프라인 앱 번들이 아닙니다.
 - Android Release APK/AAB와 iOS Release/Archive는 네이티브 빌드 가드로 차단합니다. 원격 로딩 검증 구성을 출시하지 않도록 하는 의도적인 제한입니다.
 - 앱 아이콘은 기존 웹 브랜드 색상(`#3d6b48` → `#4a7d57` → `#5a8f65`)의 초록색 그라데이션과 흰색 `세움` 글자를 사용합니다. Android 일반·원형·적응형 아이콘과 iOS 1024 아이콘을 적용했습니다. 원본은 [브랜드 아이콘](assets/native/seum-icon.png)이며, Windows의 맑은 고딕 글꼴로 `npm run mobile:icons`를 실행하면 재생성할 수 있습니다. PNG 결과물을 저장소에서 관리하므로 다른 OS에서 매번 재생성할 필요는 없습니다.
-- Splash의 별도 브랜드 디자인, Push 플러그인, 토큰 등록, 발송 및 딥링크는 아직 구현하지 않았습니다.
+- Splash의 별도 브랜드 디자인은 남아 있습니다. 네이티브 Push 플러그인·토큰 API·발송 큐·알림 클릭 이동은 구현되어 있으며, 아래 Push 운영 적용 절차를 완료해야 실제 서버와 연결됩니다.
 
 ### Android Debug 실행
 
@@ -310,7 +310,7 @@ Capacitor는 Android/iOS 네이티브 프로젝트를 연결하는 도구이며,
 - 기존 DB 인덱스 정의에는 게시글별 공감 조회 인덱스와 `(post_id, user_id, emoji)` 고유 제약이 있습니다. 운영 DB 적용 상태나 리전·부하를 확인한 것은 아니며, 전역 타임아웃/재시도 정책을 임의로 바꾸지 않습니다.
 - 변경은 웹 배포 후 원격 로딩 앱에도 적용됩니다. 이 작업만을 위해 APK를 다시 설치할 필요는 없습니다. 서버 반영 전에는 휴대폰에 기존 동작이 남아 있습니다.
 
-## 11. Supabase를 유지하는 모바일 Push 연결 준비
+## 11. Supabase를 유지하는 모바일 Push 연결
 
 Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용으로 사용하며, 사용자·게시글·기존 알림·기기 토큰·발송 기록은 Supabase에서 관리할 수 있습니다. Play Console의 패키지/서명 등록과 Firebase 앱 등록은 별개입니다.
 
@@ -322,15 +322,95 @@ Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용
 4. 프로젝트의 FCM HTTP v1 API 활성 상태와 발송 서버 권한을 확인합니다. 서버용 서비스 계정 개인키는 앱·`NEXT_PUBLIC_` 변수·Git·채팅에 넣지 않습니다. 구현 시 서버 비밀 설정으로 연결합니다.
 5. iOS도 같은 Firebase 프로젝트에 Bundle ID `life.seum.app`으로 추가할 수 있습니다. FCM 통합 방식으로 구현할 경우 `GoogleService-Info.plist`와 Apple APNs 인증 키/팀 ID/키 ID 연결, Xcode Push capability와 개발 팀 서명이 필요합니다. 기본 Capacitor Push 플러그인의 iOS 토큰은 APNs 토큰이므로 Android FCM 토큰과 혼동하면 안 됩니다.
 
-### 이후 코드 구현 및 검증 순서
+### 구현된 위치
 
-1. 네이티브 Push 플러그인과 설정을 선택하고 Android 권한·채널·등록/갱신 이벤트를 연결합니다.
-2. 로그인한 사용자 기준 기기 등록·해제 API와 Supabase 저장 구조를 추가합니다. 여러 기기·토큰 교체·로그아웃·계정 전환을 처리합니다.
-3. 기존 알림 저장과 연계한 내구성 있는 발송 큐를 추가하고, 인증된 발송 작업자가 FCM/APNs 결과를 기록·재시도·만료 토큰 정리합니다. 요청 종료 후 단순 fire-and-forget으로 발송하지 않습니다.
-4. Push 클릭 시 기존 게시글 상세 경로로 이동합니다. 세션 만료/최초 소속 선택 후에도 목적지를 유지하고 수신 사용자·접근 권한을 확인합니다.
-5. 실제 Android/iPhone에서 권한 거부·전경·백그라운드·일반 종료·다기기·로그아웃·중복 발송을 검증합니다. Android 강제 중지 등 OS 제한 상황은 일반 종료와 구분합니다.
+| 역할 | 파일/경로 |
+|---|---|
+| 네이티브 권한·등록·수신·클릭·내 정보 설정 | [NativePushProvider](src/components/notifications/native-push-provider.tsx) |
+| 설치 ID·토큰 등록 직렬화·로그아웃 연결 | [native-push](src/lib/native-push.ts) |
+| 사용자별 기기 등록·해제 | [POST/DELETE /api/push/devices](src/app/api/push/devices/route.ts) |
+| 본인에게 테스트 알림 생성 | [POST /api/push/test](src/app/api/push/test/route.ts) |
+| 수신자·부서·게시글 권한 확인 후 상세 이동 | [GET /api/push/notifications/:id](src/app/api/push/notifications/[id]/route.ts) |
+| FCM HTTP v1·APNs HTTP/2 발송 | [push-senders](src/lib/push-senders.ts) |
+| 작업 선점·결과 저장 | [push-worker](src/lib/push-worker.ts) |
+| 별도 비밀 인증을 사용하는 발송 작업자 | [POST/GET /api/push/dispatch](src/app/api/push/dispatch/route.ts) |
+| 기기·큐·트리거·RPC | [add_native_push.sql](supabase/migrations/add_native_push.sql) |
+| 선택적 Supabase 매분 실행 스케줄 | [configure_native_push_dispatch.sql](supabase/migrations/configure_native_push_dispatch.sql) |
 
-현재는 준비 안내 단계이며 Push 플러그인·토큰 API·발송 큐가 구현된 상태가 아닙니다. 설정 파일을 놓는 것만으로 기존 공지가 자동 발송되지는 않습니다.
+- `@capacitor/push-notifications@7.0.7`과 `@capacitor/preferences@7.0.4`를 사용합니다. Android는 FCM, iOS는 APNs 토큰을 분리 저장·발송합니다. iOS에 Firebase Messaging을 추가한 구성이 아니므로 iOS FCM 토큰으로 간주하지 않습니다.
+- 일반 브라우저에서는 네이티브 권한·토큰 코드를 실행하지 않습니다. 플러그인이 없는 이전 APK에는 앱 업데이트 안내를 표시합니다.
+- 앱 내 정보에서 **알림 권한 요청 / 등록**, **이 기기 알림 끄기**, **테스트 알림 보내기**를 사용할 수 있습니다. 최초 등록은 사용자 선택 후 진행합니다. 권한이 이미 허용되고 등록을 선택한 기기는 재실행/복귀 때 갱신합니다.
+- 기존 웹 알림은 유지됩니다. `notifications` INSERT 트리거가 당시 활성 기기에만 `push_jobs`를 생성합니다. 등록 전 과거 알림을 소급 Push로 발송하지 않습니다. 사역자 공지는 기존처럼 새 글의 “모두에게 알림” 옵션을 선택해야 합니다.
+- 토큰 교체·계정 전환·재설치는 등록 RPC에서 처리하고, 큐는 기기 세대·소유자·승인·세션 만료·읽음·게시글 권한을 확인합니다. 로그아웃은 진행 중 등록 요청을 기다린 뒤 현재 기기만 해제하고 인증 쿠키를 지웁니다.
+- 전경에서는 앱 안에 알림 열기 배너를 표시하고, 백그라운드/일반 종료 상태에서는 OS가 표시할 notification/alert payload를 보냅니다. Android 강제 중지·기기 정책·권한 거부·통신 불가에서 수신을 보장하지 않습니다.
+- 알림 클릭 정보는 Preferences에 보관해 로그인/최초 소속 선택 후 처리합니다. 다른 계정의 알림은 열지 않습니다. 수신자 확인 후 기존 게시글 slug/UUID 경로로 이동합니다. 이는 Push 클릭 이동이며 외부 URL의 Universal Links/App Links 설정을 추가한 것은 아닙니다.
+- 잠금 화면에는 알림 제목과 짧은 안내만 전달하고 게시글 전체 본문은 포함하지 않습니다. 제목도 개인 정보가 포함될 수 있어 앱 설정 안내와 개인정보 처리방침에 고지합니다.
+
+### Android Firebase SDK 설정
+
+- [루트 Gradle](android/build.gradle)에 Google Services `4.5.0`을 기존 `buildscript` 방식으로 선언합니다. Firebase 안내의 Kotlin DSL `plugins {}` 코드를 중복 추가하지 않습니다.
+- [앱 Gradle](android/app/build.gradle)은 Firebase BoM `34.19.0`과 버전 없는 `firebase-messaging`을 참조합니다. FCM에 불필요한 Analytics는 추가하지 않았습니다.
+- 로컬 `android/app/google-services.json`이 있으면 Google Services 플러그인을 적용합니다. 잘못된 JSON·패키지 불일치 등은 Gradle 오류로 표시되며 무시하지 않습니다. 파일이 없는 개발 환경에서는 경고를 표시하고 Firebase 미설정 상태의 검증용 빌드만 가능합니다.
+- 확인: `node --test tests/firebase-android.test.cjs` 및 `npm run mobile:android:debug`. 다른 PC에서는 같은 Firebase Android 앱의 JSON을 따로 내려받아야 합니다. Firebase SDK/Manifest 병합으로 FCM 관련 구성·권한이 추가되지만 JavaScript 권한 요청·토큰 등록·수신 이벤트 연결이 자동 구현되는 것은 아닙니다.
+
+### 운영에 적용하는 순서
+
+**1. Supabase SQL 적용**
+
+- 기존 `notifications` 테이블이 있어야 합니다. 없다면 먼저 기존 [알림 마이그레이션](supabase/migrations/add_notifications.sql)을 적용합니다.
+- Supabase 프로젝트의 **SQL Editor → New query**에서 [add_native_push.sql](supabase/migrations/add_native_push.sql) 전체를 실행합니다. 기존 사용자/게시글/웹 알림을 삭제하지 않고 `push_devices`, `push_jobs`, 트리거와 RPC를 추가합니다.
+- 새 테이블은 RLS를 활성화하고 anon/authenticated 직접 접근을 차단합니다. 앱은 로그인 쿠키로 Next.js API를 호출하며, 서버만 기존 Service Role 키를 사용합니다. JWT 사용자 ID는 서버에서 결정합니다.
+- SQL은 로컬 PostgreSQL 엔진에서 재실행, 다기기 fan-out, lease 중복 방지·복구, 재시도, 만료 토큰, 계정 전환, 읽음, 로그아웃, 재설치와 테스트 알림 제한을 검사합니다. 운영 DB에 자동 적용한 것은 아닙니다.
+
+**2. Firebase 발송 서버 자격증명 준비**
+
+- Firebase 프로젝트 설정의 서비스 계정에서 발송용 계정을 준비합니다. 해당 계정에 FCM HTTP v1 메시지 발송 권한이 있어야 합니다. 최소 권한으로 관리하고 서버 JSON 개인키를 채팅/앱/Git에 넣지 않습니다.
+- 로컬 파일 이름을 `firebase-service-account.json`으로 프로젝트 루트에 저장합니다. `.gitignore`에서 제외되어 있습니다. Android용 `google-services.json`과는 다른 파일입니다.
+- 이중 확장자(`firebase-service-account.json.json`)와 Firebase Admin SDK 기본 다운로드 이름도 Git에서 제외합니다. 개인키 파일을 커밋한 뒤 삭제/이름 변경만 해도 이전 커밋에는 남습니다. Push Protection이 차단하면 우회하지 말고 미업로드 기록에서 제거해야 합니다. 복구용 비밀 포함 브랜치는 로컬에만 보관하고 `git push --all`로 업로드하지 않습니다. 커밋에 들어갔던 서비스 계정 개인키는 재발급·기존 키 폐기를 권장합니다.
+- `npm run mobile:push:configure`를 실행하면 Firebase 프로젝트 일치를 확인하고 `.env.local`에 서버 설정과 난수 발송 비밀을 기록합니다. 개인키나 비밀은 출력하지 않습니다. 기존 다른 환경변수는 유지합니다.
+- 생성한 `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `PUSH_DISPATCH_SECRET`, `PUSH_SEND_ENABLED=true`를 **Vercel 프로젝트 → Settings → Environment Variables**에도 안전하게 설정하고 재배포합니다. 로컬 `.env.local` 변경은 Vercel에 자동 반영되지 않습니다.
+- Vercel/Vault에는 `NAME=`이나 `.env` 값의 외곽 큰따옴표 없이 값만 입력합니다. Firebase 개인키의 실제 줄바꿈 또는 `\n` 표기를 서버가 처리합니다. 개인키를 화면 캡처/채팅/로그로 공유하지 않습니다.
+- 별도 스케줄러가 호출할 `PUSH_DISPATCH_SECRET`은 32자 이상 난수입니다. 클라이언트 번들에 노출하지 않습니다. 발송 미설정 상태의 API는 503을 반환하며 발송 성공처럼 응답하지 않습니다.
+- 로컬 수동 발송을 위해 `.env.local`의 `PUSH_SERVER_URL`을 실제 배포 주소(현재 `https://seum-nu.vercel.app`)로 지정합니다. 예시는 [.env.local.example](.env.local.example)에 있습니다.
+
+**3. iOS 자격증명과 Xcode 설정**
+
+- Xcode App 타깃에 개발 팀을 지정하고 Push Notifications capability 및 App ID의 Push 활성화를 확인합니다. [AppDelegate](ios/App/App/AppDelegate.swift)에 APNs 등록 성공/실패 콜백을 연결했고 Debug용 `aps-environment=sandbox` entitlement와 Preferences용 Privacy Manifest를 추가했습니다.
+- 서버에 `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY`를 설정합니다. Apple에서 만든 APNs `.p8` 키는 서버 비밀로만 보관합니다. Bundle ID는 `life.seum.app`입니다.
+- Next.js 빌드 환경의 `NEXT_PUBLIC_APNS_ENVIRONMENT=sandbox`는 현재 Debug entitlement와 일치해야 합니다. 향후 Release 구성에서는 entitlement/프로비저닝/앱 설정을 함께 production으로 전환해야 합니다. 현재 Release/Archive 차단은 유지합니다.
+- iOS 컴파일·서명·실기기 수신은 macOS/Xcode에서 별도 확인해야 합니다.
+
+**4. 웹 배포와 앱 재설치**
+
+- `npm run build`를 통과한 웹 변경을 Vercel에 배포합니다.
+- Android 휴대폰의 USB 디버깅을 승인한 뒤 `npm run mobile:android:install`을 실행합니다. 새 APK에는 두 플러그인이 포함됩니다. 웹 배포만 하거나 이전 APK만 사용하면 전체 연결이 완료되지 않습니다.
+- 앱 로그인·소속 선택 완료 → **내 정보 → 앱 Push 알림 → 알림 권한 요청 / 등록**을 누릅니다. 성공 시 `push_devices`에 자신의 사용자와 연결된 기기가 저장됩니다. UI의 “등록 완료”는 실제 발송/수신 완료와 다릅니다.
+
+**5. 발송 작업자 실행**
+
+- 수동 확인: `npm run mobile:push:dispatch`. 이 명령은 서버의 비밀 인증을 사용해 대기 작업을 처리하고 실패/재시도 결과를 명시합니다. 로컬 개발 서버에서는 `PUSH_SERVER_URL=http://localhost:3000`을 사용할 수 있습니다.
+- 명령이 비밀값 누락/32자 미만 오류를 표시하면 로컬 설정을 먼저 수정합니다. 로컬 비밀값을 교체했으면 Vercel과 Vault도 동일하게 갱신합니다. `/login` 리다이렉트 오류는 배포된 middleware/API가 현재 코드와 다른지 확인하고 최신 코드를 배포해야 합니다. 401은 서버 비밀값 불일치, 503은 서버 설정/큐 처리 오류를 확인합니다. 스케줄러 인증은 브라우저 로그인으로 해결하지 않습니다.
+- 상시 운영에는 스케줄러가 필요합니다. 권장 옵션은 기존 Supabase의 Cron + pg_net + Vault입니다.
+- Supabase Vault에 `seum_push_dispatch_url`(예: `https://seum-nu.vercel.app/api/push/dispatch`)과 `seum_push_dispatch_secret`(Vercel의 `PUSH_DISPATCH_SECRET`과 동일한 값)을 생성합니다.
+- 이후 [configure_native_push_dispatch.sql](supabase/migrations/configure_native_push_dispatch.sql)을 SQL Editor에서 실행합니다. 확장 기능을 활성화하고 매분 호출하는 `seum-native-push` 작업을 등록합니다. 관리 권한과 Supabase 확장 지원이 필요하며 운영 프로젝트에서 직접 검증해야 합니다.
+- 작업자는 한 번에 5개씩, 호출당 최대 50개/시간 예산 내에서 처리합니다. backlog가 있으면 다음 호출에서 계속합니다. 매분 스케줄에서는 알림 발생 후 호출 대기 시간이 있고 즉시 전달을 보장하지 않습니다.
+- 중복 작업은 고유 제약·행 잠금·lease로 방지합니다. 발송 후 결과 저장 직전에 프로세스가 종료되면 재발송될 수 있는 at-least-once 구조입니다. Android tag/APNs collapse ID로 중복 표시를 줄이지만 exactly-once 전달은 보장하지 않습니다.
+- 활성 세션이 끝난 기기는 재등록 전까지 발송하지 않습니다. 이미 읽은 알림, 해제/재바인딩된 기기, 24시간 지난 작업은 취소합니다. 최대 8회 지수 backoff 재시도 후 실패로 기록합니다. 진짜 미등록 토큰 응답만 비활성화하며 인증/환경/잘못된 payload 오류 때문에 모든 토큰을 삭제하지 않습니다.
+
+### 실기기 검증
+
+1. 기기 등록 완료 후 **테스트 알림 보내기**를 누릅니다. 본인 계정의 활성 기기에만 작업을 생성하며 1분당 한 번으로 제한합니다. 테스트 알림은 기존 웹 알림에도 저장됩니다.
+2. `push_jobs`에서 pending 작업을 확인하고 수동 발송 명령 또는 Cron 실행 후 sent/failed/last_error를 확인합니다. FCM/APNs의 sent는 제공자 접수 결과이며 실제 휴대폰 도착 보장은 아닙니다.
+3. 앱 실행 중 배너, 홈 화면으로 나간 상태의 OS 알림, 일반 종료 후 알림과 상세 이동을 확인합니다. 로그인 만료, 다른 계정, 최초 소속 선택, 삭제된 게시글도 테스트합니다.
+4. 다른 계정의 댓글/공감 또는 사역자 공지의 “모두에게 알림”으로 기존 알림과 연동되는지 확인합니다. 기존처럼 본인 글에 본인이 남긴 반응은 작성자 알림을 만들지 않습니다.
+5. 알림 끄기, 재허용, 로그아웃, 다기기, 토큰 갱신/재설치, 권한 거부를 확인합니다. 로그아웃 전에 접수되어 이미 전달 중인 알림까지 회수할 수는 없습니다.
+
+### 테스트
+
+- `node --test tests/push.test.cjs tests/push-migration.test.cjs tests/firebase-android.test.cjs tests/native-preview.test.cjs`
+- PostgreSQL 실행 테스트는 `PUSH_SQL_ENGINE_PATH`에 로컬 `@electric-sql/pglite` 모듈 경로를 지정합니다. 미지정 시 SQL 실행 검사는 명시적으로 skip됩니다. 검증 도구는 세션의 임시 환경에만 설치하며 앱 의존성에 추가하지 않습니다.
+- 테스트와 Android 빌드 통과만으로 운영 DB 적용·Vercel 배포·서버 인증·휴대폰 수신·iOS 서명이 검증된 것은 아닙니다.
+- 2026-10-05 코드 검증: 로컬 PostgreSQL 실행 검사를 포함한 회귀 테스트 54개 통과, Next.js 운영 빌드 및 Android Debug APK 빌드 통과, APK 내부의 Push/Preferences 플러그인 포함 확인. 기존 린트 경고 2개와 기존 Node 린트 의존성 버전 경고는 남아 있습니다. Firebase 서버 자격증명 부재로 실제 발송·수신은 미검증이며 운영 SQL/배포/스케줄 설정은 자동 수행하지 않았습니다.
 
 ---
 

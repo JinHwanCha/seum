@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/register') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
+    pathname === '/api/push/dispatch' ||
     ['/api/auth/login', '/api/auth/register', '/api/auth/reset-password', '/api/auth/logout'].includes(pathname) ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||

@@ -75,8 +75,6 @@ export async function notifyPostAuthor(
   });
   if (notificationError) throw notificationError;
 
-  // 미래(앱 전환): 푸시 발송
-  void sendPush(supabase, post.author_id, { title, body });
 }
 
 /**
@@ -95,13 +93,14 @@ export async function broadcastAnnouncement(
 ): Promise<void> {
   const { departmentId, actorId, postId, title, body } = opts;
 
-  const { data: members } = await supabase
+  const { data: members, error: membersError } = await supabase
     .from('users')
     .select('id')
     .eq('department_id', departmentId)
     .eq('is_approved', true)
     .neq('id', actorId);
 
+  if (membersError) throw membersError;
   if (!members || members.length === 0) return;
 
   const rows = members.map((m: { id: string }) => ({
@@ -115,25 +114,6 @@ export async function broadcastAnnouncement(
     body,
   }));
 
-  await supabase.from('notifications').insert(rows);
-
-  // 미래(앱 전환): 전원에게 푸시 발송
-  for (const m of members) {
-    void sendPush(supabase, m.id, { title, body });
-  }
-}
-
-/**
- * (미래) 모바일 앱 전환 시 사용할 푸시 발송 스텁.
- * 현재는 아무 동작도 하지 않는다. 앱 전환 시:
- *   - push_subscriptions 에서 userId 의 구독 정보를 조회
- *   - web-push(VAPID) 또는 FCM 으로 payload 발송
- */
-export async function sendPush(
-  _supabase: Supabase,
-  _userId: string,
-  _payload: { title: string; body: string }
-): Promise<void> {
-  // no-op (앱 전환 시 구현)
-  return;
+  const { error } = await supabase.from('notifications').insert(rows);
+  if (error) throw error;
 }

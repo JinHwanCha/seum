@@ -103,7 +103,9 @@ export async function POST(request: Request) {
       postId: data.id,
       title,
       body: content,
-    }).catch(() => {});
+    }).catch((error: unknown) => {
+      console.error('Post saved but announcement notification failed:', error);
+    });
   }
 
   return NextResponse.json({ success: true, post: data });

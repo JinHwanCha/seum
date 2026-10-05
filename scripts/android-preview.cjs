@@ -77,7 +77,7 @@ function main(args) {
   const apk = path.join(artifactDir, 'seum-debug.apk');
   fs.copyFileSync(original, apk);
   console.log(`Debug APK ready: ${apk}`);
-  console.log('Preview only. Push is not configured. Do not upload this APK to a store.');
+  console.log('Preview only. Push requires the deployed web/API, database migration and server credentials. Do not upload this APK to a store.');
   if (action === 'install') {
     run(adb, ['-s', serial, 'install', '-r', apk], { env });
     run(adb, ['-s', serial, 'shell', 'am', 'start', '-W', '-n', `${config.appId}/.MainActivity`], { env });

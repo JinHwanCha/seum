@@ -29,6 +29,10 @@ export async function getSession(): Promise<SessionPayload | null> {
     // Fall through to cookie-based verification
   }
 
+  return getCookieSession();
+}
+
+export async function getCookieSession(): Promise<SessionPayload | null> {
   const cookieStore = cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;

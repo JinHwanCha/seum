@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SessionPayload } from '@/lib/types';
+import { cancelNativePushTransition, finishNativeLogout, prepareNativeLogout } from '@/lib/native-push';
 
 interface AuthContextType {
   user: SessionPayload | null;
@@ -71,7 +72,27 @@ export function AuthProvider({
   );
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      const installationId = await prepareNativeLogout();
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        ...(installationId ? {
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ installationId }),
+        } : {}),
+      });
+      if (!response.ok) throw new Error('알림 기기 해제 또는 로그아웃에 실패했습니다. 다시 시도해주세요.');
+      try { await finishNativeLogout(); }
+      catch (error) {
+        console.error('Native push cleanup failed after server logout:', error);
+        alert('로그아웃은 완료됐지만 기기 알림 정리에 실패했습니다. 앱을 다시 실행해주세요.');
+      }
+    } catch (error) {
+      cancelNativePushTransition();
+      console.error('Logout failed:', error);
+      alert(error instanceof Error ? error.message : '로그아웃에 실패했습니다.');
+      return;
+    }
     // 다음 사용자가 이전 사용자의 캐시를 보지 않도록 유지된 SWR 캐시를 비운다.
     try {
       if (user?.userId) localStorage.removeItem(`seum-swr-cache:${user.userId}`);

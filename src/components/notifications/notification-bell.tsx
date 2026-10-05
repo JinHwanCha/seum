@@ -24,9 +24,11 @@ export function NotificationBell() {
     };
     load();
     const id = setInterval(load, 60000);
+    window.addEventListener('seum-notifications-changed', load);
     return () => {
       active = false;
       clearInterval(id);
+      window.removeEventListener('seum-notifications-changed', load);
     };
     // 경로가 바뀌면(알림 페이지 방문 후 복귀 등) 다시 조회
   }, [pathname]);
