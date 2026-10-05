@@ -18,9 +18,8 @@ test('native push migration executes and preserves queue, lease and device lifec
   try {
     await db.exec(`
       CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
-      CREATE FUNCTION public.uuid_generate_v4() RETURNS uuid LANGUAGE sql AS 'SELECT gen_random_uuid()';
       CREATE TABLE users(id uuid PRIMARY KEY, is_approved boolean, department_id uuid);
-      CREATE TABLE notifications(id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), recipient_id uuid REFERENCES users(id),
+      CREATE TABLE notifications(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), recipient_id uuid REFERENCES users(id),
         is_read boolean DEFAULT false, created_at timestamptz DEFAULT now(),
         department_id uuid, actor_id uuid, type text, title text, body text);
     `);
@@ -92,5 +91,46 @@ test('native push migration executes and preserves queue, lease and device lifec
       [installation, user, 'android', 'apns', 'sandbox', 'fcm-token-12345678901234567890', expires]));
     await assert.rejects(() => db.exec('SET ROLE anon; SELECT * FROM push_devices'));
     await db.exec('RESET ROLE');
+  } finally { await db.close(); }
+});
+
+test('UUID repair fixes extension-schema runtime errors without losing existing devices or jobs', {
+  skip: !engine && 'Set PUSH_SQL_ENGINE_PATH for PostgreSQL execution',
+}, async () => {
+  const { PGlite } = require(engine);
+  const db = new PGlite();
+  const base = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', 'add_native_push.sql'), 'utf8');
+  const repair = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', 'fix_native_push_uuid.sql'), 'utf8');
+  try {
+    await db.exec(`
+      CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+      CREATE SCHEMA extensions;
+      CREATE FUNCTION extensions.uuid_generate_v4() RETURNS uuid LANGUAGE sql AS 'SELECT gen_random_uuid()';
+      SET search_path = public, extensions;
+      CREATE TABLE users(id uuid PRIMARY KEY, is_approved boolean, department_id uuid);
+      CREATE TABLE notifications(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), recipient_id uuid,
+        is_read boolean DEFAULT false, created_at timestamptz DEFAULT now(),
+        department_id uuid, actor_id uuid, type text, title text, body text);
+    `);
+    await db.exec(base.replaceAll('gen_random_uuid()', 'uuid_generate_v4()'));
+    await db.exec(`
+      INSERT INTO users VALUES ('11111111-1111-4111-8111-111111111111',true,'11111111-1111-4111-8111-111111111111');
+      INSERT INTO push_devices(installation_id,user_id,platform,provider,environment,token,session_expires_at)
+        VALUES ('22222222-2222-4222-8222-222222222222','11111111-1111-4111-8111-111111111111',
+          'android','fcm','production','valid-token-1234567890123456',now()+interval '1 day');
+      INSERT INTO notifications(recipient_id) VALUES ('11111111-1111-4111-8111-111111111111');
+    `);
+    await assert.rejects(() => db.query('SELECT * FROM claim_push_jobs(5)'), /uuid_generate_v4/);
+    await db.exec(repair);
+    await db.exec(repair);
+    assert.equal((await db.query('SELECT count(*)::int AS count FROM push_devices')).rows[0].count, 1);
+    const claimed = (await db.query('SELECT * FROM claim_push_jobs(5)')).rows;
+    assert.equal(claimed.length, 1);
+    assert.ok(claimed[0].lease_id);
+    await db.query(`SELECT register_push_device($1,$2,'android','fcm','production',$3,now()+interval '1 day')`, [
+      '22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111111', 'rotated-token-1234567890123456',
+    ]);
+    assert.equal((await db.query('SELECT count(*)::int AS count FROM push_devices')).rows[0].count, 1);
+    assert.equal((await db.query('SELECT count(*)::int AS count FROM push_jobs')).rows[0].count, 1);
   } finally { await db.close(); }
 });

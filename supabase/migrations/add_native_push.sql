@@ -1,14 +1,14 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.push_devices (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   installation_id UUID NOT NULL UNIQUE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   platform TEXT NOT NULL CHECK (platform IN ('android', 'ios')),
   provider TEXT NOT NULL CHECK (provider IN ('fcm', 'apns')),
   environment TEXT NOT NULL CHECK (environment IN ('production', 'sandbox')),
   token TEXT NOT NULL CHECK (length(token) BETWEEN 16 AND 4096),
-  token_version UUID NOT NULL DEFAULT uuid_generate_v4(),
+  token_version UUID NOT NULL DEFAULT gen_random_uuid(),
   enabled BOOLEAN NOT NULL DEFAULT true,
   session_expires_at TIMESTAMPTZ NOT NULL,
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_push_devices_user ON public.push_devices(user_id)
 ALTER TABLE public.push_devices ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS public.push_jobs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   notification_id UUID NOT NULL REFERENCES public.notifications(id) ON DELETE CASCADE,
   device_id UUID NOT NULL REFERENCES public.push_devices(id) ON DELETE CASCADE,
   device_version UUID NOT NULL,
@@ -64,7 +64,7 @@ BEGIN
   ON CONFLICT (installation_id) DO UPDATE SET
     token_version = CASE WHEN d.user_id <> EXCLUDED.user_id OR d.token <> EXCLUDED.token
       OR d.provider <> EXCLUDED.provider OR d.environment <> EXCLUDED.environment OR NOT d.enabled
-      THEN uuid_generate_v4() ELSE d.token_version END,
+      THEN gen_random_uuid() ELSE d.token_version END,
     user_id = EXCLUDED.user_id, platform = EXCLUDED.platform, provider = EXCLUDED.provider,
     environment = EXCLUDED.environment, token = EXCLUDED.token,
     enabled = true, session_expires_at = EXCLUDED.session_expires_at,
@@ -131,7 +131,7 @@ BEGIN
       ORDER BY available_at, id FOR UPDATE SKIP LOCKED LIMIT LEAST(GREATEST(p_limit, 1), 5)
     )
     UPDATE public.push_jobs j SET status = 'processing', attempts = attempts + 1,
-      lease_id = uuid_generate_v4(), lease_until = now() + interval '5 minutes'
+      lease_id = gen_random_uuid(), lease_until = now() + interval '5 minutes'
     FROM candidates c WHERE j.id = c.id RETURNING j.*;
 END;
 $$;

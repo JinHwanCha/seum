@@ -360,6 +360,7 @@ Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용
 - 기존 `notifications` 테이블이 있어야 합니다. 없다면 먼저 기존 [알림 마이그레이션](supabase/migrations/add_notifications.sql)을 적용합니다.
 - Supabase 프로젝트의 **SQL Editor → New query**에서 [add_native_push.sql](supabase/migrations/add_native_push.sql) 전체를 실행합니다. 기존 사용자/게시글/웹 알림을 삭제하지 않고 `push_devices`, `push_jobs`, 트리거와 RPC를 추가합니다.
 - 새 테이블은 RLS를 활성화하고 anon/authenticated 직접 접근을 차단합니다. 앱은 로그인 쿠키로 Next.js API를 호출하며, 서버만 기존 Service Role 키를 사용합니다. JWT 사용자 ID는 서버에서 결정합니다.
+- 기존 Push SQL을 이미 적용했고 `function uuid_generate_v4() does not exist`가 발생하면 [UUID 보정 SQL](supabase/migrations/fix_native_push_uuid.sql)을 한 번 실행합니다. Supabase의 확장 스키마 검색 경로 문제를 PostgreSQL 기본 `gen_random_uuid()`로 해결하며 기존 기기/알림/작업은 삭제하지 않습니다. 신규 설치용 SQL에도 같은 수정을 적용했습니다.
 - SQL은 로컬 PostgreSQL 엔진에서 재실행, 다기기 fan-out, lease 중복 방지·복구, 재시도, 만료 토큰, 계정 전환, 읽음, 로그아웃, 재설치와 테스트 알림 제한을 검사합니다. 운영 DB에 자동 적용한 것은 아닙니다.
 
 **2. Firebase 발송 서버 자격증명 준비**
