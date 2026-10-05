@@ -371,6 +371,7 @@ Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용
 - `npm run mobile:push:configure`를 실행하면 Firebase 프로젝트 일치를 확인하고 `.env.local`에 서버 설정과 난수 발송 비밀을 기록합니다. 개인키나 비밀은 출력하지 않습니다. 기존 다른 환경변수는 유지합니다.
 - 생성한 `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `PUSH_DISPATCH_SECRET`, `PUSH_SEND_ENABLED=true`를 **Vercel 프로젝트 → Settings → Environment Variables**에도 안전하게 설정하고 재배포합니다. 로컬 `.env.local` 변경은 Vercel에 자동 반영되지 않습니다.
 - Vercel/Vault에는 `NAME=`이나 `.env` 값의 외곽 큰따옴표 없이 값만 입력합니다. Firebase 개인키의 실제 줄바꿈 또는 `\n` 표기를 서버가 처리합니다. 개인키를 화면 캡처/채팅/로그로 공유하지 않습니다.
+- 서버는 개인키의 실제 줄바꿈, `\n` 표기, JSON으로 따옴표 처리한 PEM 문자열을 정규화합니다. 그래도 개인키 형식 오류가 나면 `private_key_id`나 서비스 계정 JSON 전체를 넣은 것은 아닌지 확인합니다. `FIREBASE_PRIVATE_KEY`에는 JSON의 `private_key` 필드만 들어가야 합니다.
 - 별도 스케줄러가 호출할 `PUSH_DISPATCH_SECRET`은 32자 이상 난수입니다. 클라이언트 번들에 노출하지 않습니다. 발송 미설정 상태의 API는 503을 반환하며 발송 성공처럼 응답하지 않습니다.
 - 로컬 수동 발송을 위해 `.env.local`의 `PUSH_SERVER_URL`을 실제 배포 주소(현재 `https://seum-nu.vercel.app`)로 지정합니다. 예시는 [.env.local.example](.env.local.example)에 있습니다.
 

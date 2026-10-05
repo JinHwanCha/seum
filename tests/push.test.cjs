@@ -30,6 +30,7 @@ const registration = {
   installationId, platform: 'android', provider: 'fcm', environment: 'production',
   token: 'a-valid-fcm-token-1234567890',
 };
+const testPem = ['-----BEGIN ' + 'PRIVATE KEY-----', 'TEST-ONLY-NOT-A-REAL-KEY', '-----END ' + 'PRIVATE KEY-----'].join('\n');
 
 test('registration validates platform/provider/environment and rejects forged or malformed fields', () => {
   assert.ok(validation.parsePushRegistration(registration));
@@ -151,7 +152,7 @@ function senderFixture({ status = 200, response = { name: 'projects/test/message
         ? Response.json({ access_token: 'test-access-token', expires_in: 3600 })
         : Response.json(response, { status });
     },
-  }, { FIREBASE_PROJECT_ID: 'test', FIREBASE_CLIENT_EMAIL: 'test@example.invalid', FIREBASE_PRIVATE_KEY: 'test' });
+  }, { FIREBASE_PROJECT_ID: 'test', FIREBASE_CLIENT_EMAIL: 'test@example.invalid', FIREBASE_PRIVATE_KEY: testPem });
   return { sender, requests };
 }
 
@@ -180,6 +181,17 @@ test('provider errors invalidate only truly expired tokens and preserve tokens o
   assert.equal(sender.classifyApns(503, 'ServiceUnavailable').outcome, 'retry');
 });
 
+test('private key normalization handles real newlines, env escaping and copied JSON quotes without logging keys', () => {
+  const { sender } = senderFixture();
+  assert.equal(sender.normalizePrivateKey(testPem), testPem);
+  assert.equal(sender.normalizePrivateKey(testPem.replaceAll('\n', '\\n')), testPem);
+  assert.equal(sender.normalizePrivateKey(JSON.stringify(testPem)), testPem);
+  assert.equal(sender.normalizePrivateKey(`'${testPem.replaceAll('\n', '\\n')}'`), testPem);
+  assert.throws(() => sender.normalizePrivateKey('a-key-id'), /complete PKCS#8/);
+  assert.throws(() => sender.normalizePrivateKey('{"private_key":"not-the-field-value"}'), /complete PKCS#8/);
+  assert.throws(() => sender.normalizePrivateKey('"invalid json'), /JSON/);
+});
+
 test('APNs uses the correct environment, topic, visible alert and notification IDs', async () => {
   const captures = [];
   class SignJWT {
@@ -204,7 +216,7 @@ test('APNs uses the correct environment, topic, visible alert and notification I
       };
       return client;
     } },
-  }, { APNS_PRIVATE_KEY: 'test', APNS_KEY_ID: 'KEY', APNS_TEAM_ID: 'TEAM' });
+  }, { APNS_PRIVATE_KEY: testPem, APNS_KEY_ID: 'KEY', APNS_TEAM_ID: 'TEAM' });
   assert.equal((await sender.sendNativePush({ provider: 'apns', environment: 'sandbox', token: 'a'.repeat(64) },
     { id: notificationId, recipientId: userId, title: '공지' })).outcome, 'sent');
   assert.equal(captures[0].host, 'https://api.sandbox.push.apple.com');

@@ -12,12 +12,35 @@ let apnsAccess: { token: string; expires: number } | undefined;
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing server setting: ${name}`);
-  return value.replace(/\\n/g, '\n');
+  return value.trim();
+}
+
+export function normalizePrivateKey(raw: string): string {
+  let value = raw.trim();
+  if (value.startsWith('"')) {
+    const parsed: unknown = JSON.parse(value);
+    if (typeof parsed !== 'string') throw new Error('Private key JSON must contain a PEM string, not an object.');
+    value = parsed;
+  } else if (value.startsWith("'") && value.endsWith("'")) {
+    value = value.slice(1, -1);
+  }
+  value = value.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').trim();
+  if (!/^-----BEGIN PRIVATE KEY-----\s+[\s\S]+\s+-----END PRIVATE KEY-----$/.test(value)) {
+    throw new Error('Private key must be a complete PKCS#8 PEM value, not a key ID or service-account JSON object.');
+  }
+  return value;
+}
+
+function privateKey(name: 'FIREBASE_PRIVATE_KEY' | 'APNS_PRIVATE_KEY'): string {
+  try { return normalizePrivateKey(required(name)); }
+  catch (error) {
+    throw new Error(`${name}: ${error instanceof Error ? error.message : 'Invalid key format'}`);
+  }
 }
 
 async function fcmToken(): Promise<string> {
   if (fcmAccess && fcmAccess.expires > Date.now()) return fcmAccess.token;
-  const key = await importPKCS8(required('FIREBASE_PRIVATE_KEY'), 'RS256');
+  const key = await importPKCS8(privateKey('FIREBASE_PRIVATE_KEY'), 'RS256');
   const assertion = await new SignJWT({ scope: 'https://www.googleapis.com/auth/firebase.messaging' })
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuer(required('FIREBASE_CLIENT_EMAIL'))
@@ -91,7 +114,7 @@ async function sendFcm(destination: PushDestination, message: PushMessage): Prom
 
 async function apnsToken(): Promise<string> {
   if (apnsAccess && apnsAccess.expires > Date.now()) return apnsAccess.token;
-  const key = await importPKCS8(required('APNS_PRIVATE_KEY'), 'ES256');
+  const key = await importPKCS8(privateKey('APNS_PRIVATE_KEY'), 'ES256');
   const token = await new SignJWT({})
     .setProtectedHeader({ alg: 'ES256', kid: required('APNS_KEY_ID') })
     .setIssuer(required('APNS_TEAM_ID')).setIssuedAt().sign(key);
