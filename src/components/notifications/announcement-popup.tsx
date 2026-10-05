@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { Modal } from '@/components/ui/modal';
-import { Megaphone, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/date-utils';
+import { requestPushApi } from '@/lib/native-push';
 
 interface AnnouncementItem {
   id: string;
@@ -21,21 +23,25 @@ export function AnnouncementPopup() {
   const params = useParams();
   const [items, setItems] = useState<AnnouncementItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const basePath = `/${params.church}/${params.department}`;
 
   useEffect(() => {
     let active = true;
-    fetch('/api/notifications?unreadAnnouncements=1')
-      .then((r) => (r.ok ? r.json() : { notifications: [] }))
+    requestPushApi('/api/notifications?unreadAnnouncements=1', { cache: 'no-store' })
       .then((data) => {
         if (!active) return;
-        const list: AnnouncementItem[] = data.notifications || [];
+        if (!Array.isArray(data.notifications)) throw new Error('공지 알림 응답이 올바르지 않습니다.');
+        const list: AnnouncementItem[] = data.notifications;
         if (list.length > 0) {
           setItems(list);
           setOpen(true);
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        console.error('Announcement popup load failed:', cause);
+        if (active) setError('공지 알림을 불러오지 못했습니다. 알림 목록에서 다시 확인해주세요.');
+      });
     return () => {
       active = false;
     };
@@ -44,17 +50,25 @@ export function AnnouncementPopup() {
   const handleClose = () => {
     setOpen(false);
     // 닫으면 다시 뜨지 않도록 공지 알림을 읽음 처리
-    fetch('/api/notifications/read', {
+    requestPushApi('/api/notifications/read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids: items.map((i) => i.id) }),
-    }).catch(() => {});
+    }).then((data) => {
+      if (data.success !== true) throw new Error('공지 읽음 처리가 완료되지 않았습니다.');
+      window.dispatchEvent(new Event('seum-notifications-changed'));
+    }).catch((cause: unknown) => {
+      console.error('Announcement read update failed:', cause);
+      setError('공지 읽음 처리에 실패했습니다. 알림 목록에서 다시 확인해주세요.');
+    });
   };
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !error) return null;
 
   return (
-    <Modal isOpen={open} onClose={handleClose} title="📢 새로운 공지">
+    <>
+    {error && <p role="alert" className="m-3 text-xs text-red-600">{error}</p>}
+    <Modal isOpen={open} onClose={handleClose} title="새로운 공지">
       <div className="space-y-3">
         {items.map((item) => {
           const href =
@@ -64,7 +78,7 @@ export function AnnouncementPopup() {
           const inner = (
             <div className="flex gap-3 p-3 rounded-lg bg-primary-50/60 border border-primary-100">
               <div className="shrink-0 w-9 h-9 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
-                <Megaphone size={18} />
+                <Image src="/push-icon.png" alt="세움" width={36} height={36} unoptimized className="rounded-xl" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-stone-900 truncate">{item.title}</p>
@@ -99,5 +113,6 @@ export function AnnouncementPopup() {
         </Link>
       </div>
     </Modal>
+    </>
   );
 }

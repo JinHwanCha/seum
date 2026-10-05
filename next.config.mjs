@@ -21,6 +21,7 @@ const nextConfig = {
     return [
       { source: '/(.*)', headers: securityHeaders },
       { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }] },
+      { source: '/push-icon.png', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }] },
     ];
   },
 };

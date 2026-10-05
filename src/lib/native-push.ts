@@ -39,9 +39,13 @@ export async function checkPushResponse(response: Response): Promise<Record<stri
   const body: unknown = await response.json();
   if (typeof body !== 'object' || body === null) throw new Error('알림 서버의 응답이 올바르지 않습니다.');
   if (!response.ok) {
-    throw new Error('error' in body && typeof body.error === 'string' ? body.error : '알림 서버 요청에 실패했습니다.');
+    throw new PushApiError('error' in body && typeof body.error === 'string' ? body.error : '알림 서버 요청에 실패했습니다.', response.status);
   }
   return Object.fromEntries(Object.entries(body));
+}
+
+export class PushApiError extends Error {
+  constructor(message: string, public readonly status: number) { super(message); }
 }
 
 export async function requestPushApi(url: string, options: RequestInit): Promise<Record<string, unknown>> {

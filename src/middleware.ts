@@ -24,6 +24,7 @@ export async function middleware(request: NextRequest) {
     ['/api/auth/login', '/api/auth/register', '/api/auth/reset-password', '/api/auth/logout'].includes(pathname) ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||
+    pathname === '/push-icon.png' ||
     pathname === '/manifest.webmanifest' ||
     pathname === '/sw.js' ||
     pathname === '/offline.html' ||

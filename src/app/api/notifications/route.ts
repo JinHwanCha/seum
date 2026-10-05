@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { loadNotifications } from '@/lib/notifications';
+import { notificationPreview } from '@/lib/notification-preview';
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -25,14 +26,20 @@ export async function GET(request: Request) {
 
   // 홈 진입 팝업용 — 미확인 공지 알림만
   if (unreadAnnouncements) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('notifications')
       .select('id, title, body, post_id, board_type, created_at, actor:users!notifications_actor_id_fkey(id, name)')
       .eq('recipient_id', session.userId)
       .eq('type', 'announcement')
       .eq('is_read', false)
       .order('created_at', { ascending: false });
-    return NextResponse.json({ notifications: data || [] });
+    if (error) {
+      console.error('Announcement popup lookup failed:', error.code);
+      return NextResponse.json({ error: '공지 알림 조회에 실패했습니다.' }, { status: 503 });
+    }
+    return NextResponse.json({
+      notifications: (data || []).map((item) => ({ ...item, body: notificationPreview(item.body, 240) })),
+    });
   }
 
   // 전체 목록 (알림 페이지)

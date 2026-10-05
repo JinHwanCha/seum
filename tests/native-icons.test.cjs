@@ -16,6 +16,14 @@ test('brand master and iOS app icon are 1024 square PNGs', () => {
   assert.deepEqual(dimensions('ios', 'App', 'App', 'Assets.xcassets', 'AppIcon.appiconset', 'AppIcon-512@2x.png'), [1024, 1024]);
 });
 
+test('notification brand image is a small 256 PNG and all status icons replace the old cross', () => {
+  assert.deepEqual(dimensions('public', 'push-icon.png'), [256, 256]);
+  assert.ok(fs.statSync(path.join(root, 'public', 'push-icon.png')).size <= 50 * 1024);
+  assert.equal(fs.existsSync(path.join(root, 'android', 'app', 'src', 'main', 'res', 'drawable', 'ic_stat_seum.xml')), false);
+  for (const [density, size] of [['mdpi', 24], ['hdpi', 36], ['xhdpi', 48], ['xxhdpi', 72], ['xxxhdpi', 96]]) {
+    assert.deepEqual(dimensions('android', 'app', 'src', 'main', 'res', `drawable-${density}`, 'ic_stat_seum.png'), [size, size]);
+  }
+});
 test('all Android densities have correctly sized legacy and adaptive brand artwork', () => {
   for (const [density, legacy, adaptive] of [
     ['mdpi', 48, 108], ['hdpi', 72, 162], ['xhdpi', 96, 216],

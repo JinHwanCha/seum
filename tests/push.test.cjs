@@ -1,28 +1,9 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
 const { test } = require('node:test');
-const { randomUUID } = require('node:crypto');
 const { EventEmitter } = require('node:events');
-const ts = require('typescript');
-
-function load(file, mocks = {}, env = {}) {
-  const filename = path.join(__dirname, '..', file);
-  const source = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-  }).outputText;
-  const loaded = { exports: {} };
-  vm.runInNewContext(source, {
-    module: loaded, exports: loaded.exports,
-    require: (name) => Object.hasOwn(mocks, name) ? mocks[name] : require(name),
-    process: { env }, console: mocks.console || { error: () => {} },
-    fetch: mocks.fetch, crypto: { randomUUID }, Request, Response, Headers,
-    AbortSignal, AbortController, Buffer, URLSearchParams, Date, Error, SyntaxError, setTimeout, clearTimeout,
-  }, { filename });
-  return loaded.exports;
-}
+const load = require('./helpers/load-source.cjs');
 const validation = load('src\\lib\\push-validation.ts');
+const previews = load('src\\lib\\notification-preview.ts');
 const userId = '11111111-1111-4111-8111-111111111111';
 const installationId = '22222222-2222-4222-8222-222222222222';
 const notificationId = '33333333-3333-4333-8333-333333333333';
@@ -145,6 +126,7 @@ function senderFixture({ status = 200, response = { name: 'projects/test/message
     async sign() { return 'signed-test-assertion'; }
   }
   const sender = load('src\\lib\\push-senders.ts', {
+    '@/lib/notification-preview': previews,
     jose: { SignJWT, importPKCS8: async () => 'test-key' },
     fetch: async (url, options) => {
       requests.push({ url, options });
@@ -166,6 +148,7 @@ test('FCM sends a visible background notification, IDs, channel and deduplicatio
   assert.equal(payload.android.notification.tag, notificationId);
   assert.equal(payload.android.notification.channel_id, 'seum-notifications');
   assert.equal(payload.notification.body, '세움에서 새 알림을 확인해주세요.');
+  assert.equal(payload.notification.image, 'https://seum-nu.vercel.app/push-icon.png');
   await fixture.sender.sendNativePush(registration, { id: notificationId, recipientId: userId, title: '새 공지' });
   assert.equal(fixture.requests.filter((request) => request.url.includes('oauth2')).length, 1);
 });
@@ -201,6 +184,7 @@ test('APNs uses the correct environment, topic, visible alert and notification I
     async sign() { return 'test-apns-jwt'; }
   }
   const sender = load('src\\lib\\push-senders.ts', {
+    '@/lib/notification-preview': previews,
     jose: { SignJWT, importPKCS8: async () => 'test-key' },
     'node:http2': { connect: (host) => {
       const client = new EventEmitter();
@@ -288,7 +272,8 @@ function destinationFixture({ recipient = true, visibility = 'all', dbError = nu
         eq: (key, value) => { calls.push({ table, key, value }); return query; },
         update: () => { calls.push({ read: true }); return query; },
         maybeSingle: async () => ({ error: dbError, data: table === 'notifications'
-          ? (recipient ? { id: notificationId, post_id: 'post', department_id: 'dept' } : null)
+          ? (recipient ? { id: notificationId, post_id: 'post', department_id: 'dept',
+            post: { id: 'post', slug: 'short-slug', board_type: 'notice', visibility, author_id: 'other', village_id: 'another-village', department_id: 'dept' } } : null)
           : { id: 'post', slug: 'short-slug', board_type: 'notice', visibility, author_id: 'other', village_id: 'another-village' } }),
         then: (resolve, reject) => Promise.resolve({ error: dbError }).then(resolve, reject),
       };
@@ -309,12 +294,26 @@ test('push click resolves only owned notifications and permitted tenant-scoped p
   assert.equal(response.status, 200);
   assert.equal((await response.json()).href, '/church/department/boards/notice/short-slug');
   assert.ok(fixture.calls.some((call) => call.key === 'recipient_id' && call.value === userId));
-  assert.ok(fixture.calls.some((call) => call.table === 'posts' && call.key === 'department_id'));
-  assert.ok(fixture.calls.some((call) => call.read));
+  assert.ok(fixture.calls.some((call) => call.key === 'department_id' && call.value === 'dept'));
+  assert.equal(fixture.calls.filter((call) => call.table === 'posts').length, 0, 'destination uses one joined lookup');
+  assert.equal(fixture.calls.filter((call) => call.read).length, 0, 'read writes never delay destination lookup');
   assert.equal((await destinationFixture({ recipient: false }).invoke()).status, 404);
   assert.equal((await destinationFixture({ visibility: 'pastor' }).invoke()).status, 404);
   assert.equal((await destinationFixture({ visibility: 'village' }).invoke()).status, 404);
   assert.equal((await destinationFixture({ dbError: { code: 'DB_FAIL' } }).invoke()).status, 503);
+});
+
+test('notification previews are bounded, compact and do not split emoji surrogate pairs', async () => {
+  assert.equal(previews.notificationPreview('  공지\n\n내용   안내 '), '공지 내용 안내');
+  assert.equal(previews.notificationPreview(null), '');
+  const text = previews.notificationPreview('😊'.repeat(200));
+  assert.equal(Array.from(text).length, 140);
+  assert.ok(text.endsWith('…'));
+  assert.equal(text.includes('\uFFFD'), false);
+  const fixture = senderFixture();
+  await fixture.sender.sendNativePush(registration, { id: notificationId, recipientId: userId, title: '공지', body: '새 공지 내용을 확인해주세요.' });
+  const payload = JSON.parse(fixture.requests[1].options.body).message;
+  assert.equal(payload.notification.body, '새 공지 내용을 확인해주세요.');
 });
 
 test('logout revocation verifies the cookie independently of middleware headers', async () => {

@@ -1,9 +1,10 @@
 import { importPKCS8, SignJWT } from 'jose';
 import { connect } from 'node:http2';
+import { notificationPreview } from '@/lib/notification-preview';
 
 export type PushOutcome = 'sent' | 'retry' | 'invalid' | 'failed' | 'cancelled';
 export interface PushResult { outcome: PushOutcome; error?: string }
-export interface PushMessage { id: string; recipientId: string; title: string }
+export interface PushMessage { id: string; recipientId: string; title: string; body?: string | null }
 export interface PushDestination { provider: 'fcm' | 'apns'; environment: 'production' | 'sandbox'; token: string }
 
 let fcmAccess: { token: string; expires: number } | undefined;
@@ -92,12 +93,18 @@ function fcmErrorCode(value: unknown): string {
 async function sendFcm(destination: PushDestination, message: PushMessage): Promise<PushResult> {
   const project = required('FIREBASE_PROJECT_ID');
   const token = await fcmToken();
+  const image = new URL(process.env.PUSH_IMAGE_URL || 'https://seum-nu.vercel.app/push-icon.png');
+  if (image.protocol !== 'https:' || image.username || image.password) throw new Error('PUSH_IMAGE_URL must be a public HTTPS image URL.');
   const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(project)}/messages:send`, {
     method: 'POST', signal: AbortSignal.timeout(10000),
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: {
       token: destination.token,
-      notification: { title: message.title.slice(0, 80), body: '세움에서 새 알림을 확인해주세요.' },
+      notification: {
+        title: message.title.slice(0, 80),
+        body: notificationPreview(message.body) || '세움에서 새 알림을 확인해주세요.',
+        image: image.href,
+      },
       data: { notificationId: message.id, recipientId: message.recipientId },
       android: { priority: 'high', ttl: '86400s', notification: {
         channel_id: 'seum-notifications', tag: message.id, icon: 'ic_stat_seum',
@@ -164,7 +171,7 @@ async function sendApns(destination: PushDestination, message: PushMessage): Pro
       }
     });
     request.end(JSON.stringify({
-      aps: { alert: { title: message.title.slice(0, 80), body: '세움에서 새 알림을 확인해주세요.' }, sound: 'default' },
+      aps: { alert: { title: message.title.slice(0, 80), body: notificationPreview(message.body) || '세움에서 새 알림을 확인해주세요.' }, sound: 'default' },
       notificationId: message.id, recipientId: message.recipientId,
     }));
   });

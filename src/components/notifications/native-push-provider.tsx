@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
@@ -8,10 +9,11 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { useAuth } from '@/hooks/use-auth';
 import { parsePushReference, type PushReference } from '@/lib/push-validation';
 import {
-  allowNativeRegistration, checkPushResponse, finishNativeLogout, nativePushAvailable,
+  allowNativeRegistration, finishNativeLogout, nativePushAvailable,
   persistNativeToken, prepareNativeLogout, PUSH_DISABLED_KEY, PUSH_PENDING_KEY,
   requestPushApi,
   cancelNativePushTransition,
+  PushApiError,
 } from '@/lib/native-push';
 
 interface PushContextValue {
@@ -27,11 +29,14 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
   const userRef = useRef(user);
   userRef.current = user;
   const opening = useRef(false);
+  const lastRegisteredAt = useRef(0);
+  const [resolving, setResolving] = useState(false);
+  const [navigating, startNavigation] = useTransition();
   const [native, setNative] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState('알림 권한을 확인해주세요.');
   const [error, setError] = useState<string | null>(null);
-  const [incoming, setIncoming] = useState<(PushReference & { title: string }) | null>(null);
+  const [incoming, setIncoming] = useState<(PushReference & { title: string; body?: string }) | null>(null);
 
   const report = useCallback((cause: unknown) => {
     const message = cause instanceof Error ? cause.message : '앱 알림 처리에 실패했습니다.';
@@ -48,25 +53,34 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
       if (!value) return;
       const reference = parsePushReference(JSON.parse(value));
       if (!reference) throw new Error('알림 이동 정보가 올바르지 않습니다.');
+      setResolving(true);
       if (reference.recipientId !== session.userId) {
         await Preferences.remove({ key: PUSH_PENDING_KEY });
         throw new Error('다른 계정의 알림입니다. 해당 계정으로 로그인해 알림 목록을 확인해주세요.');
       }
-      const response = await fetch(`/api/push/notifications/${reference.notificationId}`, { cache: 'no-store' });
-      if (response.status === 404) {
-        await Preferences.remove({ key: PUSH_PENDING_KEY });
-      }
-      const data = await checkPushResponse(response);
+      const data = await requestPushApi(`/api/push/notifications/${reference.notificationId}`, { cache: 'no-store' });
       if (typeof data.href !== 'string' || !data.href.startsWith('/') || data.href.startsWith('//')) {
         throw new Error('알림의 이동 경로가 올바르지 않습니다.');
       }
       if (userRef.current?.userId !== session.userId) return;
       await Preferences.remove({ key: PUSH_PENDING_KEY });
       setIncoming(null);
-      router.push(data.href);
-      window.dispatchEvent(new Event('seum-notifications-changed'));
-    } finally { opening.current = false; }
-  }, [router]);
+      const href = data.href;
+      startNavigation(() => router.push(href));
+      requestPushApi('/api/notifications/read', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [reference.notificationId] }),
+      }).then((result) => {
+        if (result.success !== true) throw new Error('알림 읽음 처리를 완료하지 못했습니다.');
+        window.dispatchEvent(new Event('seum-notifications-changed'));
+      }).catch(report);
+    } catch (cause) {
+      if (cause instanceof PushApiError && cause.status === 404) {
+        await Preferences.remove({ key: PUSH_PENDING_KEY });
+      }
+      throw cause;
+    } finally { opening.current = false; setResolving(false); }
+  }, [router, report]);
 
   const enable = useCallback(async () => {
     if (!ready || !userRef.current || userRef.current.requiresGroupSelection) return;
@@ -132,7 +146,10 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
         const owner = userRef.current;
         if (!owner || owner.requiresGroupSelection) return;
         persistNativeToken(value).then((registered) => {
-          if (registered && !disposed && userRef.current?.userId === owner.userId) setStatus('이 기기의 Push 등록이 완료되었습니다.');
+          if (registered && !disposed && userRef.current?.userId === owner.userId) {
+            lastRegisteredAt.current = Date.now();
+            setStatus('이 기기의 Push 등록이 완료되었습니다.');
+          }
         }).catch(report);
       }));
       await listen(PushNotifications.addListener('registrationError', () => {
@@ -141,7 +158,7 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
       await listen(PushNotifications.addListener('pushNotificationReceived', (notification) => {
         const reference = parsePushReference(notification.data);
         if (!reference || reference.recipientId !== userRef.current?.userId) return;
-        setIncoming({ ...reference, title: notification.title || '새 알림' });
+        setIncoming({ ...reference, title: notification.title || '새 알림', body: notification.body });
         window.dispatchEvent(new Event('seum-notifications-changed'));
       }));
       await listen(PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
@@ -165,10 +182,13 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
   }, [openPending, report]);
 
   useEffect(() => {
-    if (!ready || !user || user.requiresGroupSelection) return;
+    const session = userRef.current;
+    if (!ready || !session || session.requiresGroupSelection) return;
+    lastRegisteredAt.current = 0;
     const resume = async () => {
       if (document.visibilityState === 'hidden') return;
       await openPending();
+      if (Date.now() - lastRegisteredAt.current < 5 * 60 * 1000) return;
       const { value } = await Preferences.get({ key: PUSH_DISABLED_KEY });
       if (value === 'true') { setStatus('이 기기의 Push 알림이 꺼졌습니다.'); return; }
       if (value !== 'false') return;
@@ -181,15 +201,27 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
     onResume();
     document.addEventListener('visibilitychange', onResume);
     return () => document.removeEventListener('visibilitychange', onResume);
-  }, [ready, user, openPending, report]);
+  }, [ready, user?.userId, user?.exp, user?.requiresGroupSelection, openPending, report]);
 
   return (
     <PushContext.Provider value={{ native, ready, status, error, enable, disable, test }}>
       {children}
+      {native && (resolving || navigating) && (
+        <div role="status" className="fixed top-[calc(env(safe-area-inset-top)+1rem)] left-3 right-3 z-[70] rounded-xl warm-surface border border-primary-200 p-3 text-sm shadow-lg">
+          알림 여는 중…
+        </div>
+      )}
       {native && incoming && (
         <div className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+1rem)] z-[60] rounded-xl warm-surface border border-primary-200 p-4 shadow-lg">
-          <p className="text-sm font-semibold">{incoming.title}</p>
-          <button className="mt-2 text-sm text-primary-700" onClick={() => {
+          <div className="flex gap-3 items-start">
+            <Image src="/push-icon.png" alt="세움" width={44} height={44} unoptimized className="rounded-xl shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-primary-700 mb-1">세움 알림</p>
+              <p className="text-sm font-semibold line-clamp-2">{incoming.title}</p>
+              {incoming.body && <p className="mt-1 text-xs text-stone-600 line-clamp-2">{incoming.body}</p>}
+            </div>
+          </div>
+          <button disabled={resolving || navigating} className="mt-3 text-sm text-primary-700 disabled:opacity-50" onClick={() => {
             Preferences.set({ key: PUSH_PENDING_KEY, value: JSON.stringify(incoming) }).then(openPending).catch(report);
           }}>알림 열기</button>
           <button className="ml-4 text-sm text-stone-500" onClick={() => setIncoming(null)}>닫기</button>
@@ -212,7 +244,7 @@ export function NativePushSettings() {
     <section className="warm-surface rounded-xl border border-stone-200 p-4 space-y-2">
       <h2 className="font-semibold">앱 Push 알림</h2>
       <p className="text-sm text-stone-600">{context.status}</p>
-      <p className="text-xs text-stone-500">허용하면 공지·댓글·공감 알림을 받습니다. 잠금 화면에 알림 제목이 표시될 수 있습니다.</p>
+      <p className="text-xs text-stone-500">허용하면 공지·댓글·공감 알림을 받습니다. 휴대폰 설정에 따라 잠금 화면에 제목과 본문 미리보기가 표시될 수 있습니다.</p>
       <div className="flex flex-wrap gap-4 text-sm">
         <button disabled={!context.ready} className="text-primary-700 disabled:opacity-50" onClick={context.enable}>알림 권한 요청 / 등록</button>
         <button disabled={!context.ready} className="text-stone-600 disabled:opacity-50" onClick={context.disable}>이 기기 알림 끄기</button>

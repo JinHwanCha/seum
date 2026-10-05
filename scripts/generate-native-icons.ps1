@@ -22,7 +22,7 @@ function Write-Icon {
             $clip.AddEllipse($rect)
             $graphics.SetClip($clip)
         }
-        if ($Kind -ne 'foreground') {
+        if ($Kind -ne 'foreground' -and $Kind -ne 'status') {
             $gradient = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
                 $rect,
                 [System.Drawing.ColorTranslator]::FromHtml('#3d6b48'),
@@ -47,7 +47,7 @@ function Write-Icon {
             )
             $bounds = $glyph.GetBounds()
             # Adaptive artwork stays inside Android's central safe zone.
-            $fraction = if ($Kind -eq 'foreground') { 0.50 } else { 0.65 }
+            $fraction = if ($Kind -eq 'foreground') { 0.50 } elseif ($Kind -eq 'status') { 0.85 } else { 0.65 }
             $scale = [single]($Size * $fraction / $bounds.Width)
             $matrix.Translate(-$bounds.X, -$bounds.Y, [System.Drawing.Drawing2D.MatrixOrder]::Append)
             $matrix.Scale($scale, $scale, [System.Drawing.Drawing2D.MatrixOrder]::Append)
@@ -73,6 +73,7 @@ function Write-Icon {
 
 try {
     Write-Icon (Join-Path $root 'assets\native\seum-icon.png') 1024 'square'
+    Write-Icon (Join-Path $root 'public\push-icon.png') 256 'square'
     Write-Icon (Join-Path $root 'ios\App\App\Assets.xcassets\AppIcon.appiconset\AppIcon-512@2x.png') 1024 'square'
     $densities = @(
         @{ Name = 'mdpi'; Legacy = 48; Adaptive = 108 },
@@ -87,6 +88,8 @@ try {
         Write-Icon (Join-Path $dir 'ic_launcher_round.png') $density.Legacy 'round'
         Write-Icon (Join-Path $dir 'ic_launcher_foreground.png') $density.Adaptive 'foreground'
         Write-Icon (Join-Path $dir 'ic_launcher_background.png') $density.Adaptive 'background'
+        $statusDir = Join-Path $root ('android\app\src\main\res\drawable-' + $density.Name)
+        Write-Icon (Join-Path $statusDir 'ic_stat_seum.png') ([int]($density.Legacy / 2)) 'status'
     }
     Write-Output 'Generated SEUM Android and iOS icons using the installed Malgun Gothic font.'
 } finally {
