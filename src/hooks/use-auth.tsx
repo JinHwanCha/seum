@@ -61,7 +61,9 @@ export function AuthProvider({
       const resData = await res.json();
       if (res.ok && !resData.multipleMatches && !resData.requireBirthDate) {
         // 하드 네비게이션: 쿠키가 확실히 포함된 새 요청으로 Server Component를 렌더링
-        window.location.href = `/${resData.churchSlug}/${resData.departmentSlug}`;
+        window.location.href = resData.requiresGroupSelection
+          ? '/onboarding'
+          : `/${resData.churchSlug}/${resData.departmentSlug}`;
       }
       return resData;
     },

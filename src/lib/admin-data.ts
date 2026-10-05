@@ -25,7 +25,7 @@ export async function getVillagesWithCells(session: SessionPayload): Promise<Vil
       .select('id, villages(id, name, sort_order, cells(id, name, sort_order))')
       .eq('department_id', session.departmentId)
       .eq('is_active', true)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('users')
       .select('id, name, cell_id')
@@ -33,6 +33,9 @@ export async function getVillagesWithCells(session: SessionPayload): Promise<Vil
       .eq('role', 'cell_leader')
       .eq('is_approved', true),
   ]);
+
+  if (orgResult.error) throw orgResult.error;
+  if (cellLeadersResult.error) throw cellLeadersResult.error;
 
   const groupYear = orgResult.data as any;
   if (!groupYear) return [];

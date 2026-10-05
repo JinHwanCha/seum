@@ -123,6 +123,7 @@ export async function POST(request: Request) {
       department_id: departmentId,
       role: 'pending',
       is_approved: false,
+      requires_group_selection: true,
     });
 
     if (insertError) {

@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/register') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
-    pathname.startsWith('/api/auth') ||
+    ['/api/auth/login', '/api/auth/register', '/api/auth/reset-password', '/api/auth/logout'].includes(pathname) ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||
     pathname === '/manifest.webmanifest' ||
@@ -44,6 +44,18 @@ export async function middleware(request: NextRequest) {
 
   try {
     const { payload } = await jwtVerify(token, getJwtSecretKey());
+    if (
+      payload.requiresGroupSelection === true &&
+      !['/onboarding', '/api/auth/onboarding', '/api/auth/me'].includes(pathname)
+    ) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: '마을과 소그룹을 먼저 선택해주세요.', requiresGroupSelection: true },
+          { status: 403 }
+        );
+      }
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
     // HTTP 헤더는 ASCII만 허용하므로 non-ASCII 문자(한글 등)를 \uXXXX 이스케이프로 인코딩
     const safePayload = JSON.stringify(payload).replace(
       /[\u007F-\uFFFF]/g,

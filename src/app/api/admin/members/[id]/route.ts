@@ -98,6 +98,7 @@ export async function PATCH(
       minister_rank: role === 'minister' ? ministerRank : null,
       village_id: villageId || null,
       cell_id: cellId || null,
+      ...(villageId && cellId ? { requires_group_selection: false } : {}),
       updated_at: new Date().toISOString(),
     };
 

@@ -4,6 +4,7 @@ import { createToken, verifyPassword } from '@/lib/auth';
 import { COOKIE_NAME } from '@/lib/constants';
 import { maskPhone } from '@/lib/utils';
 import type { SessionPayload } from '@/lib/types';
+import { needsGroupSelection } from '@/lib/group-selection';
 
 // 생년월일 비교용 정규화: 숫자만 남겨 "2000-01-15" / "20000115" 등 형식 차이를 흡수
 function normalizeBirth(value?: string | null): string {
@@ -165,6 +166,7 @@ export async function POST(request: Request) {
       isBureauLeader: bureauMembership?.is_leader ?? false,
       isBureauMember: !!bureauMembership,
       isAdmin: user.is_admin || user.minister_rank === 'pastor',
+      requiresGroupSelection: needsGroupSelection(user),
     };
 
     const tokenExpiry = rememberMe ? '30d' : '7d';
@@ -175,6 +177,7 @@ export async function POST(request: Request) {
       success: true,
       churchSlug: church.slug,
       departmentSlug: dept?.slug || '',
+      requiresGroupSelection: payload.requiresGroupSelection,
     });
 
     response.cookies.set(COOKIE_NAME, token, {

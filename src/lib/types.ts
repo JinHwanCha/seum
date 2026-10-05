@@ -313,6 +313,8 @@ export interface SessionPayload {
   isBureauLeader: boolean;
   isBureauMember: boolean;
   isAdmin: boolean;
+  requiresGroupSelection?: boolean;
+  exp?: number;
 }
 
 // ─── API Response ───
