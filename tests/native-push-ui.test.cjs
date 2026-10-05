@@ -123,6 +123,8 @@ test('push clicks show immediate progress and navigate before the read POST fini
   subject.listeners.get('pushNotificationActionPerformed')(action);
   await new Promise(setImmediate);
   assert.ok(subject.nodes().some((node) => node.props?.role === 'status'));
+  assert.equal(subject.render().props.value.openedNotificationId, action.notification.data.notificationId);
+  assert.equal(subject.render().props.value.openingNotification, true);
   assert.equal(subject.requests.length, 1);
   assert.equal(subject.routes.length, 0);
   subject.lookup.resolve({ href: '/church/department/boards/notice/post' });

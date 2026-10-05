@@ -20,6 +20,8 @@ interface PushContextValue {
   native: boolean; ready: boolean; status: string; error: string | null;
   enable: () => Promise<void>; disable: () => Promise<void>;
   test: () => Promise<void>;
+  openingNotification: boolean;
+  openedNotificationId: string | null;
 }
 const PushContext = createContext<PushContextValue | null>(null);
 
@@ -37,6 +39,7 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState('알림 권한을 확인해주세요.');
   const [error, setError] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<(PushReference & { title: string; body?: string }) | null>(null);
+  const [openedNotificationId, setOpenedNotificationId] = useState<string | null>(null);
 
   const report = useCallback((cause: unknown) => {
     const message = cause instanceof Error ? cause.message : '앱 알림 처리에 실패했습니다.';
@@ -58,6 +61,7 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
         await Preferences.remove({ key: PUSH_PENDING_KEY });
         throw new Error('다른 계정의 알림입니다. 해당 계정으로 로그인해 알림 목록을 확인해주세요.');
       }
+      setOpenedNotificationId(reference.notificationId);
       const data = await requestPushApi(`/api/push/notifications/${reference.notificationId}`, { cache: 'no-store' });
       if (typeof data.href !== 'string' || !data.href.startsWith('/') || data.href.startsWith('//')) {
         throw new Error('알림의 이동 경로가 올바르지 않습니다.');
@@ -98,6 +102,8 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
       await PushNotifications.register();
     } catch (cause) { report(cause); }
   }, [ready, report]);
+
+  useEffect(() => { setOpenedNotificationId(null); }, [user?.userId]);
 
   const disable = useCallback(async () => {
     setError(null);
@@ -204,7 +210,10 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
   }, [ready, user?.userId, user?.exp, user?.requiresGroupSelection, openPending, report]);
 
   return (
-    <PushContext.Provider value={{ native, ready, status, error, enable, disable, test }}>
+    <PushContext.Provider value={{
+      native, ready, status, error, enable, disable, test,
+      openingNotification: resolving || navigating, openedNotificationId,
+    }}>
       {children}
       {native && (resolving || navigating) && (
         <div role="status" className="fixed top-[calc(env(safe-area-inset-top)+1rem)] left-3 right-3 z-[70] rounded-xl warm-surface border border-primary-200 p-3 text-sm shadow-lg">
@@ -253,4 +262,12 @@ export function NativePushSettings() {
       {context.error && <p role="alert" className="text-sm text-red-600">{context.error}</p>}
     </section>
   );
+}
+
+export function useNativePushNavigation() {
+  const context = useContext(PushContext);
+  return {
+    opening: context?.native ? context.openingNotification : false,
+    openedId: context?.native ? context.openedNotificationId : null,
+  };
 }

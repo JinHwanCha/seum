@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import { ChevronRight } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/date-utils';
 import { requestPushApi } from '@/lib/native-push';
+import { useNativePushNavigation } from '@/components/notifications/native-push-provider';
 
 interface AnnouncementItem {
   id: string;
@@ -25,14 +26,16 @@ export function AnnouncementPopup() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const basePath = `/${params.church}/${params.department}`;
+  const pushNavigation = useNativePushNavigation();
 
   useEffect(() => {
+    if (pushNavigation.opening) { setOpen(false); return; }
     let active = true;
     requestPushApi('/api/notifications?unreadAnnouncements=1', { cache: 'no-store' })
       .then((data) => {
         if (!active) return;
         if (!Array.isArray(data.notifications)) throw new Error('공지 알림 응답이 올바르지 않습니다.');
-        const list: AnnouncementItem[] = data.notifications;
+        const list: AnnouncementItem[] = data.notifications.filter((item) => item.id !== pushNavigation.openedId);
         if (list.length > 0) {
           setItems(list);
           setOpen(true);
@@ -45,7 +48,7 @@ export function AnnouncementPopup() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [pushNavigation.opening, pushNavigation.openedId]);
 
   const handleClose = () => {
     setOpen(false);
