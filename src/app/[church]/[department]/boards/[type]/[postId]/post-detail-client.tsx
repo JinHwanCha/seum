@@ -148,10 +148,10 @@ export default function PostDetailClient({
         {/* Reactions */}
         <div className="border-t border-stone-100 pt-4 mb-4">
           <ReactionBar
+            key={`${postId}:${user.userId}`}
             postId={postId}
             reactions={reactions}
             session={user}
-            onRefresh={refresh}
           />
         </div>
 

@@ -6,9 +6,18 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mobile:sync": "cap sync",
+    "mobile:icons": "powershell -NoProfile -File scripts\\generate-native-icons.ps1",
+    "mobile:android:debug": "node scripts/android-preview.cjs build",
+    "mobile:android:install": "node scripts/android-preview.cjs install",
+    "mobile:open:android": "cap open android",
+    "mobile:open:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "7.6.9",
+    "@capacitor/core": "7.6.9",
+    "@capacitor/ios": "7.6.9",
     "@supabase/supabase-js": "^2.47.10",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
@@ -23,6 +32,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "7.6.9",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.17.9",
     "@types/react": "^18.3.12",

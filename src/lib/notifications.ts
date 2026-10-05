@@ -42,12 +42,13 @@ export async function notifyPostAuthor(
 ): Promise<void> {
   const { postId, actorId, actorName, type, snippet } = opts;
 
-  const { data: post } = await supabase
+  const { data: post, error: postError } = await supabase
     .from('posts')
     .select('author_id, title, board_type, department_id')
     .eq('id', postId)
     .single();
 
+  if (postError) throw postError;
   if (!post || post.author_id === actorId) return;
 
   const title =
@@ -62,7 +63,7 @@ export async function notifyPostAuthor(
       ? snippet
       : post.title;
 
-  await supabase.from('notifications').insert({
+  const { error: notificationError } = await supabase.from('notifications').insert({
     department_id: post.department_id,
     recipient_id: post.author_id,
     actor_id: actorId,
@@ -72,6 +73,7 @@ export async function notifyPostAuthor(
     title,
     body,
   });
+  if (notificationError) throw notificationError;
 
   // 미래(앱 전환): 푸시 발송
   void sendPush(supabase, post.author_id, { title, body });
