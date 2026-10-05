@@ -15,6 +15,7 @@ export function WeekSelector({ currentSunday, onChange }: WeekSelectorProps) {
   return (
     <div className="flex items-center justify-between warm-surface rounded-xl border border-stone-200/80 px-4 py-3">
       <button
+        aria-label="이전 주"
         onClick={() => onChange(getPreviousWeek(currentSunday))}
         className="p-1.5 rounded-lg hover:bg-primary-50 text-stone-600 transition-colors"
       >
@@ -24,6 +25,7 @@ export function WeekSelector({ currentSunday, onChange }: WeekSelectorProps) {
         {formatWeekLabel(currentSunday)}
       </span>
       <button
+        aria-label="다음 주"
         onClick={() => canGoNext && onChange(nextWeek)}
         disabled={!canGoNext}
         className="p-1.5 rounded-lg hover:bg-primary-50 text-stone-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"

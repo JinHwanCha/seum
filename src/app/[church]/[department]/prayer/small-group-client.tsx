@@ -18,10 +18,10 @@ import { TreeOverview } from '@/components/prayer/tree-overview';
 import { SharingSheet } from '@/components/prayer/sharing-sheet';
 import { MonthlyPrayerView } from '@/components/prayer/monthly-prayer-view';
 import { VillagePrayerCells } from '@/components/prayer/village-prayer-cells';
-import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
+import { getCurrentWeekSunday, formatWeekDate, getPreviousWeek, getNextWeek, isFutureWeek } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import type { PrayerRequest, Attendance } from '@/lib/types';
 
 const birthYearLabel = (birthDate?: string | null) => {
@@ -55,6 +55,8 @@ interface VillageGroup {
 
 export default function SmallGroupClient({ initialData }: { initialData?: any }) {
   const { user } = useAuth();
+  const { cache, mutate: mutateCache } = useSWRConfig();
+  const prefetchingWeeks = useRef(new Set<string>());
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('sharing');
@@ -68,7 +70,6 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   // Optimistic local state (updated by callbacks, synced from SWR)
   const [myPrayer, setMyPrayer] = useState<PrayerRequest | null>(initialData?.myPrayer ?? null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>(initialData?.prayers ?? []);
-  const [attendanceMap, setAttendanceMap] = useState<Record<string, Attendance>>(initialData?.attendanceMap ?? {});
 
   // '나의 기도제목' 저장/수정 시 제목 옆에 잠깐 나타나는 알림
   const [prayerToast, setPrayerToast] = useState<string | null>(null);
@@ -82,16 +83,55 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
   const weekStart = formatWeekDate(currentSunday);
 
-  const isInitialWeek = weekStart === formatWeekDate(getCurrentWeekSunday());
+  const initialWeekStart = useRef(formatWeekDate(getCurrentWeekSunday())).current;
+  const isInitialWeek = weekStart === initialWeekStart;
+  const groupWeekStart = activeTab === 'attendance' ? initialWeekStart : weekStart;
   const { data: swrData, isLoading, mutate } = useSWR(
-    `/api/small-group?weekStart=${weekStart}`,
+    `/api/small-group?weekStart=${groupWeekStart}`,
     {
-      fallbackData: isInitialWeek ? initialData : undefined,
+      fallbackData: groupWeekStart === initialWeekStart ? initialData : undefined,
       keepPreviousData: true,
       // 초기 주차는 서버에서 이미 최신 데이터를 받았으므로 재검증 생략
-      revalidateOnMount: !isInitialWeek,
+      revalidateOnMount: groupWeekStart !== initialWeekStart || !initialData,
     }
   );
+
+  const { data: attendanceData, error: attendanceError, mutate: mutateAttendance } = useSWR<{
+    attendanceMap: Record<string, Attendance>;
+  }>(
+    activeTab === 'attendance'
+      ? `/api/small-group?weekStart=${weekStart}&attendanceOnly=true`
+      : null,
+    {
+      fallbackData: isInitialWeek && initialData
+        ? { attendanceMap: initialData.attendanceMap ?? {} }
+        : undefined,
+      keepPreviousData: false,
+      revalidateOnMount: !isInitialWeek || !initialData,
+    }
+  );
+  const attendanceMap: Record<string, Attendance> =
+    (activeTab === 'attendance' ? attendanceData?.attendanceMap : swrData?.attendanceMap) ?? {};
+
+  useEffect(() => {
+    if (!user || activeTab !== 'attendance' || !attendanceData) return;
+
+    for (const sunday of [getPreviousWeek(currentSunday), getNextWeek(currentSunday)]) {
+      if (isFutureWeek(sunday)) continue;
+      const key = `/api/small-group?weekStart=${formatWeekDate(sunday)}&attendanceOnly=true`;
+      if (cache.get(key)?.data || prefetchingWeeks.current.has(key)) continue;
+
+      prefetchingWeeks.current.add(key);
+      void mutateCache(
+        key,
+        fetch(key).then((response) => {
+          if (!response.ok) throw new Error('Attendance fetch failed');
+          return response.json();
+        }),
+        { revalidate: false }
+      ).catch(() => {}).finally(() => prefetchingWeeks.current.delete(key));
+    }
+  }, [user, activeTab, attendanceData, currentSunday, cache, mutateCache]);
 
   // Derive stable values from SWR cache
   const cellName = swrData?.cell?.name || null;
@@ -105,14 +145,13 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     if (swrData) {
       setMyPrayer(swrData.myPrayer || null);
       setPrayers(swrData.prayers || []);
-      setAttendanceMap(swrData.attendanceMap || {});
     }
   }, [swrData]);
 
   // Optimistic attendance update (no refetch)
   const handleAttendanceChange = useCallback(
     (userId: string, field: string, value: unknown) => {
-      setAttendanceMap((prev) => {
+      const updateAttendance = (prev: Record<string, Attendance>) => {
         const existing = prev[userId] || {
           id: '',
           user_id: userId,
@@ -139,9 +178,22 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
           ...prev,
           [userId]: { ...existing, [field]: value },
         };
-      });
+      };
+      void mutateAttendance(
+        (current) => ({ attendanceMap: updateAttendance(current?.attendanceMap ?? attendanceMap) }),
+        false
+      );
+      if (groupWeekStart === weekStart) {
+        void mutate(
+          (current: any) => ({
+            ...(current ?? swrData),
+            attendanceMap: updateAttendance(current?.attendanceMap ?? attendanceMap),
+          }),
+          false
+        );
+      }
     },
-    [weekStart]
+    [weekStart, groupWeekStart, attendanceMap, mutateAttendance, mutate, swrData]
   );
 
   if (!user) return null;
@@ -548,8 +600,15 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       {/* ===== ATTENDANCE TAB ===== */}
       {activeTab === 'attendance' && (
         <>
-          {isLoading && !swrData ? (
-            <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
+          {attendanceError && !attendanceData ? (
+            <div role="alert" className="text-center py-8 text-stone-500 text-sm">
+              <p>경건생활 기록을 불러오지 못했습니다.</p>
+              <button onClick={() => void mutateAttendance()} className="mt-2 text-primary-600">
+                다시 시도
+              </button>
+            </div>
+          ) : !attendanceData || (isLoading && !swrData) ? (
+            <div role="status" className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
           ) : (
             <>
               {/* 하위 탭: 내 소그룹 / 주중예배 / (마을) */}
