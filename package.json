@@ -13,6 +13,7 @@
     "mobile:android:install": "node scripts/android-preview.cjs install",
     "mobile:push:configure": "node scripts/configure-push.cjs",
     "mobile:push:dispatch": "node scripts/push-dispatch.cjs",
+    "images:migrate:gathering": "node scripts/migrate-gathering-images.cjs",
     "mobile:open:android": "cap open android",
     "mobile:open:ios": "cap open ios"
   },

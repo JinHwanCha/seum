@@ -127,6 +127,10 @@ export default function PostDetailClient({
                   <img
                     src={src}
                     alt=""
+                    loading={idx < 2 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    width={1024}
+                    height={1024}
                     className="w-full aspect-square object-cover"
                   />
                 </button>
