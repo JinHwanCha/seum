@@ -64,7 +64,7 @@ export async function GET() {
   // Get all approved non-graduated members
   const { data: members } = await supabase
     .from('users')
-    .select('id, name, role, phone, birth_date, village_id, cell_id')
+    .select('id, name, role, phone, birth_date, is_early_birth, village_id, cell_id')
     .eq('department_id', session.departmentId)
     .eq('is_approved', true)
     .eq('is_graduated', false)
@@ -135,6 +135,7 @@ export async function GET() {
         role: m.role,
         phone: m.phone,
         birth_date: m.birth_date,
+        is_early_birth: m.is_early_birth,
         village_name: m.village_id ? villageMap[m.village_id] : null,
         cell_name: cellInfo?.name || null,
         last_attended: lastAttendedMap[m.id] || null,

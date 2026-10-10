@@ -7,6 +7,7 @@ import { PillTabs } from '@/components/ui/pill-tabs';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { User, Calendar, Phone, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/date-utils';
+import { birthYearTag } from '@/lib/utils';
 
 export interface AbsentMember {
   id: string;
@@ -14,6 +15,7 @@ export interface AbsentMember {
   role: string;
   phone: string | null;
   birth_date: string | null;
+  is_early_birth: boolean;
   village_name: string | null;
   cell_name: string | null;
   last_attended: string | null;
@@ -87,7 +89,7 @@ export function AbsentList({
                     <span className="truncate text-sm font-medium text-stone-900">
                       {m.name}
                       {m.birth_date && (
-                        <span className="font-normal text-stone-400"> ({m.birth_date.substring(2, 4)})</span>
+                        <span className="font-normal text-stone-400">{birthYearTag(m.birth_date, m.is_early_birth)}</span>
                       )}
                     </span>
                     <Badge variant="default">{ROLE_LABELS_DEFAULT[m.role] || m.role}</Badge>

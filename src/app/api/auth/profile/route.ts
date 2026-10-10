@@ -9,7 +9,7 @@ export async function GET() {
   const supabase = createClient();
   const { data: user } = await supabase
     .from('users')
-    .select('id, name, birth_date, phone, role, minister_rank, village_id, cell_id, is_admin')
+    .select('id, name, birth_date, is_early_birth, phone, role, minister_rank, village_id, cell_id, is_admin')
     .eq('id', session.userId)
     .single();
 
@@ -36,7 +36,11 @@ export async function PATCH(request: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { birthDate, phone, currentPassword, newPassword } = body;
+  const { birthDate, isEarlyBirth, phone, currentPassword, newPassword } = body;
+
+  if (isEarlyBirth !== undefined && typeof isEarlyBirth !== 'boolean') {
+    return NextResponse.json({ error: '빠른 년생 여부는 체크 값으로 입력해주세요.' }, { status: 400 });
+  }
 
   const supabase = createClient();
 
@@ -45,6 +49,7 @@ export async function PATCH(request: Request) {
   };
 
   if (birthDate !== undefined) updates.birth_date = birthDate || null;
+  if (isEarlyBirth !== undefined) updates.is_early_birth = isEarlyBirth;
   if (phone !== undefined) updates.phone = phone;
 
   // Password change
@@ -77,7 +82,10 @@ export async function PATCH(request: Request) {
     .update(updates)
     .eq('id', session.userId);
 
-  if (error) return NextResponse.json({ error: '저장에 실패했습니다.' }, { status: 500 });
+  if (error) {
+    console.error('Profile update error:', error);
+    return NextResponse.json({ error: '저장에 실패했습니다.' }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }

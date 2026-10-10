@@ -69,6 +69,7 @@ CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   birth_date DATE,
+  is_early_birth BOOLEAN NOT NULL DEFAULT false,
   phone TEXT,
   password_hash TEXT NOT NULL,
   church_id UUID NOT NULL REFERENCES churches(id),

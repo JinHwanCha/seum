@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, birthYearTag } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Crown, User, Check, X, Church, Users, UsersRound, Heart, Sun, Minus, Plus } from 'lucide-react';
 import type { Attendance, SessionPayload } from '@/lib/types';
@@ -13,6 +13,7 @@ interface CellMember {
   name: string;
   role: string;
   birth_date?: string | null;
+  is_early_birth?: boolean;
 }
 
 interface AttendanceCheckProps {
@@ -32,11 +33,6 @@ const WORSHIP_OPTIONS = [
   { value: '3부', label: '3부', short: '3' },
   { value: '온라인', label: '온라인', short: 'O' },
 ] as const;
-
-const birthYearLabel = (birthDate?: string | null) => {
-  if (!birthDate) return '';
-  return ` (${birthDate.substring(2, 4)})`;
-};
 
 // Fire-and-forget API call — no await needed
 function saveField(userId: string, weekStart: string, field: string, value: unknown) {
@@ -116,7 +112,7 @@ export function AttendanceCheck({
                   <User size={14} className="text-stone-400" />
                 )}
                 <span className="text-sm font-medium text-stone-900">
-                  {member.name}{birthYearLabel(member.birth_date)}
+                  {member.name}{birthYearTag(member.birth_date, member.is_early_birth)}
                 </span>
                 {member.id === session.userId && (
                   <span className="text-xs text-primary-500">(나)</span>

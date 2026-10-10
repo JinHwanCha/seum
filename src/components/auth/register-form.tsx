@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { EarlyBirthCheckbox } from './early-birth-checkbox';
 import { ChevronDown, ChevronUp, Shield } from 'lucide-react';
 
 export function RegisterForm() {
@@ -16,6 +17,7 @@ export function RegisterForm() {
     birthYear: '',
     birthMonth: '',
     birthDay: '',
+    isEarlyBirth: false,
     phone: '',
     departmentId: '',
     password: '',
@@ -28,6 +30,9 @@ export function RegisterForm() {
   const [churchValid, setChurchValid] = useState<boolean | null>(null);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const birthDate = form.birthYear && form.birthMonth && form.birthDay
+    ? `${form.birthYear}-${form.birthMonth.padStart(2, '0')}-${form.birthDay.padStart(2, '0')}`
+    : null;
 
   // Validate church when name + pastor entered
   useEffect(() => {
@@ -91,9 +96,8 @@ export function RegisterForm() {
           churchName: form.churchName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, ''),
           pastorName: form.pastorName.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, ''),
           name: form.name,
-          birthDate: form.birthYear && form.birthMonth && form.birthDay
-            ? `${form.birthYear}-${form.birthMonth.padStart(2, '0')}-${form.birthDay.padStart(2, '0')}`
-            : null,
+          birthDate,
+          isEarlyBirth: form.isEarlyBirth,
           phone: form.phone,
           departmentId: form.departmentId,
           password: form.password,
@@ -223,6 +227,12 @@ export function RegisterForm() {
             </select>
           </div>
         </div>
+        <EarlyBirthCheckbox
+          checked={form.isEarlyBirth}
+          onChange={(isEarlyBirth) => setForm((prev) => ({ ...prev, isEarlyBirth }))}
+          name={form.name}
+          birthDate={birthDate}
+        />
         <Input
           label="전화번호"
           type="tel"

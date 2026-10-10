@@ -7,7 +7,7 @@ export const POSTS_PAGE_SIZE = 20;
 
 // 목록에 필요한 컬럼만 조회한다. 무거운 images(base64) 대신 thumbnail/image_count 만 가져온다.
 const LIST_SELECT =
-  'id, slug, title, content, board_type, gathering_type, is_pinned, visibility, created_at, updated_at, author_id, category_id, village_id, department_id, image_count, thumbnail, author:users(id, name, role, minister_rank, village_id, birth_date), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)';
+  'id, slug, title, content, board_type, gathering_type, is_pinned, visibility, created_at, updated_at, author_id, category_id, village_id, department_id, image_count, thumbnail, author:users(id, name, role, minister_rank, village_id, birth_date, is_early_birth), category:board_categories(id, name), village:villages(id, name), comments(count), reactions(count)';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

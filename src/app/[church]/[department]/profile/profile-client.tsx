@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
+import { EarlyBirthCheckbox } from '@/components/auth/early-birth-checkbox';
+import { birthYearTag } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -13,6 +17,7 @@ import { NativePushSettings } from '@/components/notifications/native-push-provi
 
 interface ProfileData {
   birth_date: string | null;
+  is_early_birth: boolean;
   phone: string | null;
   village_name: string | null;
   cell_name: string | null;
@@ -26,8 +31,15 @@ interface Props {
 }
 
 export default function ProfileClient({ user, basePath, profile, deletionRequested }: Props) {
+  const router = useRouter();
+  const { mutate } = useSWRConfig();
+  const [savedBirth, setSavedBirth] = useState({
+    birthDate: profile.birth_date,
+    isEarlyBirth: profile.is_early_birth,
+  });
   const [form, setForm] = useState({
     birthDate: profile.birth_date || '',
+    isEarlyBirth: profile.is_early_birth,
     phone: profile.phone || '',
     currentPassword: '',
     newPassword: '',
@@ -60,6 +72,7 @@ export default function ProfileClient({ user, basePath, profile, deletionRequest
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           birthDate: form.birthDate,
+          isEarlyBirth: form.isEarlyBirth,
           phone: form.phone,
           ...(form.newPassword
             ? { currentPassword: form.currentPassword, newPassword: form.newPassword }
@@ -74,6 +87,13 @@ export default function ProfileClient({ user, basePath, profile, deletionRequest
       }
 
       setMessage('저장되었습니다.');
+      setSavedBirth({ birthDate: form.birthDate, isEarlyBirth: form.isEarlyBirth });
+      await mutate((key) => typeof key === 'string' && (
+        key.startsWith('/api/small-group') ||
+        key.startsWith('/api/prayer-requests') ||
+        key.startsWith('/api/posts')
+      ), undefined, { revalidate: false });
+      router.refresh();
       setForm((prev) => ({
         ...prev,
         currentPassword: '',
@@ -133,7 +153,9 @@ export default function ProfileClient({ user, basePath, profile, deletionRequest
             {user.name.charAt(0)}
           </div>
           <div>
-            <div className="font-semibold text-stone-900">{user.name}</div>
+            <div className="font-semibold text-stone-900">
+              {user.name}{birthYearTag(savedBirth.birthDate, savedBirth.isEarlyBirth)}
+            </div>
             <Badge variant="primary">{roleLabel}</Badge>
           </div>
         </div>
@@ -171,6 +193,12 @@ export default function ProfileClient({ user, basePath, profile, deletionRequest
               type="date"
               value={form.birthDate}
               onChange={(e) => setForm((prev) => ({ ...prev, birthDate: e.target.value }))}
+            />
+            <EarlyBirthCheckbox
+              checked={form.isEarlyBirth}
+              onChange={(isEarlyBirth) => setForm((prev) => ({ ...prev, isEarlyBirth }))}
+              name={user.name}
+              birthDate={form.birthDate}
             />
             <Input
               label="전화번호"

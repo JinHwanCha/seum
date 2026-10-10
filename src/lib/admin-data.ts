@@ -68,7 +68,7 @@ export async function getMembers(
   let query = supabase
     .from('users')
     .select(
-      'id, name, birth_date, phone, role, minister_rank, village_id, cell_id, is_approved, is_admin, is_graduated, graduated_at, created_at'
+      'id, name, birth_date, is_early_birth, phone, role, minister_rank, village_id, cell_id, is_approved, is_admin, is_graduated, graduated_at, created_at'
     )
     .eq('department_id', session.departmentId)
     .order('created_at', { ascending: false });

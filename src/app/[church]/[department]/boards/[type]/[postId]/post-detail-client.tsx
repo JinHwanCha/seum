@@ -90,7 +90,7 @@ export default function PostDetailClient({
               )}
               <span className="font-medium text-stone-700 whitespace-nowrap">
                 {post.author?.name}
-                {birthYearTag((post.author as any)?.birth_date)}
+                {birthYearTag(post.author?.birth_date, post.author?.is_early_birth)}
               </span>
               <span className="whitespace-nowrap">{formatDateTime(post.created_at)}</span>
               {post.updated_at !== post.created_at && <span className="whitespace-nowrap">(수정됨)</span>}

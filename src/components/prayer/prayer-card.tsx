@@ -67,7 +67,7 @@ export function PrayerCard({ prayer, session, weekStart, onUpdated }: PrayerCard
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="font-medium text-stone-900 text-sm">
             {user.name}
-            {birthYearTag((user as any).birth_date)}
+            {birthYearTag(user.birth_date, user.is_early_birth)}
           </span>
           <Badge variant={roleBadgeVariant()}>{getRoleDisplay()}</Badge>
           {prayer.is_cell_only && (

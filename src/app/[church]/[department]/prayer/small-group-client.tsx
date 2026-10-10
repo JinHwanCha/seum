@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { PrayerForm } from '@/components/prayer/prayer-form';
@@ -23,17 +23,14 @@ import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
 import useSWR, { useSWRConfig } from 'swr';
 import type { PrayerRequest, Attendance } from '@/lib/types';
-
-const birthYearLabel = (birthDate?: string | null) => {
-  if (!birthDate) return '';
-  return ` (${birthDate.substring(2, 4)})`;
-};
+import { birthYearTag } from '@/lib/utils';
 
 interface CellMember {
   id: string;
   name: string;
   role: string;
   birth_date?: string | null;
+  is_early_birth?: boolean;
 }
 
 interface CellInfo {
@@ -110,8 +107,10 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       revalidateOnMount: !isInitialWeek || !initialData,
     }
   );
-  const attendanceMap: Record<string, Attendance> =
-    (activeTab === 'attendance' ? attendanceData?.attendanceMap : swrData?.attendanceMap) ?? {};
+  const attendanceMap = useMemo<Record<string, Attendance>>(
+    () => (activeTab === 'attendance' ? attendanceData?.attendanceMap : swrData?.attendanceMap) ?? {},
+    [activeTab, attendanceData?.attendanceMap, swrData?.attendanceMap]
+  );
 
   useEffect(() => {
     if (!user || activeTab !== 'attendance' || !attendanceData) return;
@@ -360,7 +359,8 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         id: user.userId,
                         name: me?.name ?? user.name,
                         role: me?.role ?? user.role,
-                        birth_date: me?.birth_date ?? null,
+                        birth_date: me?.birth_date ?? swrData?.currentUser?.birth_date ?? null,
+                        is_early_birth: me?.is_early_birth ?? swrData?.currentUser?.is_early_birth ?? false,
                         cell_id: effectiveCellId,
                         minister_rank: null,
                       },
@@ -404,7 +404,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                     {leader && (
                       <div className="flex items-center gap-2 mb-3 pb-3 border-b border-stone-100">
                         <Crown size={14} className="text-amber-500" />
-                        <span className="text-sm font-medium text-stone-900">{leader.name}{birthYearLabel((members.find(m => m.role === 'cell_leader') || {} as any).birth_date)}</span>
+                        <span className="text-sm font-medium text-stone-900">{leader.name}{birthYearTag(leader.birth_date, leader.is_early_birth)}</span>
                         <Badge variant="success">목자</Badge>
                       </div>
                     )}
@@ -416,7 +416,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                         .map((m) => (
                           <div key={m.id} className="flex items-center gap-2 text-sm">
                             <User size={14} className="text-stone-400" />
-                            <span className="text-stone-700">{m.name}{birthYearLabel(m.birth_date)}</span>
+                            <span className="text-stone-700">{m.name}{birthYearTag(m.birth_date, m.is_early_birth)}</span>
                             {m.id === user.userId && (
                               <span className="text-xs text-primary-500">(나)</span>
                             )}
@@ -473,7 +473,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
                               className="warm-surface rounded-xl border border-stone-100 p-4 opacity-60"
                             >
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-stone-900 text-sm">{m.name}{birthYearLabel(m.birth_date)}</span>
+                                <span className="font-medium text-stone-900 text-sm">{m.name}{birthYearTag(m.birth_date, m.is_early_birth)}</span>
                                 <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
                                   {ROLE_LABELS_DEFAULT[m.role]}
                                 </Badge>

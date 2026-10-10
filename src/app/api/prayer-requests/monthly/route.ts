@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   const [membersResult, prayersResult] = await Promise.all([
     supabase
       .from('users')
-      .select('id, name, role, birth_date')
+      .select('id, name, role, birth_date, is_early_birth')
       .eq('cell_id', cellId)
       .eq('is_approved', true)
       .eq('is_graduated', false)

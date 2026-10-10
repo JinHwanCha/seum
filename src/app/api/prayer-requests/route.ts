@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const [prayersResult, orgResult, cellLeadersResult, bureauResult] = await Promise.all([
     supabase
       .from('prayer_requests')
-      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id)')
+      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date, is_early_birth)')
       .eq('department_id', session.departmentId)
       .eq('week_start', weekStart)
       .order('created_at', { ascending: true }),

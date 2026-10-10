@@ -57,6 +57,7 @@ export interface User {
   id: string;
   name: string;
   birth_date: string | null;
+  is_early_birth: boolean;
   phone: string | null;
   password_hash?: string;
   church_id: string;

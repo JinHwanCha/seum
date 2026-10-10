@@ -62,7 +62,7 @@ export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
             )}
             <span className="font-medium text-stone-600 whitespace-nowrap">
               {post.author?.name}
-              {birthYearTag((post.author as any)?.birth_date)}
+              {birthYearTag(post.author?.birth_date, post.author?.is_early_birth)}
             </span>
             <span className="whitespace-nowrap">{formatDateTime(post.created_at)}</span>
           </div>

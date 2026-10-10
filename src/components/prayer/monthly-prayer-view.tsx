@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { ChevronLeft, ChevronRight, Crown, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
+import { birthYearTag } from '@/lib/utils';
 import {
   formatMonthKey,
   formatMonthLabel,
@@ -19,6 +20,7 @@ interface MonthlyMember {
   name: string;
   role: string;
   birth_date?: string | null;
+  is_early_birth?: boolean;
 }
 
 interface MonthlyPrayer {
@@ -29,11 +31,6 @@ interface MonthlyPrayer {
   images: string[] | null;
   is_cell_only: boolean;
 }
-
-const birthYearLabel = (birthDate?: string | null) => {
-  if (!birthDate) return '';
-  return ` (${birthDate.substring(2, 4)})`;
-};
 
 export function MonthlyPrayerView({
   onImageClick,
@@ -108,7 +105,7 @@ export function MonthlyPrayerView({
                   )}
                   <span className="text-sm font-semibold text-stone-900">
                     {m.name}
-                    {birthYearLabel(m.birth_date)}
+                    {birthYearTag(m.birth_date, m.is_early_birth)}
                   </span>
                   <Badge variant={m.role === 'cell_leader' ? 'success' : 'default'}>
                     {ROLE_LABELS_DEFAULT[m.role]}

@@ -16,7 +16,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   // 항상 DB에서 최신 cell/village를 조회한다.
   const { data: freshUser } = await supabase
     .from('users')
-    .select('role, cell_id, village_id')
+    .select('role, cell_id, village_id, birth_date, is_early_birth')
     .eq('id', session.userId)
     .single();
 
@@ -33,11 +33,11 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       ? supabase.from('villages').select('name, is_new_member_team').eq('id', villageId).single()
       : Promise.resolve({ data: null }),
     cellId
-      ? supabase.from('users').select('id, name, role, minister_rank, phone, birth_date').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
+      ? supabase.from('users').select('id, name, role, minister_rank, phone, birth_date, is_early_birth').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
       : Promise.resolve({ data: [] }),
     supabase
       .from('prayer_requests')
-      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date)')
+      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date, is_early_birth)')
       .eq('department_id', session.departmentId)
       .eq('week_start', weekStart)
       .order('created_at', { ascending: true }),
@@ -59,7 +59,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
           .single(),
         supabase
           .from('users')
-          .select('id, name, role, cell_id, village_id, birth_date')
+          .select('id, name, role, cell_id, village_id, birth_date, is_early_birth')
           .eq('department_id', session.departmentId)
           .eq('is_approved', true)
           .eq('is_graduated', false),
@@ -67,7 +67,7 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     : (role === 'village_leader' || role === 'cell_leader' || role === 'cell_member') && villageId
     ? [
         supabase.from('cells').select('id, village_id, name, sort_order').eq('village_id', villageId).order('sort_order'),
-        supabase.from('users').select('id, name, role, cell_id, birth_date').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
+        supabase.from('users').select('id, name, role, cell_id, birth_date, is_early_birth').eq('village_id', villageId).eq('is_approved', true).eq('is_graduated', false),
       ]
     : [];
 
@@ -84,7 +84,12 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
   const isNewFamilyTeam = !!villageResult.data?.is_new_member_team;
   let members = ((cellMembersResult.data || []) as any[]).sort(byLeaderThenName);
   const leader = members.find((m: any) => m.role === 'cell_leader');
-  let leaderInfo = leader ? { id: leader.id, name: leader.name } : null;
+  let leaderInfo = leader ? {
+    id: leader.id,
+    name: leader.name,
+    birth_date: leader.birth_date,
+    is_early_birth: leader.is_early_birth,
+  } : null;
 
   const allDeptPrayers = (deptPrayersResult.data || []) as any[];
   const allDeptAttendance = (deptAttendanceResult.data || []) as any[];
@@ -237,7 +242,12 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
         .filter((u: any) => u.role === 'cell_leader')
         .sort(byLeaderThenName);
       const me = allVillageMembers.find((u: any) => u.id === session.userId);
-      if (me) leaderInfo = { id: me.id, name: me.name };
+      if (me) leaderInfo = {
+        id: me.id,
+        name: me.name,
+        birth_date: me.birth_date,
+        is_early_birth: me.is_early_birth,
+      };
       cell = {
         id: cellId || `village-leaders-${villageId}`,
         name: villageName ? `${villageName} 리더` : '마을 리더',
@@ -259,6 +269,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       cellId,
       villageId,
       isNewFamilyTeam,
+      birth_date: freshUser?.birth_date ?? null,
+      is_early_birth: freshUser?.is_early_birth ?? false,
     },
   };
 }

@@ -17,7 +17,7 @@ export async function GET(
     .from('posts')
     .select(`
       *,
-      author:users(id, name, role, minister_rank),
+      author:users(id, name, role, minister_rank, birth_date, is_early_birth),
       category:board_categories(id, name),
       village:villages(id, name)
     `)
@@ -47,7 +47,7 @@ export async function GET(
   const [{ data: comments }, { data: reactions }] = await Promise.all([
     supabase
       .from('comments')
-      .select('*, author:users(id, name, role, minister_rank)')
+      .select('*, author:users(id, name, role, minister_rank, birth_date, is_early_birth)')
       .eq('post_id', params.id)
       .order('created_at', { ascending: true }),
     supabase

@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, birthDate, phone, departmentId, password } = body;
+    const { name, birthDate, isEarlyBirth, phone, departmentId, password } = body;
     const churchName = body.churchName?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
     const pastorName = body.pastorName?.trim().replace(/^['‘’“”"]+|['‘’“”"]+$/g, '');
 
@@ -53,6 +53,10 @@ export async function POST(request: Request) {
 
     if (password.length < 4) {
       return NextResponse.json({ error: '비밀번호는 4자 이상이어야 합니다.' }, { status: 400 });
+    }
+
+    if (isEarlyBirth !== undefined && typeof isEarlyBirth !== 'boolean') {
+      return NextResponse.json({ error: '빠른 년생 여부는 체크 값으로 입력해주세요.' }, { status: 400 });
     }
 
     const supabase = createClient();
@@ -117,6 +121,7 @@ export async function POST(request: Request) {
     const { error: insertError } = await supabase.from('users').insert({
       name,
       birth_date: birthDate || null,
+      is_early_birth: isEarlyBirth ?? false,
       phone,
       password_hash: passwordHash,
       church_id: church.id,

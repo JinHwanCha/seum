@@ -12,11 +12,13 @@ export default async function ProfilePage({ params }: PageProps) {
   if (!session) redirect('/login');
 
   const supabase = createClient();
-  const { data: user } = await supabase
+  const { data: user, error: profileError } = await supabase
     .from('users')
-    .select('birth_date, phone, village_id, cell_id')
+    .select('birth_date, is_early_birth, phone, village_id, cell_id')
     .eq('id', session.userId)
     .single();
+
+  if (profileError) throw profileError;
 
   // village/cell 이름 병렬 조회
   const [villageResult, cellResult] = await Promise.all([
@@ -30,6 +32,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const profile = {
     birth_date: user?.birth_date ?? null,
+    is_early_birth: user?.is_early_birth ?? false,
     phone: user?.phone ?? null,
     village_name: villageResult.data?.name ?? null,
     cell_name: cellResult.data?.name ?? null,
