@@ -192,11 +192,12 @@ test('group cache keys isolate users, assignments, week and mode and share dupli
   await one;
 });
 
-test('compact board skeleton has just two cards and no pulsing animation', () => {
+test('board skeleton restores three rounded cards and respects reduced motion', () => {
   const skeleton = load('src\\components\\board\\board-skeleton.tsx', {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
   }).BoardSkeleton();
-  assert.equal(skeleton.props.children[0].length, 2);
+  assert.equal(skeleton.props.children[0].length, 3);
   assert.equal(skeleton.props['aria-busy'], 'true');
-  assert.equal(JSON.stringify(skeleton).includes('animate-pulse'), false);
+  assert.equal(skeleton.props.children[0][0].props.className.includes('h-20 rounded-xl'), true);
+  assert.equal(skeleton.props.children[0][0].props.className.includes('motion-reduce:animate-none'), true);
 });

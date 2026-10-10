@@ -30,13 +30,15 @@ test('route loading boundaries keep streaming but use the nonvisual pending stat
   }
 });
 
-test('page UI has no pulse placeholders and only the requested compact board skeleton', () => {
+test('page UI only animates the requested board skeleton', () => {
   function visit(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(file);
       else if (file.endsWith('.tsx')) {
-        assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /animate-pulse/, file);
+        if (entry.name !== 'board-skeleton.tsx') {
+          assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /animate-pulse/, file);
+        }
         if (!['board-skeleton.tsx', 'cached-board.tsx'].includes(entry.name)) {
           assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\b\w*Skeleton\b/, file);
         }

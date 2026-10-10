@@ -515,7 +515,8 @@ Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용
 - 일반 회원의 기도/출석은 현재 마을·소그룹 회원 및 본인 ID로 범위를 제한하고, 사역자의 부서 전체 조회는 유지합니다. 기존 다른 소그룹의 소그룹 전용 기도제목 차단·마을장 리더 그룹·주중예배 자가체크·나무 동작은 유지합니다.
 - 소그룹 SWR 키는 사용자/교회/부서/세션/현재 배정/주차/조회 모드를 포함합니다. 다른 주차/소속의 데이터를 잠깐 잘못 표시하지 않도록 `keepPreviousData=false`를 사용합니다. 요청은 30초 dedupe, context/현재 조직은 60초 및 화면 focus 때 재검증합니다. 같은 진행 중 요청은 Promise를 공유합니다.
 - 출석 이전/다음 주차를 탭 진입만으로 모두 가져오던 사전 요청은 제거했습니다. 실제 선택한 주차만 조회합니다. 나무·월간기도·새가족·마을기도 UI는 dynamic import로 해당 화면을 열 때 로드합니다.
-- 게시판은 캐시 없는 첫 조회에만 [작은 스켈레톤](src/components/board/board-skeleton.tsx) 두 개를 표시합니다. 회색 줄 두 개의 낮은 카드만 사용하며 반짝임/회전/전체 화면 배너는 없습니다. 유효 캐시가 있거나 백그라운드 갱신 중에는 표시하지 않습니다.
+- 게시판은 캐시 없는 첫 조회에만 [스켈레톤](src/components/board/board-skeleton.tsx)을 표시합니다. 이전 스타일의 높이 80px 둥근 회색 카드 3개와 pulse 효과를 사용하고, 기기의 reduced-motion 설정에서는 애니메이션을 끕니다. 유효 캐시가 있거나 백그라운드 갱신 중에는 표시하지 않습니다. 스켈레톤을 보여주기 위한 인위적인 최소 대기 시간은 없습니다.
+- 브라우저의 `[Intervention] Images loaded lazily and replaced with placeholders` 메시지는 `loading="lazy"` 이미지의 로딩/이벤트 지연 안내입니다. React 스켈레톤이나 API 오류가 아니며, 이 안내만 없애려고 목록의 모든 이미지를 eager 로딩하지 않습니다.
 - 검증: `node --test tests/prayer-loading.test.cjs tests/board-cache.test.cjs tests/page-opening.test.cjs tests/hydration-cache.test.cjs tests/group-selection.test.cjs`. 처음에 소속 외 heavy query 없음, 탭별 mode, 불필요한 기도/출석 쿼리 미실행, 사용자 격리, 최신 null 소속, 간단한 첫 목록 스켈레톤을 검사합니다.
 - 이번 변경은 웹·API 코드이며 운영 배포 후 원격 앱에 적용됩니다. APK/패키지/DB 스키마/환경변수 변경은 없습니다. 나눔지 외부 Google Sheet 응답 자체와 첫 탭의 실제 DB 응답 시간을 없앤 것은 아니며 실기기 속도 측정은 별도입니다.
 - 운영 빌드 비교에서 `/prayer` 페이지 번들은 25kB → 20.1kB, 표시된 First Load JS는 141kB → 132kB로 줄었습니다. 이는 빌드 산출물 크기 비교이며 네트워크/DB/실기기 전환 시간 수치는 아닙니다.
