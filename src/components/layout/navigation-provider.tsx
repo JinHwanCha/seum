@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useTransition, type ComponentProps, type ReactNode } from 'react';
+import { useBoardPrefetch } from '@/components/board/use-board-prefetch';
 
 const NavigationContext = createContext<((href: string, replace: boolean) => void) | null>(null);
 
@@ -18,9 +19,14 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function NavigationLink({ onClick, ...props }: ComponentProps<typeof Link>) {
+export function NavigationLink({ onClick, onMouseEnter, onFocus, onTouchStart, ...props }: ComponentProps<typeof Link>) {
   const navigate = useContext(NavigationContext);
-  return <Link {...props} onClick={(event) => {
+  const prefetch = useBoardPrefetch();
+  return <Link {...props}
+    onMouseEnter={(event) => { onMouseEnter?.(event); prefetch(props.href); }}
+    onFocus={(event) => { onFocus?.(event); prefetch(props.href); }}
+    onTouchStart={(event) => { onTouchStart?.(event); prefetch(props.href); }}
+    onClick={(event) => {
     onClick?.(event);
     if (!navigate || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
         event.shiftKey || event.altKey || props.target || props.download || props.scroll === false ||
@@ -28,6 +34,7 @@ export function NavigationLink({ onClick, ...props }: ComponentProps<typeof Link
     event.preventDefault();
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (props.href === current) return;
+    prefetch(props.href);
     navigate(props.href, Boolean(props.replace));
   }} />;
 }

@@ -10,14 +10,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readInitialTheme(): ThemeId {
-  if (typeof document !== 'undefined') {
-    const attr = document.documentElement.getAttribute('data-theme');
-    if (isValidTheme(attr)) return attr;
-  }
-  return DEFAULT_THEME;
-}
-
 // 모바일 상태표시줄(theme-color) 색을 현재 테마 배경에 맞춘다.
 function updateThemeColorMeta(theme: ThemeId) {
   if (typeof document === 'undefined') return;
@@ -31,7 +23,7 @@ function updateThemeColorMeta(theme: ThemeId) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>(readInitialTheme);
+  const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME);
   const syncedFromServer = useRef(false);
 
   const applyTheme = useCallback((next: ThemeId, persist: boolean) => {

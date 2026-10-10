@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import useSWR from 'swr';
 import { useAuth } from '@/hooks/use-auth';
-import { boardCacheKey, boardCacheUsable, fetchBoard } from '@/lib/board-cache';
+import { boardCacheKey, fetchBoard } from '@/lib/board-cache';
 import { PostList } from '@/components/board/post-list';
 import { PagePending } from '@/components/ui/page-pending';
 
@@ -29,7 +29,9 @@ export function CachedBoard({ boardType }: { boardType: string }) {
     };
   }, [mutate]);
 
-  const visible = boardCacheUsable(data) ? data : undefined;
+  // Once hydrated, a short stale snapshot remains visible while fresh data loads.
+  const visible = data && data.fetchedAt > 0 && Date.now() >= data.fetchedAt &&
+    Date.now() - data.fetchedAt < 30 * 60 * 1000 ? data : undefined;
   return (
     <div>
       {error && <p role="alert" className="mb-3 text-sm text-red-600">

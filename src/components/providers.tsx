@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { SWRConfig } from 'swr';
+import { useEffect, useState } from 'react';
+import { SWRConfig, useSWRConfig } from 'swr';
+import { readStoredCache } from '@/lib/persistent-cache';
 import { AuthProvider } from '@/hooks/use-auth';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import type { SessionPayload } from '@/lib/types';
@@ -20,33 +21,45 @@ export const SWR_CACHE_PREFIX = 'seum-swr-cache:';
 
 // SWR 캐시를 localStorage 에 유지해 재방문/새로고침 시 이전 데이터를 즉시 렌더한다.
 // 이후 백그라운드 재검증으로 최신값을 반영한다. 계정이 섞이지 않도록 사용자별 키를 쓴다.
-function createLocalStorageProvider(cacheKey: string) {
+function createLocalStorageProvider() {
   // SWR Cache 는 값 타입이 any 라 map 도 any 로 맞춘다.
   return (): Map<string, any> => {
     const map = new Map<string, any>();
-    if (typeof window === 'undefined') return map;
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      if (raw) {
-        for (const [k, v] of JSON.parse(raw) as [string, any][]) map.set(k, v);
-      }
-    } catch {
-      // 손상된 캐시는 무시
-    }
-    const save = () => {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(Array.from(map.entries())));
-      } catch {
-        // 용량 초과 등은 무시
-      }
-    };
-    window.addEventListener('beforeunload', save);
-    // 모바일은 beforeunload 가 안 뜨는 경우가 많아 백그라운드 진입 시에도 저장한다.
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') save();
-    });
     return map;
   };
+}
+
+function PersistentCache({ userId }: { userId: string }) {
+  const { cache, mutate } = useSWRConfig();
+  useEffect(() => {
+    const cacheKey = `${SWR_CACHE_PREFIX}${userId}`;
+    try {
+      for (const entry of readStoredCache(localStorage.getItem(cacheKey))) {
+        if (cache.get(entry.key)?.data !== undefined) continue;
+        // Restore through SWR after hydration, preserving keys for later invalidation.
+        if (entry.originalKey !== undefined) {
+          const snapshot = { ...cache.get(entry.key), _k: entry.originalKey };
+          cache.set(entry.key, snapshot);
+        }
+        mutate(entry.key, entry.data, { revalidate: false }).catch((error: unknown) =>
+          console.error('Persisted cache restore failed:', error));
+      }
+    } catch (error) {
+      console.error('Persisted cache could not be restored:', error);
+    }
+    const save = () => {
+      try { localStorage.setItem(cacheKey, JSON.stringify(Array.from(cache.keys()).map((key) => [key, cache.get(key)]))); }
+      catch (error) { console.error('Persisted cache save failed:', error); }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') save(); };
+    window.addEventListener('beforeunload', save);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', save);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [cache, mutate, userId]);
+  return null;
 }
 
 export function Providers({
@@ -58,7 +71,7 @@ export function Providers({
 }) {
   // provider 는 최초 1회만 초기화되므로 함수 정체성을 고정한다.
   const [provider] = useState(() =>
-    initialUser ? createLocalStorageProvider(`${SWR_CACHE_PREFIX}${initialUser.userId}`) : undefined
+    createLocalStorageProvider()
   );
 
   return (
@@ -71,6 +84,7 @@ export function Providers({
         provider,
       }}
     >
+      {initialUser && <PersistentCache userId={initialUser.userId} />}
       <ThemeProvider>
         <NativeSystemBars />
         <AuthProvider initialUser={initialUser}>

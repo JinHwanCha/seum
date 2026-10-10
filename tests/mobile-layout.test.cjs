@@ -101,6 +101,7 @@ test('navigation handles ordinary internal taps but preserves modified and exter
     },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/link': 'Link',
     'next/navigation': { useRouter: () => router },
+    '@/components/board/use-board-prefetch': { useBoardPrefetch: () => () => {} },
   }, {}, { window: { location: { pathname: '/current', search: '', hash: '' } } });
   context = exports.NavigationProvider({ children: null }).props.value;
   assert.equal(exports.NavigationProvider({ children: 'page' }).props.children, 'page', 'navigation must not add a flashing progress banner');

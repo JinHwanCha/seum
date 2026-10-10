@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         {/* 이미지가 저장된 Supabase Storage 로의 연결(DNS/TLS)을 미리 열어 다운로드를 앞당긴다 */}
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (

@@ -30,7 +30,18 @@ export function notifyBoardChanged() {
   }
 }
 
-export async function fetchBoard(key: readonly string[]): Promise<CachedBoardPayload> {
+const pendingBoardRequests = new Map<string, Promise<CachedBoardPayload>>();
+
+export function fetchBoard(key: readonly string[]): Promise<CachedBoardPayload> {
+  const scope = JSON.stringify(key);
+  const pending = pendingBoardRequests.get(scope);
+  if (pending) return pending;
+  const request = requestBoard(key).finally(() => pendingBoardRequests.delete(scope));
+  pendingBoardRequests.set(scope, request);
+  return request;
+}
+
+async function requestBoard(key: readonly string[]): Promise<CachedBoardPayload> {
   const response = await fetch(key[key.length - 1], { cache: 'no-store' });
   if (!response.headers.get('content-type')?.includes('application/json')) {
     throw new Error('게시판에 연결하지 못했습니다. 로그인 상태를 확인해주세요.');
