@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { useAuth } from '@/hooks/use-auth';
 import { boardCacheKey, fetchBoard } from '@/lib/board-cache';
 import { PostList } from '@/components/board/post-list';
-import { PagePending } from '@/components/ui/page-pending';
+import { BoardSkeleton } from '@/components/board/board-skeleton';
 
 export function CachedBoard({ boardType }: { boardType: string }) {
   const { user } = useAuth();
@@ -45,7 +45,7 @@ export function CachedBoard({ boardType }: { boardType: string }) {
           villages={visible.villages} categories={visible.categories} villageMap={visible.villageMap}
           initialHasMore={visible.hasMore} />
       ) : !error ? (
-        <PagePending />
+        <BoardSkeleton />
       ) : null}
     </div>
   );

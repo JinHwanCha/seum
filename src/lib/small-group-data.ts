@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase';
 import type { SessionPayload } from '@/lib/types';
+import { getSmallGroupContext, getSmallGroupUserIds } from '@/lib/small-group-context';
 
 // 멤버 정렬: 목자 우선, 그다음 이름순. 서버에서만 정렬해 SSR/CSR 순서를 일치시킨다
 // (localeCompare 결과가 Node/브라우저 간 다를 수 있어 클라이언트 정렬은 hydration 불일치를 유발).
@@ -9,43 +10,41 @@ const byLeaderThenName = (a: any, b: any) => {
   return (a.name || '').localeCompare(b.name || '', 'ko');
 };
 
-export async function getSmallGroupData(session: SessionPayload, weekStart: string) {
+export async function getSmallGroupData(session: SessionPayload, weekStart: string, options: {
+  includePrayers?: boolean; includeAttendance?: boolean;
+} = {}) {
   const supabase = createClient();
 
   // 세션 JWT는 로그인 시점 스냅샷이라 관리자 배정 변경이 즉시 반영되지 않음.
   // 항상 DB에서 최신 cell/village를 조회한다.
-  const { data: freshUser } = await supabase
-    .from('users')
-    .select('role, cell_id, village_id, birth_date, is_early_birth')
-    .eq('id', session.userId)
-    .single();
-
-  const cellId = freshUser?.cell_id ?? session.cellId ?? null;
-  const villageId = freshUser?.village_id ?? session.villageId ?? null;
-  const role = (freshUser?.role as string) ?? session.role;
+  const context = await getSmallGroupContext(session);
+  const cellId = context.currentUser.cellId;
+  const villageId = context.currentUser.villageId;
+  const role = context.currentUser.role;
+  const includePrayers = options.includePrayers !== false;
+  const includeAttendance = options.includeAttendance !== false;
+  const userIds = includePrayers || includeAttendance ? await getSmallGroupUserIds(session, context) : null;
+  let prayerQuery = supabase.from('prayer_requests')
+    .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date, is_early_birth)')
+    .eq('department_id', session.departmentId).eq('week_start', weekStart).order('created_at');
+  let attendanceQuery = supabase.from('attendance').select('*')
+    .eq('department_id', session.departmentId).eq('week_start', weekStart);
+  if (userIds) {
+    prayerQuery = prayerQuery.in('user_id', userIds);
+    attendanceQuery = attendanceQuery.in('user_id', userIds);
+  }
 
   // 모든 쿼리(base + role별)를 동시에 시작해 워터폴 제거
   const basePromises = [
     cellId
       ? supabase.from('cells').select('id, name, village_id').eq('id', cellId).single()
       : Promise.resolve({ data: null }),
-    villageId
-      ? supabase.from('villages').select('name, is_new_member_team').eq('id', villageId).single()
-      : Promise.resolve({ data: null }),
+    Promise.resolve({ data: { name: context.villageName, is_new_member_team: context.currentUser.isNewFamilyTeam } }),
     cellId
       ? supabase.from('users').select('id, name, role, minister_rank, phone, birth_date, is_early_birth').eq('cell_id', cellId).eq('is_approved', true).eq('is_graduated', false).order('role', { ascending: true })
       : Promise.resolve({ data: [] }),
-    supabase
-      .from('prayer_requests')
-      .select('*, user:users(id, name, role, minister_rank, village_id, cell_id, birth_date, is_early_birth)')
-      .eq('department_id', session.departmentId)
-      .eq('week_start', weekStart)
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('attendance')
-      .select('*')
-      .eq('department_id', session.departmentId)
-      .eq('week_start', weekStart),
+    includePrayers ? prayerQuery : Promise.resolve({ data: [] }),
+    includeAttendance ? attendanceQuery : Promise.resolve({ data: [] }),
   ] as const;
 
   // role별 추가 쿼리도 동시에 시작
@@ -76,6 +75,9 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
     Promise.all(basePromises),
     Promise.all(rolePromises),
   ]);
+  for (const result of [...baseResults, ...roleResults]) {
+    if ('error' in result && result.error) throw result.error;
+  }
 
   const [cellResult, villageResult, cellMembersResult, deptPrayersResult, deptAttendanceResult] = baseResults;
 
@@ -269,8 +271,8 @@ export async function getSmallGroupData(session: SessionPayload, weekStart: stri
       cellId,
       villageId,
       isNewFamilyTeam,
-      birth_date: freshUser?.birth_date ?? null,
-      is_early_birth: freshUser?.is_early_birth ?? false,
+      birth_date: context.currentUser.birth_date ?? null,
+      is_early_birth: context.currentUser.is_early_birth ?? false,
     },
   };
 }

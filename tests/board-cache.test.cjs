@@ -50,7 +50,7 @@ test('cached board renders existing posts while network revalidation is pending'
     '@/hooks/use-auth': { useAuth: () => ({ user: session }) },
     '@/lib/board-cache': cache,
     '@/components/board/post-list': { PostList: 'PostList' },
-    '@/components/ui/page-pending': { PagePending: 'PagePending' },
+    '@/components/board/board-skeleton': { BoardSkeleton: 'BoardSkeleton' },
   }, {}, { window: { addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: () => {} } }).CachedBoard;
   let tree = component({ boardType: 'notice' });
   assert.equal(tree.props.children[1].type, 'PostList');

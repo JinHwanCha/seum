@@ -30,20 +30,23 @@ test('route loading boundaries keep streaming but use the nonvisual pending stat
   }
 });
 
-test('page UI no longer contains skeleton or pulse placeholders', () => {
+test('page UI has no pulse placeholders and only the requested compact board skeleton', () => {
   function visit(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(file);
       else if (file.endsWith('.tsx')) {
-        assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /animate-pulse|\b\w*Skeleton\b/, file);
+        assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /animate-pulse/, file);
+        if (!['board-skeleton.tsx', 'cached-board.tsx'].includes(entry.name)) {
+          assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\b\w*Skeleton\b/, file);
+        }
       }
     }
   }
   visit(path.join(root, 'src'));
 });
 
-test('board initial load is nonvisual, cached posts stay visible, and errors remain visible', () => {
+test('board initial load uses the compact skeleton, cached posts stay visible, and errors remain visible', () => {
   let data;
   let error;
   const board = load('src\\components\\board\\cached-board.tsx', {
@@ -55,10 +58,10 @@ test('board initial load is nonvisual, cached posts stay visible, and errors rem
     } }) },
     '@/lib/board-cache': load('src\\lib\\board-cache.ts'),
     '@/components/board/post-list': { PostList: 'PostList' },
-    '@/components/ui/page-pending': { PagePending: 'PagePending' },
+    '@/components/board/board-skeleton': { BoardSkeleton: 'BoardSkeleton' },
   }).CachedBoard;
   let tree = board({ boardType: 'notice' });
-  assert.equal(tree.props.children[1].type, 'PagePending');
+  assert.equal(tree.props.children[1].type, 'BoardSkeleton');
   data = { posts: [{ id: 'post' }], villages: [], categories: [], villageMap: {}, hasMore: false, fetchedAt: Date.now() };
   tree = board({ boardType: 'notice' });
   assert.equal(tree.props.children[1].type, 'PostList');

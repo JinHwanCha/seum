@@ -1,29 +1,33 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/use-auth';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { PrayerForm } from '@/components/prayer/prayer-form';
 import { PrayerCard } from '@/components/prayer/prayer-card';
 import { AttendanceCheck } from '@/components/attendance/attendance-check';
-import { SpecialWorshipCheck } from '@/components/attendance/special-worship-check';
-import { NewFamilyManager } from '@/components/attendance/new-family-manager';
 import { Tabs } from '@/components/ui/tabs';
 import { PillTabs } from '@/components/ui/pill-tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
-import { TreeGrowth } from '@/components/prayer/tree-growth';
-import { TreeOverview } from '@/components/prayer/tree-overview';
 import { SharingSheet } from '@/components/prayer/sharing-sheet';
-import { MonthlyPrayerView } from '@/components/prayer/monthly-prayer-view';
-import { VillagePrayerCells } from '@/components/prayer/village-prayer-cells';
-import { getCurrentWeekSunday, formatWeekDate, getPreviousWeek, getNextWeek, isFutureWeek } from '@/lib/date-utils';
+import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
 import { ROLE_LABELS_DEFAULT } from '@/lib/constants';
 import { Users, Crown, User, ChevronDown, ChevronRight } from 'lucide-react';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import type { PrayerRequest, Attendance } from '@/lib/types';
 import { birthYearTag } from '@/lib/utils';
+import { smallGroupCacheKey, fetchSmallGroup } from '@/lib/small-group-cache';
+import { PagePending } from '@/components/ui/page-pending';
+
+const SpecialWorshipCheck = dynamic(() => import('@/components/attendance/special-worship-check').then((module) => module.SpecialWorshipCheck));
+const NewFamilyManager = dynamic(() => import('@/components/attendance/new-family-manager').then((module) => module.NewFamilyManager));
+const TreeGrowth = dynamic(() => import('@/components/prayer/tree-growth').then((module) => module.TreeGrowth));
+const TreeOverview = dynamic(() => import('@/components/prayer/tree-overview').then((module) => module.TreeOverview));
+const MonthlyPrayerView = dynamic(() => import('@/components/prayer/monthly-prayer-view').then((module) => module.MonthlyPrayerView));
+const VillagePrayerCells = dynamic(() => import('@/components/prayer/village-prayer-cells').then((module) => module.VillagePrayerCells));
 
 interface CellMember {
   id: string;
@@ -52,8 +56,6 @@ interface VillageGroup {
 
 export default function SmallGroupClient({ initialData }: { initialData?: any }) {
   const { user } = useAuth();
-  const { cache, mutate: mutateCache } = useSWRConfig();
-  const prefetchingWeeks = useRef(new Set<string>());
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('sharing');
@@ -83,28 +85,43 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const initialWeekStart = useRef(formatWeekDate(getCurrentWeekSunday())).current;
   const isInitialWeek = weekStart === initialWeekStart;
   const groupWeekStart = activeTab === 'attendance' ? initialWeekStart : weekStart;
-  const { data: swrData, isLoading, mutate } = useSWR(
-    `/api/small-group?weekStart=${groupWeekStart}`,
+  const { data: contextData, error: contextError, mutate: mutateContext } = useSWR(
+    user ? smallGroupCacheKey(user, '/api/small-group?contextOnly=true') : null,
+    fetchSmallGroup, { keepPreviousData: false, revalidateOnFocus: true, dedupingInterval: 30000, refreshInterval: 60000 }
+  );
+  const assignment = contextData ? JSON.stringify(contextData.currentUser) : '';
+  const mode = activeTab === 'prayer' ? 'prayer' : 'structure';
+  const { data: swrData, error: groupError, isLoading, mutate } = useSWR(
+    user && contextData && activeTab !== 'sharing'
+      ? smallGroupCacheKey(user, `/api/small-group?weekStart=${groupWeekStart}&mode=${mode}`, assignment)
+      : null,
+    fetchSmallGroup,
     {
       fallbackData: groupWeekStart === initialWeekStart ? initialData : undefined,
-      keepPreviousData: true,
+      keepPreviousData: false,
       // 초기 주차는 서버에서 이미 최신 데이터를 받았으므로 재검증 생략
       revalidateOnMount: groupWeekStart !== initialWeekStart || !initialData,
+      revalidateOnFocus: true,
+      dedupingInterval: 30000,
+      refreshInterval: 60000,
     }
   );
 
   const { data: attendanceData, error: attendanceError, mutate: mutateAttendance } = useSWR<{
     attendanceMap: Record<string, Attendance>;
   }>(
-    activeTab === 'attendance'
-      ? `/api/small-group?weekStart=${weekStart}&attendanceOnly=true`
+    user && contextData && activeTab === 'attendance'
+      ? smallGroupCacheKey(user, `/api/small-group?weekStart=${weekStart}&attendanceOnly=true`, assignment)
       : null,
+    fetchSmallGroup,
     {
       fallbackData: isInitialWeek && initialData
         ? { attendanceMap: initialData.attendanceMap ?? {} }
         : undefined,
       keepPreviousData: false,
       revalidateOnMount: !isInitialWeek || !initialData,
+      revalidateOnFocus: true,
+      dedupingInterval: 30000,
     }
   );
   const attendanceMap = useMemo<Record<string, Attendance>>(
@@ -112,29 +129,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     [activeTab, attendanceData?.attendanceMap, swrData?.attendanceMap]
   );
 
-  useEffect(() => {
-    if (!user || activeTab !== 'attendance' || !attendanceData) return;
-
-    for (const sunday of [getPreviousWeek(currentSunday), getNextWeek(currentSunday)]) {
-      if (isFutureWeek(sunday)) continue;
-      const key = `/api/small-group?weekStart=${formatWeekDate(sunday)}&attendanceOnly=true`;
-      if (cache.get(key)?.data || prefetchingWeeks.current.has(key)) continue;
-
-      prefetchingWeeks.current.add(key);
-      void mutateCache(
-        key,
-        fetch(key).then((response) => {
-          if (!response.ok) throw new Error('Attendance fetch failed');
-          return response.json();
-        }),
-        { revalidate: false }
-      ).catch(() => {}).finally(() => prefetchingWeeks.current.delete(key));
-    }
-  }, [user, activeTab, attendanceData, currentSunday, cache, mutateCache]);
-
   // Derive stable values from SWR cache
   const cellName = swrData?.cell?.name || null;
-  const villageName = swrData?.villageName || null;
+  const villageName = swrData?.villageName || contextData?.villageName || null;
   const leader = swrData?.leader || null;
   const members: CellMember[] = swrData?.members || [];
   const villageCells: VillageGroup[] = swrData?.villageCells || [];
@@ -198,10 +195,10 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   if (!user) return null;
 
   // 서버에서 DB 최신값을 받아오므로 JWT가 stale해도 정확하게 분기
-  const fresh = swrData?.currentUser;
+  const fresh = contextData?.currentUser;
   const effectiveRole = (fresh?.role ?? user.role) as string;
-  const effectiveCellId = fresh?.cellId ?? user.cellId ?? null;
-  const effectiveVillageId = fresh?.villageId ?? user.villageId ?? null;
+  const effectiveCellId = fresh ? fresh.cellId : user.cellId ?? null;
+  const effectiveVillageId = fresh ? fresh.villageId : user.villageId ?? null;
 
   const isMinister = effectiveRole === 'minister';
   const isVillageLeader = effectiveRole === 'village_leader';
@@ -279,6 +276,14 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
 
       {/* ===== SHARING (나눔지) TAB ===== */}
       {activeTab === 'sharing' && <SharingSheet />}
+
+      {contextError && <p role="alert" className="text-sm text-red-600">현재 소속을 확인하지 못했습니다.
+        <button className="ml-2 underline" onClick={() => { mutateContext().catch((error: unknown) => console.error('Small group context retry failed:', error)); }}>다시 시도</button>
+      </p>}
+      {activeTab !== 'sharing' && groupError && <p role="alert" className="text-sm text-red-600">소그룹 데이터를 불러오지 못했습니다.
+        <button className="ml-2 underline" onClick={() => { mutate().catch((error: unknown) => console.error('Small group retry failed:', error)); }}>다시 시도</button>
+      </p>}
+      {activeTab !== 'sharing' && (!contextData || !swrData) ? <PagePending /> : <>
 
       {/* ===== PRAYER TAB ===== */}
       {activeTab === 'prayer' && (
@@ -765,6 +770,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
         open={!!lightbox}
         onClose={() => setLightbox(null)}
       />
+      </>}
     </div>
   );
 }

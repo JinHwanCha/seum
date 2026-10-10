@@ -22,6 +22,9 @@ export const metadata: Metadata = {
     title: '세움',
     statusBarStyle: 'default',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   robots: {
     index: true,
     follow: true,
