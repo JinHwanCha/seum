@@ -8,6 +8,7 @@ import type { SessionPayload } from '@/lib/types';
 import { NativePushProvider } from '@/components/notifications/native-push-provider';
 import { NativeSystemBars } from '@/components/theme/native-system-bars';
 import { NavigationProvider } from '@/components/layout/navigation-provider';
+import { BoardCacheInvalidator } from '@/components/board/board-cache-invalidator';
 
 const swrFetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -73,6 +74,7 @@ export function Providers({
       <ThemeProvider>
         <NativeSystemBars />
         <AuthProvider initialUser={initialUser}>
+          <BoardCacheInvalidator />
           <NavigationProvider><NativePushProvider>{children}</NativePushProvider></NavigationProvider>
         </AuthProvider>
       </ThemeProvider>

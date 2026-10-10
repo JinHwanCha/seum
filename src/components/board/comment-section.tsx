@@ -1,4 +1,5 @@
 'use client';
+import { notifyBoardChanged } from '@/lib/board-cache';
 
 import { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,6 +39,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
         body: JSON.stringify({ content: content.trim(), parentId }),
       });
       if (res.ok) {
+        notifyBoardChanged();
         setNewComment('');
         setReplyTo(null);
         setReplyContent('');
@@ -60,6 +62,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
         body: JSON.stringify({ content: editContent.trim() }),
       });
       if (res.ok) {
+        notifyBoardChanged();
         setEditingId(null);
         setEditContent('');
         onRefresh();
@@ -74,10 +77,13 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
   const deleteComment = async (commentId: string) => {
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
     try {
-      await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('댓글 삭제에 실패했습니다.');
+      notifyBoardChanged();
       onRefresh();
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Comment deletion failed:', error);
+      alert('댓글 삭제에 실패했습니다. 다시 시도해주세요.');
     }
   };
 

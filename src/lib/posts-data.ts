@@ -83,7 +83,8 @@ export async function loadBoardPosts({
   // hasMore 판별을 위해 한 건 더 요청한다.
   query = query.range(offset, offset + limit);
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw error;
   const rows = (data || []) as any[];
   const hasMore = rows.length > limit;
   const posts = rows.slice(0, limit).map(enrich);

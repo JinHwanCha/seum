@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { Card } from '@/components/ui/card';
@@ -8,10 +7,6 @@ import { UsersRound, BookOpen, MessageSquare, Users, Heart, Shield } from 'lucid
 import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { GatheringBoard } from '@/components/gathering/gathering-board';
 import { WorshipGuide } from '@/components/worship/worship-guide';
-import { DashboardFallback } from '@/components/dashboard-fallback';
-import { loadGatherings, loadWorshipItems } from '@/lib/dashboard-data';
-import type { SessionPayload } from '@/lib/types';
-import DepartmentLoading from './loading';
 
 
 function getQuickLinks(session: any) {
@@ -40,33 +35,6 @@ interface PageProps {
   params: { church: string; department: string };
 }
 
-function DashboardContent({ session }: { session: SessionPayload }) {
-  // 예배 안내/모임 데이터를 서버에서 미리 조회해 SWR fallback 으로 주입한다.
-  // 클라이언트 페칭 워터폴(마운트→요청→스켈레톤→표시)을 제거해 즉시 렌더한다.
-  return (
-    <>
-      <Suspense fallback={<DepartmentLoading />}><WorshipContent session={session} /></Suspense>
-      <Suspense fallback={<DepartmentLoading />}><GatheringContent session={session} /></Suspense>
-    </>
-  );
-}
-
-async function WorshipContent({ session }: { session: SessionPayload }) {
-  const worship = await loadWorshipItems(session).catch((error: unknown) => {
-    console.error('Dashboard worship preload failed:', error);
-    return null;
-  });
-  return <DashboardFallback fallback={worship ? { '/api/worship-guide': worship } : {}}><WorshipGuide /></DashboardFallback>;
-}
-
-async function GatheringContent({ session }: { session: SessionPayload }) {
-  const gatherings = await loadGatherings(session).catch((error: unknown) => {
-    console.error('Dashboard gathering preload failed:', error);
-    return null;
-  });
-  return <DashboardFallback fallback={gatherings ? { '/api/gatherings': gatherings } : {}}><GatheringBoard /></DashboardFallback>;
-}
-
 export default async function DashboardPage({ params }: PageProps) {
   const session = await getSession();
   if (!session) redirect('/login');
@@ -91,9 +59,8 @@ export default async function DashboardPage({ params }: PageProps) {
         </div>
       </Card>
 
-      <Suspense fallback={<DepartmentLoading />}>
-        <DashboardContent session={session} />
-      </Suspense>
+      <WorshipGuide />
+      <GatheringBoard />
     </div>
   );
 }

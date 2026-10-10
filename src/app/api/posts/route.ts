@@ -5,6 +5,7 @@ import { canWritePost, isMinister } from '@/lib/permissions';
 import { broadcastAnnouncement } from '@/lib/notifications';
 import { loadBoardPosts, POSTS_PAGE_SIZE, generatePostSlug } from '@/lib/posts-data';
 import type { BoardType, Role } from '@/lib/types';
+import { loadBoardData } from '@/lib/board-data';
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -13,6 +14,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const boardType = searchParams.get('boardType');
   if (!boardType) return NextResponse.json({ error: 'boardType required' }, { status: 400 });
+  if (searchParams.get('includeMeta') === '1') {
+    try {
+      return NextResponse.json(await loadBoardData(session, boardType), {
+        headers: { 'Cache-Control': 'private, no-store' },
+      });
+    } catch (error) {
+      console.error('Board data lookup failed:', error);
+      return NextResponse.json({ error: '게시판 조회에 실패했습니다. 다시 시도해주세요.' }, { status: 503 });
+    }
+  }
 
   const offset = Math.max(0, parseInt(searchParams.get('offset') || '0', 10) || 0);
   const limit = Math.min(50, parseInt(searchParams.get('limit') || String(POSTS_PAGE_SIZE), 10) || POSTS_PAGE_SIZE);

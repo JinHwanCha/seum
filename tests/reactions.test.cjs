@@ -17,7 +17,8 @@ function load(relative, mocks = {}) {
   }).outputText;
   vm.runInNewContext(code, {
     module: loaded, exports: loaded.exports,
-    require: (name) => Object.hasOwn(mocks, name) ? mocks[name] : require(name),
+    require: (name) => name === '@/lib/board-cache' ? { notifyBoardChanged: () => {} }
+      : Object.hasOwn(mocks, name) ? mocks[name] : require(name),
     console: mocks.console || console, fetch: mocks.fetch,
     Date, Map, Set, Error, SyntaxError, Request, Response,
   }, { filename });

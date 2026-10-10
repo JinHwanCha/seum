@@ -1,4 +1,5 @@
 'use client';
+import { notifyBoardChanged } from '@/lib/board-cache';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -118,6 +119,7 @@ export function PostForm({ boardType, existingPost }: PostFormProps) {
       }
 
       const data = await res.json();
+      notifyBoardChanged();
       const target = data.post?.slug || data.post?.id || existingPost?.slug || existingPost?.id;
       router.push(`${basePath}/boards/${boardType}/${target}`);
       router.refresh();

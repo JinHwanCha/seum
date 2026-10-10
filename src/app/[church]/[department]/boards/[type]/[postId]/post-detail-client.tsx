@@ -1,4 +1,5 @@
 'use client';
+import { notifyBoardChanged } from '@/lib/board-cache';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ export default function PostDetailClient({
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
       if (res.ok) {
+        notifyBoardChanged();
         router.push(`${basePath}/boards/${boardType}`);
         router.refresh();
       }

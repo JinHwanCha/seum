@@ -45,6 +45,7 @@ export function PostList({
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 게시판 전환/서버 재렌더 시 초기화
   useEffect(() => {
@@ -55,6 +56,7 @@ export function PostList({
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
+    setError(null);
     try {
       const res = await fetch(
         `/api/posts?boardType=${encodeURIComponent(boardType)}&offset=${posts.length}`
@@ -67,7 +69,12 @@ export function PostList({
           return [...prev, ...more.filter((p) => !seen.has(p.id))];
         });
         setHasMore(Boolean(data.hasMore));
+      } else {
+        throw new Error('게시글을 더 불러오지 못했습니다. 다시 시도해주세요.');
       }
+    } catch (cause) {
+      console.error('Board pagination failed:', cause);
+      setError('게시글을 더 불러오지 못했습니다. 다시 시도해주세요.');
     } finally {
       setLoadingMore(false);
     }
@@ -165,6 +172,7 @@ export function PostList({
           {loadingMore ? '불러오는 중…' : '더 보기'}
         </button>
       )}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

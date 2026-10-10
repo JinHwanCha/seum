@@ -84,8 +84,8 @@ test('each primary data route has a loading boundary for shell prefetch', () => 
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'src', 'app', '[church]', '[department]', route, 'loading.tsx')));
   }
   const main = read('src', 'app', '[church]', '[department]', 'page.tsx');
-  assert.ok(main.includes('<WorshipContent session={session} />'));
-  assert.ok(main.includes('<GatheringContent session={session} />'));
+  assert.ok(main.includes('<WorshipGuide />'));
+  assert.ok(main.includes('<GatheringBoard />'));
   assert.ok(!main.includes('await Promise.all('));
 });
 
@@ -103,6 +103,7 @@ test('navigation handles ordinary internal taps but preserves modified and exter
     'next/navigation': { useRouter: () => router },
   }, {}, { window: { location: { pathname: '/current', search: '', hash: '' } } });
   context = exports.NavigationProvider({ children: null }).props.value;
+  assert.equal(exports.NavigationProvider({ children: 'page' }).props.children, 'page', 'navigation must not add a flashing progress banner');
   const click = (props, options = {}) => {
     let prevented = false;
     exports.NavigationLink(props).props.onClick({

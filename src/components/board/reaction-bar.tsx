@@ -1,4 +1,5 @@
 'use client';
+import { notifyBoardChanged } from '@/lib/board-cache';
 
 import { useEffect, useRef, useState } from 'react';
 import { EMOJIS } from '@/lib/constants';
@@ -58,6 +59,7 @@ export function ReactionBar({ postId, reactions, session }: ReactionBarProps) {
           : '공감을 저장하지 못했습니다. 다시 시도해주세요.';
         throw new Error(message);
       }
+      notifyBoardChanged();
     } catch (cause) {
       itemsRef.current = setOwnReaction(
         itemsRef.current, postId, session.userId, emoji, previous.length > 0, previous

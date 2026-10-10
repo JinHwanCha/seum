@@ -8,17 +8,12 @@ const NavigationContext = createContext<((href: string, replace: boolean) => voi
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   return (
     <NavigationContext.Provider value={(href, replace) => {
       startTransition(() => { if (replace) router.replace(href); else router.push(href); });
     }}>
       {children}
-      {pending && (
-        <div role="status" aria-live="polite" className="fixed top-0 left-0 right-0 z-[80] bg-primary-600 px-3 py-1 text-center text-xs text-white">
-          페이지 여는 중…
-        </div>
-      )}
     </NavigationContext.Provider>
   );
 }
