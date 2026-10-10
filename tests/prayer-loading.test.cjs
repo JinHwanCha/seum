@@ -43,6 +43,7 @@ test('initial sharing tab enables only small context query; heavy tabs use disti
     '@/lib/constants': { ROLE_LABELS_DEFAULT: {} },
     '@/lib/utils': { birthYearTag: () => '' },
     '@/lib/small-group-cache': { smallGroupCacheKey: (_session, url) => [url], fetchSmallGroup: () => {} },
+    '@/components/prayer/use-week-prefetch': { useWeekPrefetch: () => () => {} },
     'lucide-react': {},
     swr: { __esModule: true, default: (key) => {
       keys.push(key);

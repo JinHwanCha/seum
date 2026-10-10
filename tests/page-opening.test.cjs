@@ -30,6 +30,14 @@ test('route loading boundaries keep streaming but use the nonvisual pending stat
   }
 });
 
+test('board route loading boundary uses the same visible skeleton as its first data fetch', () => {
+  const skeleton = () => null;
+  const route = load('src\\app\\[church]\\[department]\\boards\\[type]\\loading.tsx', {
+    '@/components/board/board-skeleton': { BoardSkeleton: skeleton },
+  });
+  assert.equal(route.default, skeleton);
+});
+
 test('page UI only animates the requested board skeleton', () => {
   function visit(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -39,7 +47,8 @@ test('page UI only animates the requested board skeleton', () => {
         if (entry.name !== 'board-skeleton.tsx') {
           assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /animate-pulse/, file);
         }
-        if (!['board-skeleton.tsx', 'cached-board.tsx'].includes(entry.name)) {
+        const boardBoundary = path.join(root, 'src', 'app', '[church]', '[department]', 'boards', '[type]', 'loading.tsx');
+        if (!['board-skeleton.tsx', 'cached-board.tsx'].includes(entry.name) && file !== boardBoundary) {
           assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\b\w*Skeleton\b/, file);
         }
       }

@@ -1,1 +1,1 @@
-export { default } from '../../loading';
+export { BoardSkeleton as default } from '@/components/board/board-skeleton';

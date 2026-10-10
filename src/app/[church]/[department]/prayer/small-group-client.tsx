@@ -21,6 +21,8 @@ import type { PrayerRequest, Attendance } from '@/lib/types';
 import { birthYearTag } from '@/lib/utils';
 import { smallGroupCacheKey, fetchSmallGroup } from '@/lib/small-group-cache';
 import { PagePending } from '@/components/ui/page-pending';
+import { SmallGroupWarmer } from '@/components/prayer/small-group-warmer';
+import { useWeekPrefetch } from '@/components/prayer/use-week-prefetch';
 
 const SpecialWorshipCheck = dynamic(() => import('@/components/attendance/special-worship-check').then((module) => module.SpecialWorshipCheck));
 const NewFamilyManager = dynamic(() => import('@/components/attendance/new-family-manager').then((module) => module.NewFamilyManager));
@@ -59,6 +61,9 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
   const [currentSunday, setCurrentSunday] = useState(() => getCurrentWeekSunday());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('sharing');
+  const [readyScope, setReadyScope] = useState<string | null>(null);
+  const sessionScope = user ? `${user.userId}:${user.exp}` : '';
+  const onSharingReady = useCallback(() => setReadyScope(sessionScope), [sessionScope]);
   const [attSubTab, setAttSubTab] = useState<'mine' | 'special' | 'village'>('mine');
   const [praySubTab, setPraySubTab] = useState<'mine' | 'village'>('mine');
   const [attVillageFilter, setAttVillageFilter] = useState<string>('__all__');
@@ -90,6 +95,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
     fetchSmallGroup, { keepPreviousData: false, revalidateOnFocus: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const assignment = contextData ? JSON.stringify(contextData.currentUser) : '';
+  const prefetchWeek = useWeekPrefetch(assignment);
   const mode = activeTab === 'prayer' ? 'prayer' : 'structure';
   const { data: swrData, error: groupError, isLoading, mutate } = useSWR(
     user && contextData && activeTab !== 'sharing'
@@ -271,11 +277,16 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
       )}
 
       {activeTab !== 'sharing' && (
-        <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
+        <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday}
+          onPrepare={(sunday) => prefetchWeek(sunday, activeTab === 'attendance' ? 'attendance' : activeTab === 'prayer' ? 'prayer' : 'both')} />
       )}
 
       {/* ===== SHARING (나눔지) TAB ===== */}
-      {activeTab === 'sharing' && <SharingSheet />}
+      {activeTab === 'sharing' && <SharingSheet onReady={onSharingReady} />}
+      {user && contextData && readyScope === sessionScope && (
+        <SmallGroupWarmer key={`${sessionScope}:${assignment}`}
+          user={user} assignment={assignment} initialWeek={initialWeekStart} week={weekStart} />
+      )}
 
       {contextError && <p role="alert" className="text-sm text-red-600">현재 소속을 확인하지 못했습니다.
         <button className="ml-2 underline" onClick={() => { mutateContext().catch((error: unknown) => console.error('Small group context retry failed:', error)); }}>다시 시도</button>
@@ -565,6 +576,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
         <div className="space-y-3">
           {hasCell && (
             <TreeGrowth
+              assignment={assignment}
               cellId={effectiveCellId}
               cellName={cellName}
               villageName={villageName}
@@ -574,6 +586,7 @@ export default function SmallGroupClient({ initialData }: { initialData?: any })
           )}
           {hasOversight && villageCells.length > 0 && (
             <TreeOverview
+              assignment={assignment}
               villageCells={villageCells}
               weekStart={weekStart}
               showVillageFilter={isMinister}

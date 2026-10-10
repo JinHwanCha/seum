@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { getUpcomingSundayLabelKST } from '@/lib/date-utils';
 import { Modal } from '@/components/ui/modal';
@@ -19,7 +19,7 @@ interface SharingSheetResponse {
   content: SharingSheetContent;
 }
 
-export function SharingSheet() {
+export function SharingSheet({ onReady }: { onReady?: () => void } = {}) {
   const { data, error, isLoading, mutate } = useSWR<SharingSheetResponse>(
     '/api/small-group/sharing-sheet'
   );
@@ -27,6 +27,19 @@ export function SharingSheet() {
 
   const sundayLabel = getUpcomingSundayLabelKST();
   const year = sundayLabel.slice(0, 4);
+
+  useEffect(() => {
+    if (!onReady || (!data && !error)) return;
+    // Let the sharing sheet paint before starting other tab requests.
+    let secondFrame: number | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(onReady);
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+    };
+  }, [data, error, onReady]);
 
   if (isLoading && !data) return <PagePending />;
   if (error && !data) {

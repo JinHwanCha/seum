@@ -5,6 +5,8 @@ import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { PillTabs } from '@/components/ui/pill-tabs';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchSmallGroup, smallGroupCacheKey } from '@/lib/small-group-cache';
 
 interface CellInfo {
   id: string;
@@ -27,6 +29,7 @@ interface Summary {
 }
 
 interface Props {
+  assignment?: string;
   villageCells: VillageGroup[];
   weekStart: string;
   showVillageFilter: boolean; // minister: true, village_leader: false
@@ -53,7 +56,8 @@ function monthStartOf(weekStart: string): string {
   return `${y}-${m}-01`;
 }
 
-export function TreeOverview({ villageCells, weekStart, showVillageFilter }: Props) {
+export function TreeOverview({ villageCells, weekStart, showVillageFilter, assignment = '' }: Props) {
+  const { user } = useAuth();
   const [villageFilter, setVillageFilter] = useState<string>('__all__');
 
   const allCells = useMemo(() => {
@@ -68,7 +72,10 @@ export function TreeOverview({ villageCells, weekStart, showVillageFilter }: Pro
   const swrKey = cellIds.length > 0
     ? `/api/small-group/tree/summary?monthStart=${monthStart}&cellIds=${cellIds.join(',')}`
     : null;
-  const { data, isLoading } = useSWR<{ summaries: Summary[] }>(swrKey);
+  const { data, isLoading } = useSWR<{ summaries: Summary[] }>(
+    user && swrKey ? smallGroupCacheKey(user, swrKey, assignment) : null,
+    fetchSmallGroup, { dedupingInterval: 30000, revalidateOnFocus: true }
+  );
 
   const scoreMap = useMemo(() => {
     const map = new Map<string, Summary>();

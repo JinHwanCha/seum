@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { pickVerseForMember } from '@/lib/bible-verses';
+import { useAuth } from '@/hooks/use-auth';
+import { fetchSmallGroup, smallGroupCacheKey } from '@/lib/small-group-cache';
 
 interface Member {
   id: string;
@@ -36,6 +38,7 @@ interface TreeData {
 }
 
 interface TreeGrowthProps {
+  assignment?: string;
   cellId: string | null;
   cellName: string | null;
   villageName?: string | null;
@@ -249,14 +252,18 @@ function TreeArt({
 
 // ========== Main Component ==========
 
-export function TreeGrowth({ cellId, cellName, villageName, weekStart, members }: TreeGrowthProps) {
+export function TreeGrowth({ cellId, cellName, villageName, weekStart, members, assignment = '' }: TreeGrowthProps) {
+  const { user } = useAuth();
   const [selectedFruit, setSelectedFruit] = useState<Member | null>(null);
 
   const monthStart = monthStartOf(weekStart);
   const swrKey = cellId
     ? `/api/small-group/tree?cellId=${cellId}&monthStart=${monthStart}`
     : null;
-  const { data, isLoading } = useSWR<TreeData>(swrKey);
+  const { data, isLoading } = useSWR<TreeData>(
+    user && swrKey ? smallGroupCacheKey(user, swrKey, assignment) : null,
+    fetchSmallGroup, { dedupingInterval: 30000, revalidateOnFocus: true }
+  );
 
   const weekKeys = data?.weekKeys ?? [];
   const weeks = data?.weeks ?? [];

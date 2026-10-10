@@ -22,5 +22,5 @@ async function requestSmallGroup(key: readonly string[]) {
   const data = await response.json();
   if (!data || typeof data !== 'object') throw new Error('소그룹 서버 응답이 올바르지 않습니다.');
   if (!response.ok) throw new Error(data.error || '소그룹 조회에 실패했습니다.');
-  return data;
+  return { ...data, fetchedAt: Date.now() };
 }
