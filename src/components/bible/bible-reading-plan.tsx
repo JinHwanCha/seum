@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { ChevronDown, Check, BookOpen, Loader2 } from 'lucide-react';
+import { ChevronDown, Check, BookOpen } from 'lucide-react';
+import { PagePending } from '@/components/ui/page-pending';
 import { cn } from '@/lib/utils';
 import { BIBLE_BOOKS, TOTAL_CHAPTERS } from '@/lib/bible';
 
@@ -77,9 +78,7 @@ export function BibleReadingPlan({
       </div>
 
       {!progressLoaded && (
-        <div className="flex justify-center py-8 text-stone-400">
-          <Loader2 className="animate-spin" size={22} />
-        </div>
+        <PagePending />
       )}
 
       {/* 책 리스트 */}

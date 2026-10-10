@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { useAuth } from '@/hooks/use-auth';
 import { boardCacheKey, boardCacheUsable, fetchBoard } from '@/lib/board-cache';
 import { PostList } from '@/components/board/post-list';
+import { PagePending } from '@/components/ui/page-pending';
 
 export function CachedBoard({ boardType }: { boardType: string }) {
   const { user } = useAuth();
@@ -42,9 +43,7 @@ export function CachedBoard({ boardType }: { boardType: string }) {
           villages={visible.villages} categories={visible.categories} villageMap={visible.villageMap}
           initialHasMore={visible.hasMore} />
       ) : !error ? (
-        <div aria-label="게시판 불러오는 중" className="space-y-2 animate-pulse motion-reduce:animate-none">
-          {[1, 2, 3].map((item) => <div key={item} className="h-20 rounded-xl bg-stone-100" />)}
-        </div>
+        <PagePending />
       ) : null}
     </div>
   );

@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { SharingSheetEditor } from '@/components/prayer/sharing-sheet-editor';
 import { BookOpen, Mic, MessageCircleQuestion, Pencil } from 'lucide-react';
 import type { SharingSheetContent, SharingSheetSource } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 interface SharingSheetResponse {
   churchName: string;
@@ -18,18 +19,8 @@ interface SharingSheetResponse {
   content: SharingSheetContent;
 }
 
-function SharingSkeleton() {
-  return (
-    <div className="space-y-3 animate-pulse">
-      <div className="h-32 w-full rounded-2xl bg-primary-100" />
-      <div className="h-28 w-full rounded-xl bg-stone-100" />
-      <div className="h-40 w-full rounded-xl bg-stone-100" />
-    </div>
-  );
-}
-
 export function SharingSheet() {
-  const { data, isLoading, mutate } = useSWR<SharingSheetResponse>(
+  const { data, error, isLoading, mutate } = useSWR<SharingSheetResponse>(
     '/api/small-group/sharing-sheet'
   );
   const [editing, setEditing] = useState(false);
@@ -37,7 +28,12 @@ export function SharingSheet() {
   const sundayLabel = getUpcomingSundayLabelKST();
   const year = sundayLabel.slice(0, 4);
 
-  if (isLoading && !data) return <SharingSkeleton />;
+  if (isLoading && !data) return <PagePending />;
+  if (error && !data) {
+    return <p role="alert" className="text-sm text-red-600">나눔지를 불러오지 못했습니다.
+      <button className="ml-2 underline" onClick={() => { mutate().catch((cause: unknown) => console.error('Sharing sheet retry failed:', cause)); }}>다시 시도</button>
+    </p>;
+  }
 
   const churchName = data?.churchName || '';
   const departmentName = data?.departmentName || '';

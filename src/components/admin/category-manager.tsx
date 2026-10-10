@@ -9,6 +9,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Plus, Trash2, Edit3 } from 'lucide-react';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
 import type { BoardCategory, BoardType } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 export function CategoryManager() {
   const [activeBoard, setActiveBoard] = useState<string>('sharing');
@@ -83,7 +84,7 @@ export function CategoryManager() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>
+        <PagePending />
       ) : categories.length === 0 ? (
         <div className="text-center py-8 text-stone-400 text-sm">카테고리가 없습니다.</div>
       ) : (

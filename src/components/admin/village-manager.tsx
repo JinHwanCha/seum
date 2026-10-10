@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Plus, Trash2, Edit3, ChevronDown, ChevronRight } from 'lucide-react';
 import { ResetAssignmentsButton } from '@/components/admin/reset-assignments-button';
 import type { Village, Cell } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 interface VillageWithCells extends Village {
   cells?: Cell[];
@@ -101,7 +102,7 @@ export function VillageManager() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-stone-400 text-sm">불러오는 중...</div>;
+    return <PagePending />;
   }
 
   return (

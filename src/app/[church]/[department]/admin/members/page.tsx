@@ -10,6 +10,7 @@ import {
 import type { Role } from '@/lib/types';
 import MembersClient from './members-client';
 import { AdminBackButton } from '@/components/admin/back-button';
+import { PagePending } from '@/components/ui/page-pending';
 
 interface PageProps {
   params: { church: string; department: string };
@@ -72,17 +73,6 @@ async function MembersData({
   );
 }
 
-function MembersSkeleton() {
-  return (
-    <div className="space-y-3">
-      <div className="animate-pulse h-10 bg-stone-100 rounded-xl" />
-      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
-      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
-      <div className="animate-pulse h-24 bg-stone-100 rounded-xl" />
-    </div>
-  );
-}
-
 export default function MembersPage({ params, searchParams }: PageProps) {
   const tab = resolveTab(searchParams.tab);
   const basePath = `/${params.church}/${params.department}`;
@@ -93,7 +83,7 @@ export default function MembersPage({ params, searchParams }: PageProps) {
         <AdminBackButton />
         <h1 className="text-lg font-bold text-stone-900">회원 관리</h1>
       </div>
-      <Suspense key={tab} fallback={<MembersSkeleton />}>
+      <Suspense key={tab} fallback={<PagePending />}>
         <MembersData tab={tab} basePath={basePath} />
       </Suspense>
     </div>

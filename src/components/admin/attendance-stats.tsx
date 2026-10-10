@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, ChevronDown, Church, Wifi, Users, UsersRound } from 'lucide-react';
+import { ChevronDown, Church, Wifi, Users, UsersRound } from 'lucide-react';
+import { PagePending } from '@/components/ui/page-pending';
 import { cn } from '@/lib/utils';
 import { WeekSelector } from '@/components/prayer/week-selector';
 import { getCurrentWeekSunday, formatWeekDate } from '@/lib/date-utils';
@@ -91,9 +92,7 @@ export function AttendanceStats() {
       <WeekSelector currentSunday={currentSunday} onChange={setCurrentSunday} />
 
       {loading && (
-        <div className="flex justify-center py-16 text-stone-400">
-          <Loader2 className="animate-spin" size={24} />
-        </div>
+        <PagePending />
       )}
 
       {error && !loading && (

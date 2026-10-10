@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Trophy, ChevronDown, TrendingUp, Clock } from 'lucide-react';
+import { Trophy, ChevronDown, TrendingUp, Clock } from 'lucide-react';
+import { PagePending } from '@/components/ui/page-pending';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/date-utils';
 
@@ -173,11 +174,7 @@ export function BibleGroupProgress() {
   const sortedCellMembers = useMemo(() => sortMembers(members, sort), [members, sort]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-16 text-stone-400">
-        <Loader2 className="animate-spin" size={24} />
-      </div>
-    );
+    return <PagePending />;
   }
 
   if (error) {

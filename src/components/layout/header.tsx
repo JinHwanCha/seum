@@ -7,6 +7,7 @@ import { LogOut, UserCircle, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { ThemePicker } from '@/components/theme/theme-picker';
+import { PagePending } from '@/components/ui/page-pending';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -17,7 +18,7 @@ export function Header() {
       <header className="warm-surface border-b border-stone-200/80 sticky top-0 z-40 safe-top">
         <div className="px-3 h-14 flex items-center justify-between">
           <div className="text-xl font-bold text-primary-700 tracking-tight">세움</div>
-          <div className="w-20 h-5 bg-stone-200 rounded-md animate-pulse" />
+          <PagePending />
         </div>
       </header>
     );

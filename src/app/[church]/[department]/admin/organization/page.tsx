@@ -2,10 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { AdminBackButton } from '@/components/admin/back-button';
+import { PagePending } from '@/components/ui/page-pending';
 
 const VillageManager = dynamic(
   () => import('@/components/admin/village-manager').then((m) => m.VillageManager),
-  { loading: () => <div className="animate-pulse h-32 bg-stone-100 rounded-xl" /> }
+  { loading: () => <PagePending /> }
 );
 
 export default function OrganizationPage() {

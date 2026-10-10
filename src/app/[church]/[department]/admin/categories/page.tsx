@@ -2,10 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { AdminBackButton } from '@/components/admin/back-button';
+import { PagePending } from '@/components/ui/page-pending';
 
 const CategoryManager = dynamic(
   () => import('@/components/admin/category-manager').then((m) => m.CategoryManager),
-  { loading: () => <div className="animate-pulse h-32 bg-stone-100 rounded-xl" /> }
+  { loading: () => <PagePending /> }
 );
 
 export default function CategoriesPage() {

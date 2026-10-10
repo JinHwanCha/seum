@@ -7,6 +7,7 @@ import { MessageSquare, Heart, Megaphone, Bell } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 const TYPE_ICON = {
   comment: MessageSquare,
@@ -26,13 +27,19 @@ export function NotificationList({ initialItems }: { initialItems?: Notification
   const hasInitial = initialItems !== undefined;
   const [items, setItems] = useState<Notification[]>(initialItems ?? []);
   const [loading, setLoading] = useState(!hasInitial);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const res = await fetch('/api/notifications');
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('알림 조회에 실패했습니다.');
       const data = await res.json();
-      setItems(data.notifications || []);
+      if (!Array.isArray(data.notifications)) throw new Error('알림 응답이 올바르지 않습니다.');
+      setItems(data.notifications);
+    } catch (cause) {
+      console.error('Notification list load failed:', cause);
+      setError('알림을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
@@ -56,14 +63,11 @@ export function NotificationList({ initialItems }: { initialItems?: Notification
     n.post_id && n.board_type ? `${basePath}/boards/${n.board_type}/${n.post_id}` : null;
 
   if (loading) {
-    return (
-      <div className="space-y-2">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-16 rounded-xl bg-stone-100 animate-pulse" />
-        ))}
-      </div>
-    );
+    return <PagePending />;
   }
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}
+    <button className="ml-2 underline" onClick={load}>다시 시도</button>
+  </p>;
 
   if (items.length === 0) {
     return (

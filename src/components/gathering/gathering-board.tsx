@@ -9,6 +9,7 @@ import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { GatheringThumb, splitName } from './gathering-shared';
 import { GatheringManager } from './gathering-manager';
 import type { GatheringItem } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 interface GatheringsResponse {
   gatherings: GatheringItem[];
@@ -32,22 +33,6 @@ function useGridColumns(): number {
   }, []);
 
   return columns;
-}
-
-function GatheringSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex animate-pulse items-center gap-3 rounded-xl border border-stone-200/80 bg-white p-3 sm:flex-col sm:gap-0"
-        >
-          <div className="h-12 w-12 shrink-0 rounded-xl bg-stone-100 sm:mb-2" />
-          <div className="h-3 w-3/4 rounded bg-stone-100" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 /** 팝업 상세 이미지 슬라이드. 여러 장이면 순서대로 넘길 수 있고, 탭하면 전체화면. */
@@ -141,7 +126,7 @@ function SectionHeader({ canManage, onManage }: { canManage: boolean; onManage: 
 }
 
 export function GatheringBoard() {
-  const { data, isLoading, mutate } = useSWR<GatheringsResponse>('/api/gatherings');
+  const { data, error, isLoading, mutate } = useSWR<GatheringsResponse>('/api/gatherings');
   const [selected, setSelected] = useState<GatheringItem | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [managing, setManaging] = useState(false);
@@ -180,12 +165,12 @@ export function GatheringBoard() {
   }, [data]);
 
   if (isLoading && !data) {
-    return (
-      <div>
-        <h2 className="mb-3 px-1 text-sm font-semibold text-stone-500">모임 게시판</h2>
-        <GatheringSkeleton />
-      </div>
-    );
+    return <PagePending />;
+  }
+  if (error && !data) {
+    return <p role="alert" className="text-sm text-red-600">모임을 불러오지 못했습니다.
+      <button className="ml-2 underline" onClick={() => { mutate().catch((cause: unknown) => console.error('Gatherings retry failed:', cause)); }}>다시 시도</button>
+    </p>;
   }
 
   // 모임이 없고 관리 권한도 없으면 섹션 자체를 숨긴다.

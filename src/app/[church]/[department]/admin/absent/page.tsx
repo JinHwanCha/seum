@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { PagePending } from '@/components/ui/page-pending';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
@@ -131,21 +132,6 @@ async function getAbsentData(departmentId: string) {
   };
 }
 
-function AbsentSkeleton() {
-  return (
-    <div className="space-y-2 animate-pulse">
-      <div className="flex gap-2">
-        <div className="h-6 w-24 bg-stone-100 rounded-full" />
-        <div className="h-6 w-24 bg-stone-100 rounded-full" />
-        <div className="h-6 w-24 bg-stone-100 rounded-full" />
-      </div>
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-20 bg-stone-100 rounded-xl" />
-      ))}
-    </div>
-  );
-}
-
 async function AbsentContent({ departmentId }: { departmentId: string }) {
   const { worship, department, smallGroup, totalMembers } = await getAbsentData(departmentId);
 
@@ -180,7 +166,7 @@ export default async function AbsentMembersPage() {
           <h1 className="text-lg font-bold text-stone-900">장기미출석</h1>
         </div>
       </div>
-      <Suspense fallback={<AbsentSkeleton />}>
+      <Suspense fallback={<PagePending />}>
         <AbsentContent departmentId={session.departmentId} />
       </Suspense>
     </div>

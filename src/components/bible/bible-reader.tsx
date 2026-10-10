@@ -9,10 +9,10 @@ import {
   Highlighter,
   Check,
   X,
-  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
+import { PagePending } from '@/components/ui/page-pending';
 import {
   BIBLE_BOOKS,
   BIBLE_VERSIONS,
@@ -293,9 +293,7 @@ export function BibleReader({
         {/* 본문 */}
         <div ref={scrollRef} className="max-h-[60vh] space-y-1 overflow-y-auto px-1 py-1">
           {loading && (
-            <div className="flex items-center justify-center py-16 text-stone-400">
-              <Loader2 className="animate-spin" size={24} />
-            </div>
+            <PagePending />
           )}
           {error && !loading && (
             <div className="py-16 text-center text-sm text-stone-500">{error}</div>

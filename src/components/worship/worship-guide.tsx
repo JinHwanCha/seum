@@ -9,6 +9,7 @@ import { Slideshow } from '@/components/ui/slideshow';
 import { WORSHIP_FIXED_MAP, DEFAULT_SNS_URLS } from '@/lib/worship';
 import { Settings, X, ExternalLink, Loader2, Instagram, MessageCircle, ChevronRight } from 'lucide-react';
 import type { WorshipAnnouncement, WorshipContent } from '@/lib/types';
+import { PagePending } from '@/components/ui/page-pending';
 
 const detailFetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -279,7 +280,7 @@ function WorshipDetail({ item }: { item: WorshipAnnouncement }) {
 // ─── 메인 ───────────────────────────────────────────────────
 
 export function WorshipGuide() {
-  const { data, isLoading, mutate } = useSWR<WorshipResponse>('/api/worship-guide');
+  const { data, error, isLoading, mutate } = useSWR<WorshipResponse>('/api/worship-guide');
   const [selected, setSelected] = useState<WorshipAnnouncement | null>(null);
   const [managing, setManaging] = useState(false);
 
@@ -320,19 +321,12 @@ export function WorshipGuide() {
   }, [data]);
 
   if (isLoading && !data) {
-    return (
-      <div>
-        <h2 className="mb-3 px-1 text-sm font-semibold text-stone-500">주일 예배 안내</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-stone-200/80 bg-white p-4">
-              <div className="mx-auto mb-2 h-10 w-10 rounded-xl bg-stone-100" />
-              <div className="mx-auto h-3 w-2/3 rounded bg-stone-100" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <PagePending />;
+  }
+  if (error && !data) {
+    return <p role="alert" className="text-sm text-red-600">예배 안내를 불러오지 못했습니다.
+      <button className="ml-2 underline" onClick={() => { mutate().catch((cause: unknown) => console.error('Worship retry failed:', cause)); }}>다시 시도</button>
+    </p>;
   }
 
   if (visible.length === 0 && !canManage) return null;
