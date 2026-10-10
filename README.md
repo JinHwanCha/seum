@@ -430,6 +430,22 @@ Firebase는 DB·로그인을 대체하지 않습니다. Android의 FCM 전송용
 
 ---
 
+## 12. 네이티브 상태바·하단 영역·화면 전환
+
+- [네이티브 상태바 연결](src/components/theme/native-system-bars.tsx)은 현재 SEUM 테마를 사용합니다. 밝은 테마에는 어두운 상태바 아이콘, 어두운 테마에는 밝은 아이콘을 적용하고 앱 복귀 시 다시 적용합니다. 일반 웹/PWA의 기존 `theme-color` 설정은 유지합니다.
+- `@capacitor/status-bar@7.0.6`을 설치했습니다. Android 15 이상의 투명 시스템 바에도 테마 배경이 보이도록 [앱 전용 시스템 바 플러그인](android/app/src/main/java/life/seum/app/SeumSystemBarsPlugin.java)이 네이티브 배경과 상태바·내비게이션 바 아이콘을 설정합니다.
+- Android는 native edge-to-edge와 `adjustMarginsForEdgeToEdge: force`로 상태바/내비게이션 바/화면 컷아웃을 WebView 바깥 여백으로 처리합니다. 이 네이티브 여백 위에 CSS Safe Area를 중복 적용하지 않습니다. iOS와 PWA는 기존 CSS Safe Area를 사용합니다.
+- 본문 하단 여백은 모바일 메뉴 64px + 16px 여유 + Safe Area를 반영합니다. 640~767px에서도 `sm:p-6` 같은 shorthand가 하단 여백을 덮어쓰지 않도록 상단/좌우 패딩을 분리했습니다. PC에서는 24px 여백과 기존 사이드바를 유지합니다.
+- [화면 전환 연결](src/components/layout/navigation-provider.tsx)은 주요 메뉴·헤더·게시글 링크 클릭 즉시 전환 상태를 표시합니다. 수정키 클릭·다운로드·외부 링크의 기존 동작을 유지합니다. 기존 고정 메뉴의 replace 방식도 유지합니다.
+- 주요 데이터 화면에 로딩 경계를 추가하고, 고정 메뉴의 전체 데이터 강제 prefetch 대신 Next.js 기본 shell prefetch를 사용합니다. 한 화면에서 사용하지 않을 여러 페이지의 DB 조회가 동시에 몰리는 부담을 줄입니다.
+- 홈의 예배·모임은 각각 Suspense로 스트리밍해, 느린 모임/외부 시트 조회가 예배 데이터 표시까지 막지 않도록 분리합니다. 사용자별 데이터의 접근 권한·최신성을 희생하는 공용 캐시나 정적 export는 추가하지 않습니다.
+- 검사: `node --test tests/mobile-layout.test.cjs tests/native-preview.test.cjs tests/native-push-ui.test.cjs tests/group-selection.test.cjs`. 전체 11개 테마의 아이콘/배경 선택, 웹/iOS Safe Area 보존, 일반 링크 동작과 전환 경계를 검사합니다.
+- 브라우저 geometry 검사에서 390px/680px/1024px 및 하단 inset 0px/34px 조합을 확인했습니다. 모바일 본문 마지막 항목이 fixed 메뉴 위로 16px 여유를 두고 올라오며 PC 메뉴는 숨겨집니다. 이는 브라우저의 CSS 검사이며 실제 기기의 네이티브 inset/키보드/상태바 검증을 대신하지 않습니다.
+- 웹 수정은 Vercel 배포가 필요하고, 상태바 네이티브 플러그인 및 inset 설정은 새 APK 설치가 필요합니다. `npm run mobile:sync` 후 `npm run mobile:android:install`을 실행합니다. 실기기에서는 밝은/어두운 테마, 재실행/백그라운드 복귀, 가로 화면·제스처/3버튼 내비게이션·키보드 표시를 확인해야 합니다.
+- 전환 표시와 데이터 스트리밍은 즉시 시작하지만, 원격 서버·Supabase·네트워크 응답 자체가 즉시 완료되는 것을 보장하지 않습니다. 운영 계정에서 실제 이동/쿼리 시간을 아직 측정하지 않았으므로 서버 응답 속도 개선 수치를 주장하지 않습니다.
+
+---
+
 ## 문의
 
 - 시스템 관리자 또는 프로젝트 담당자에게 문의 바랍니다.

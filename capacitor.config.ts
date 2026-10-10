@@ -11,9 +11,11 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
+    adjustMarginsForEdgeToEdge: 'force',
   },
   plugins: {
     PushNotifications: { presentationOptions: [] },
+    StatusBar: { style: 'LIGHT', backgroundColor: '#faf8f3', overlaysWebView: true },
   },
 };
 

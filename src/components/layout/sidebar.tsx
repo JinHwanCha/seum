@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { useParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -45,7 +45,6 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={href}
-              prefetch={true}
               replace
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
@@ -65,7 +64,6 @@ export function Sidebar() {
             <div className="border-t border-stone-200/80 my-3" />
             <Link
               href={`${basePath}/admin`}
-              prefetch={true}
               replace
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS_DEFAULT, MINISTER_RANK_LABELS } from '@/lib/constants';
 import { UsersRound, BookOpen, MessageSquare, Users, Heart, Shield } from 'lucide-react';
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { GatheringBoard } from '@/components/gathering/gathering-board';
 import { WorshipGuide } from '@/components/worship/worship-guide';
 import { DashboardFallback } from '@/components/dashboard-fallback';
@@ -40,23 +40,31 @@ interface PageProps {
   params: { church: string; department: string };
 }
 
-async function DashboardContent({ session }: { session: SessionPayload }) {
+function DashboardContent({ session }: { session: SessionPayload }) {
   // 예배 안내/모임 데이터를 서버에서 미리 조회해 SWR fallback 으로 주입한다.
   // 클라이언트 페칭 워터폴(마운트→요청→스켈레톤→표시)을 제거해 즉시 렌더한다.
-  const [worship, gatherings] = await Promise.all([
-    loadWorshipItems(session).catch(() => null),
-    loadGatherings(session).catch(() => null),
-  ]);
-  const fallback: Record<string, unknown> = {};
-  if (worship) fallback['/api/worship-guide'] = worship;
-  if (gatherings) fallback['/api/gatherings'] = gatherings;
-
   return (
-    <DashboardFallback fallback={fallback}>
-      <WorshipGuide />
-      <GatheringBoard />
-    </DashboardFallback>
+    <>
+      <Suspense fallback={<DepartmentLoading />}><WorshipContent session={session} /></Suspense>
+      <Suspense fallback={<DepartmentLoading />}><GatheringContent session={session} /></Suspense>
+    </>
   );
+}
+
+async function WorshipContent({ session }: { session: SessionPayload }) {
+  const worship = await loadWorshipItems(session).catch((error: unknown) => {
+    console.error('Dashboard worship preload failed:', error);
+    return null;
+  });
+  return <DashboardFallback fallback={worship ? { '/api/worship-guide': worship } : {}}><WorshipGuide /></DashboardFallback>;
+}
+
+async function GatheringContent({ session }: { session: SessionPayload }) {
+  const gatherings = await loadGatherings(session).catch((error: unknown) => {
+    console.error('Dashboard gathering preload failed:', error);
+    return null;
+  });
+  return <DashboardFallback fallback={gatherings ? { '/api/gatherings': gatherings } : {}}><GatheringBoard /></DashboardFallback>;
 }
 
 export default async function DashboardPage({ params }: PageProps) {

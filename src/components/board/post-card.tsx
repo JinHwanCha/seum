@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { useParams } from 'next/navigation';
 import { MessageSquare, Heart as HeartIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

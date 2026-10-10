@@ -362,14 +362,28 @@
 }
 
 @layer utilities {
+  .safe-top {
+    padding-top: var(--seum-safe-top, env(safe-area-inset-top, 0px));
+  }
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--seum-safe-bottom, env(safe-area-inset-bottom, 0px));
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+}
+
+.mobile-content {
+  padding-bottom: calc(5rem + var(--seum-safe-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+@media (min-width: 768px) {
+  .mobile-content {
+    padding-bottom: 1.5rem;
   }
 }

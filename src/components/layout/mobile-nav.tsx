@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { useParams, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Home, UsersRound, HeartHandshake, Heart, Megaphone } from 'lucide-react';
@@ -33,7 +33,6 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={href}
-              prefetch={true}
               replace
               className={cn(
                 'flex flex-col items-center gap-1 px-3 py-1 min-w-[56px] transition-colors',
