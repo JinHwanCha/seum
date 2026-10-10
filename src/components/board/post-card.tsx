@@ -2,6 +2,7 @@
 
 import { NavigationLink as Link } from '@/components/layout/navigation-provider';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { MessageSquare, Heart as HeartIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/date-utils';
@@ -16,14 +17,19 @@ interface PostCardProps {
 
 export function PostCard({ post, boardType, villageMap = {} }: PostCardProps) {
   const params = useParams();
+  const router = useRouter();
   const basePath = `/${params.church}/${params.department}`;
   const firstImage = post.images && post.images.length > 0 ? post.images[0] : null;
   const totalImages = (post as any)._imageCount ?? (post.images?.length ?? 0);
   const extraCount = totalImages > 1 ? totalImages - 1 : 0;
   const authorVillageName = villageMap[(post.author as any)?.village_id] || null;
+  const href = `${basePath}/boards/${boardType}/${post.slug ?? post.id}`;
 
   return (
-    <Link href={`${basePath}/boards/${boardType}/${post.slug ?? post.id}`} className="block">
+    <Link href={href} className="block"
+      onMouseEnter={() => router.prefetch(href)}
+      onFocus={() => router.prefetch(href)}
+      onTouchStart={() => router.prefetch(href)}>
       <div className="warm-surface rounded-xl border border-stone-200/80 p-4 hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">

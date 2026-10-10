@@ -125,6 +125,7 @@ test('a click updates membership and count within 100ms without waiting for the 
   assert.equal(button.props.children[1].props.children, 2);
   assert.equal(fixture.requests.length, 1);
   assert.equal(fixture.requests[0].options.method, 'POST');
+  assert.ok(!fixture.nodes().some((node) => node.props?.children === '저장 중…'));
   fixture.requests[0].response.resolve(Response.json({ success: true }));
   await pending;
   assert.equal(fixture.button(emoji).props['aria-busy'], false);

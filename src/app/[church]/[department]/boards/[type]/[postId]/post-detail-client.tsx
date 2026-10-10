@@ -1,19 +1,17 @@
 'use client';
 import { notifyBoardChanged } from '@/lib/board-cache';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageLightbox } from '@/components/ui/image-lightbox';
-import { CommentSection } from '@/components/board/comment-section';
-import { ReactionBar } from '@/components/board/reaction-bar';
 import { canEditPost, canDeletePost } from '@/lib/permissions';
 import { formatDateTime } from '@/lib/date-utils';
 import { birthYearTag } from '@/lib/utils';
 import { BOARD_TYPE_LABELS } from '@/lib/constants';
 import { ArrowLeft, Edit3, Trash2 } from 'lucide-react';
-import type { BoardType, Comment, Reaction, SessionPayload } from '@/lib/types';
+import type { BoardType, SessionPayload } from '@/lib/types';
 
 interface Props {
   basePath: string;
@@ -22,8 +20,7 @@ interface Props {
   postSlug: string;
   user: SessionPayload;
   post: any;
-  comments: Comment[];
-  reactions: Reaction[];
+  children: ReactNode;
 }
 
 export default function PostDetailClient({
@@ -33,20 +30,17 @@ export default function PostDetailClient({
   postSlug,
   user,
   post,
-  comments,
-  reactions,
+  children,
 }: Props) {
   const router = useRouter();
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-
-  const refresh = () => router.refresh();
 
   const handleDelete = async () => {
     if (!confirm('게시글을 삭제하시겠습니까?')) return;
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
       if (res.ok) {
-        notifyBoardChanged();
+        notifyBoardChanged({ kind: 'remove', postId });
         router.push(`${basePath}/boards/${boardType}`);
         router.refresh();
       }
@@ -147,25 +141,7 @@ export default function PostDetailClient({
           onClose={() => setLightboxIdx(null)}
         />
 
-        {/* Reactions */}
-        <div className="border-t border-stone-100 pt-4 mb-4">
-          <ReactionBar
-            key={`${postId}:${user.userId}`}
-            postId={postId}
-            reactions={reactions}
-            session={user}
-          />
-        </div>
-
-        {/* Comments */}
-        <div className="border-t border-stone-100 pt-4">
-          <CommentSection
-            postId={postId}
-            comments={comments}
-            session={user}
-            onRefresh={refresh}
-          />
-        </div>
+        {children}
       </Card>
     </div>
   );

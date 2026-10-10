@@ -85,6 +85,49 @@ test('mutation invalidation only expires the active user board keys, including u
   assert.equal(invocation[2].revalidate, true);
 });
 
+test('reaction and comment count changes preserve list content; removed posts disappear without blanking other posts', () => {
+  const initial = { ...payload, posts: [
+    { id: 'first', _count: { comments: 3, reactions: 2 } },
+    { id: 'second', _count: { comments: 0, reactions: 0 } },
+  ] };
+  const reacted = cache.updateBoardSnapshot(initial, { kind: 'counts', postId: 'first', reactionsDelta: 1 });
+  assert.equal(reacted.posts.length, 2);
+  assert.equal(reacted.posts[0]._count.reactions, 3);
+  assert.equal(reacted.posts[0]._count.comments, 3);
+  assert.equal(reacted.fetchedAt, initial.fetchedAt);
+  assert.equal(reacted.needsRefresh, true);
+  assert.equal(cache.boardCacheUsable(reacted), false, 'changed snapshots always request fresh data');
+  const removed = cache.updateBoardSnapshot(reacted, { kind: 'remove', postId: 'first' });
+  assert.equal(removed.posts.length, 1);
+  assert.equal(removed.posts[0].id, 'second');
+  assert.equal(removed.fetchedAt, initial.fetchedAt);
+  assert.equal(cache.updateBoardSnapshot(initial).fetchedAt, 0, 'unknown visibility/content changes remain safely invalidated');
+});
+
+test('targeted mutation only refreshes boards containing the affected post', async () => {
+  const callbacks = new Map();
+  let invocation;
+  const snapshot = { ...payload, posts: [{ id: 'affected', _count: { comments: 0, reactions: 0 } }] };
+  const component = load('src\\components\\board\\board-cache-invalidator.tsx', {
+    react: { useEffect: (fn) => fn() },
+    swr: {
+      unstable_serialize: (key) => key.join('|'),
+      useSWRConfig: () => ({
+        cache: { get: (key) => ({ data: key.includes('notice') ? snapshot : { ...payload, posts: [] } }) },
+        mutate: async (...args) => { invocation = args; },
+      }),
+    },
+    '@/lib/board-cache': cache,
+    '@/hooks/use-auth': { useAuth: () => ({ user: session }) },
+  }, {}, { window: { addEventListener: (name, fn) => callbacks.set(name, fn), removeEventListener: () => {} } }).BoardCacheInvalidator;
+  component();
+  callbacks.get(cache.BOARD_CHANGED_EVENT)({ detail: { kind: 'counts', postId: 'affected', reactionsDelta: 1 } });
+  await new Promise(setImmediate);
+  assert.equal(invocation[0](cache.boardCacheKey(session, 'notice')), true);
+  assert.equal(invocation[0](cache.boardCacheKey(session, 'sharing')), false);
+  assert.equal(invocation[1](snapshot).posts[0]._count.reactions, 1);
+});
+
 test('board server loader starts posts and metadata in parallel and surfaces DB failures', async () => {
   for (const fail of [false, true]) {
     const started = [];
@@ -106,7 +149,7 @@ test('board server loader starts posts and metadata in parallel and surfaces DB 
       }) },
       '@/lib/posts-data': { loadBoardPosts: () => { started.push('posts'); return posts; } },
     });
-    const pending = loader.loadBoardData(session, 'notice');
+    const pending = loader.loadBoardData(session, 'gathering');
     await new Promise(setImmediate);
     assert.ok(started.includes('posts'));
     assert.ok(started.includes('group_years'));

@@ -16,11 +16,15 @@ export async function GET(request: Request) {
 
   // 미읽음 개수만 필요할 때 (헤더 벨 배지)
   if (countOnly) {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('notifications')
       .select('id', { count: 'exact', head: true })
       .eq('recipient_id', session.userId)
       .eq('is_read', false);
+    if (error) {
+      console.error('Notification count query failed:', error.code);
+      return NextResponse.json({ error: '알림 개수 조회에 실패했습니다.' }, { status: 503 });
+    }
     return NextResponse.json({ unreadCount: count ?? 0 });
   }
 

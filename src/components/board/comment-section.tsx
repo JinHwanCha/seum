@@ -39,7 +39,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
         body: JSON.stringify({ content: content.trim(), parentId }),
       });
       if (res.ok) {
-        notifyBoardChanged();
+        notifyBoardChanged({ kind: 'counts', postId, commentsDelta: 1 });
         setNewComment('');
         setReplyTo(null);
         setReplyContent('');
@@ -62,7 +62,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
         body: JSON.stringify({ content: editContent.trim() }),
       });
       if (res.ok) {
-        notifyBoardChanged();
+        notifyBoardChanged({ kind: 'counts', postId });
         setEditingId(null);
         setEditContent('');
         onRefresh();
@@ -79,7 +79,7 @@ export function CommentSection({ postId, comments, session, onRefresh }: Comment
     try {
       const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('댓글 삭제에 실패했습니다.');
-      notifyBoardChanged();
+      notifyBoardChanged({ kind: 'counts', postId });
       onRefresh();
     } catch (error) {
       console.error('Comment deletion failed:', error);

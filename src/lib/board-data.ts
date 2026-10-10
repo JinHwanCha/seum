@@ -8,8 +8,10 @@ export async function loadBoardData(session: SessionPayload, type: string): Prom
   const [groups, categories, result] = await Promise.all([
     supabase.from('group_years').select('villages(id, name, sort_order)')
       .eq('department_id', session.departmentId).eq('is_active', true).maybeSingle(),
-    supabase.from('board_categories').select('id, name, sort_order')
-      .eq('department_id', session.departmentId).eq('board_type', type).order('sort_order'),
+    type === 'gathering'
+      ? supabase.from('board_categories').select('id, name, sort_order')
+        .eq('department_id', session.departmentId).eq('board_type', type).order('sort_order')
+      : Promise.resolve({ data: [], error: null }),
     loadBoardPosts({
       departmentId: session.departmentId, boardType: type,
       canSeeAll: session.role === 'minister' || session.role === 'village_leader',

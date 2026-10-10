@@ -11,7 +11,14 @@ export interface BoardPayload {
   villageMap: Record<string, string>;
 }
 
-export interface CachedBoardPayload extends BoardPayload { fetchedAt: number }
+export interface CachedBoardPayload extends BoardPayload { fetchedAt: number; needsRefresh?: boolean }
+
+export interface BoardChange {
+  kind: 'counts' | 'remove';
+  postId: string;
+  reactionsDelta?: number;
+  commentsDelta?: number;
+}
 
 export function boardCacheKey(session: SessionPayload, type: string): readonly string[] {
   return ['seum-board-v1', session.userId, session.churchId, session.departmentId,
@@ -20,14 +27,29 @@ export function boardCacheKey(session: SessionPayload, type: string): readonly s
 }
 
 export function boardCacheUsable(data: CachedBoardPayload | undefined, now = Date.now()): boolean {
-  return Boolean(data && Number.isFinite(data.fetchedAt) && data.fetchedAt > 0 &&
+  return Boolean(data && !data.needsRefresh && Number.isFinite(data.fetchedAt) && data.fetchedAt > 0 &&
     now >= data.fetchedAt && now - data.fetchedAt < BOARD_CACHE_TTL);
 }
 
-export function notifyBoardChanged() {
+export function notifyBoardChanged(change?: BoardChange) {
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-    window.dispatchEvent(new Event(BOARD_CHANGED_EVENT));
+    window.dispatchEvent(change ? new CustomEvent(BOARD_CHANGED_EVENT, { detail: change }) : new Event(BOARD_CHANGED_EVENT));
   }
+}
+
+export function updateBoardSnapshot(data: CachedBoardPayload | undefined, change?: BoardChange): CachedBoardPayload | undefined {
+  if (!data) return undefined;
+  if (!change) return { ...data, fetchedAt: 0 };
+  return {
+    ...data, needsRefresh: true,
+    posts: change.kind === 'remove' ? data.posts.filter((post) => post.id !== change.postId)
+      : data.posts.map((post) => post.id === change.postId ? {
+        ...post, _count: {
+          comments: Math.max(0, (post._count?.comments || 0) + (change.commentsDelta || 0)),
+          reactions: Math.max(0, (post._count?.reactions || 0) + (change.reactionsDelta || 0)),
+        },
+      } : post),
+  };
 }
 
 const pendingBoardRequests = new Map<string, Promise<CachedBoardPayload>>();

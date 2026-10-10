@@ -156,7 +156,7 @@ export interface Comment {
   content: string;
   created_at: string;
   updated_at: string;
-  author?: User;
+  author?: Pick<User, 'id' | 'name' | 'role' | 'minister_rank' | 'birth_date' | 'is_early_birth'>;
   replies?: Comment[];
 }
 

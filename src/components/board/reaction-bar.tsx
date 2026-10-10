@@ -59,7 +59,7 @@ export function ReactionBar({ postId, reactions, session }: ReactionBarProps) {
           : '공감을 저장하지 못했습니다. 다시 시도해주세요.';
         throw new Error(message);
       }
-      notifyBoardChanged();
+      notifyBoardChanged({ kind: 'counts', postId, reactionsDelta: active ? 1 : -1 });
     } catch (cause) {
       itemsRef.current = setOwnReaction(
         itemsRef.current, postId, session.userId, emoji, previous.length > 0, previous
@@ -117,7 +117,6 @@ export function ReactionBar({ postId, reactions, session }: ReactionBarProps) {
           ))}
         </div>
       )}
-      {pending.size > 0 && <span role="status" className="text-xs text-stone-400">저장 중…</span>}
       {error && <p role="alert" className="w-full text-xs text-red-600">{error}</p>}
     </div>
   );

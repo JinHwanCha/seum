@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase';
 import { canEditPost, canDeletePost } from '@/lib/permissions';
 import type { BoardType } from '@/lib/types';
+import { loadPostContent, loadPostInteractions } from '@/lib/post-detail-data';
 
 export async function GET(
   _request: Request,
@@ -11,56 +12,15 @@ export async function GET(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = createClient();
-
-  const { data: post } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      author:users(id, name, role, minister_rank, birth_date, is_early_birth),
-      category:board_categories(id, name),
-      village:villages(id, name)
-    `)
-    .eq('id', params.id)
-    .single();
-
-  if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
-
-  // 가시성 검사
-  //  - 'all' 은 모두
-  //  - 사역자는 전부 읽기 가능
-  //  - 작성자 본인은 항상 읽기 가능
-  //  - 'village' 는 해당 마을 소속자 + 마을장
-  //  - 'pastor' 는 사역자(+작성자)만
-  const isAuthor = post.author_id === session.userId;
-  const canView =
-    isAuthor ||
-    session.role === 'minister' ||
-    post.visibility === 'all' ||
-    (post.visibility === 'village' &&
-      (session.role === 'village_leader' ||
-        (post.village_id && post.village_id === session.villageId)));
-  if (!canView) {
-    return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+  try {
+    const post = await loadPostContent(session, null, params.id);
+    if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+    const interactions = await loadPostInteractions(post.id);
+    return NextResponse.json({ post, ...interactions }, { headers: { 'Cache-Control': 'private, no-store' } });
+  } catch (error) {
+    console.error('Post detail lookup failed:', error);
+    return NextResponse.json({ error: '게시글 조회에 실패했습니다. 다시 시도해주세요.' }, { status: 503 });
   }
-
-  const [{ data: comments }, { data: reactions }] = await Promise.all([
-    supabase
-      .from('comments')
-      .select('*, author:users(id, name, role, minister_rank, birth_date, is_early_birth)')
-      .eq('post_id', params.id)
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('reactions')
-      .select('*')
-      .eq('post_id', params.id),
-  ]);
-
-  return NextResponse.json({
-    post,
-    comments: comments || [],
-    reactions: reactions || [],
-  });
 }
 
 export async function PATCH(

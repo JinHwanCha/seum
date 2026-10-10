@@ -1,43 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
+import useSWR from 'swr';
 import { Bell } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { requestPushApi } from '@/lib/native-push';
 
 export function NotificationBell() {
   const params = useParams();
-  const pathname = usePathname();
-  const [unread, setUnread] = useState(0);
+  const { user } = useAuth();
+  const { data, error, mutate } = useSWR(
+    user ? ['notification-count', user.userId, user.departmentId, user.exp] : null,
+    async () => {
+      const result = await requestPushApi('/api/notifications?countOnly=1', { cache: 'no-store' });
+      if (typeof result.unreadCount !== 'number') throw new Error('알림 개수 응답이 올바르지 않습니다.');
+      return result.unreadCount;
+    },
+    { refreshInterval: 60000, dedupingInterval: 15000, revalidateOnFocus: true, keepPreviousData: false }
+  );
+  const unread = data || 0;
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const res = await fetch('/api/notifications?countOnly=1');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (active) setUnread(data.unreadCount ?? 0);
-      } catch {
-        // ignore
-      }
-    };
-    load();
-    const id = setInterval(load, 60000);
+    const load = () => { mutate().catch((cause: unknown) => console.error('Notification count update failed:', cause)); };
     window.addEventListener('seum-notifications-changed', load);
     return () => {
-      active = false;
-      clearInterval(id);
       window.removeEventListener('seum-notifications-changed', load);
     };
-    // 경로가 바뀌면(알림 페이지 방문 후 복귀 등) 다시 조회
-  }, [pathname]);
+  }, [mutate]);
+
+  useEffect(() => {
+    if (error) console.error('Notification count lookup failed:', error);
+  }, [error]);
 
   return (
     <Link
       href={`/${params.church}/${params.department}/notifications`}
       className="relative p-2 rounded-lg text-stone-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-      title="알림"
+      title={error ? '알림 개수를 갱신하지 못했습니다. 알림 목록에서 확인해주세요.' : '알림'}
     >
       <Bell size={18} />
       {unread > 0 && (
