@@ -67,6 +67,7 @@ function fixture() {
     } },
     '@/hooks/use-auth': { useAuth: () => ({ user }) },
     '@/lib/push-validation': validation,
+    '@/lib/push-image': load('src\\lib\\push-image.ts'),
     '@/lib/native-push': {
       PUSH_DISABLED_KEY: 'disabled', PUSH_PENDING_KEY: 'pending', nativePushAvailable: () => true,
       persistNativeToken: async () => true,
@@ -147,14 +148,19 @@ test('same-session page rerenders and immediate app resumes do not re-register t
   assert.equal(subject.registrations(), 1);
 });
 
-test('foreground banners include the brand image and body preview', async () => {
+test('foreground banners include the post image only when provided, with body preview', async () => {
   const subject = fixture();
   await initialize(subject);
   subject.listeners.get('pushNotificationReceived')({
     title: '새 공지', body: '공지 내용 미리보기',
-    data: { notificationId: '33333333-3333-4333-8333-333333333333', recipientId: '11111111-1111-4111-8111-111111111111' },
+    data: { notificationId: '33333333-3333-4333-8333-333333333333', recipientId: '11111111-1111-4111-8111-111111111111', imageUrl: 'https://images.example/first.jpg' },
   });
   const nodes = subject.nodes();
-  assert.ok(nodes.some((node) => node.props?.src === '/push-icon.png'));
+  assert.ok(nodes.some((node) => node.props?.src === 'https://images.example/first.jpg'));
   assert.ok(nodes.some((node) => node.props?.children === '공지 내용 미리보기'));
+  subject.listeners.get('pushNotificationReceived')({
+    title: '이미지 없는 글', body: '본문',
+    data: { notificationId: '33333333-3333-4333-8333-333333333333', recipientId: '11111111-1111-4111-8111-111111111111' },
+  });
+  assert.ok(!subject.nodes().some((node) => node.props?.src));
 });

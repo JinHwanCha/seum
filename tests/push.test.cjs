@@ -4,6 +4,7 @@ const { EventEmitter } = require('node:events');
 const load = require('./helpers/load-source.cjs');
 const validation = load('src\\lib\\push-validation.ts');
 const previews = load('src\\lib\\notification-preview.ts');
+const images = load('src\\lib\\push-image.ts');
 const userId = '11111111-1111-4111-8111-111111111111';
 const installationId = '22222222-2222-4222-8222-222222222222';
 const notificationId = '33333333-3333-4333-8333-333333333333';
@@ -127,6 +128,7 @@ function senderFixture({ status = 200, response = { name: 'projects/test/message
   }
   const sender = load('src\\lib\\push-senders.ts', {
     '@/lib/notification-preview': previews,
+    '@/lib/push-image': images,
     jose: { SignJWT, importPKCS8: async () => 'test-key' },
     fetch: async (url, options) => {
       requests.push({ url, options });
@@ -148,7 +150,8 @@ test('FCM sends a visible background notification, IDs, channel and deduplicatio
   assert.equal(payload.android.notification.tag, notificationId);
   assert.equal(payload.android.notification.channel_id, 'seum-notifications');
   assert.equal(payload.notification.body, '세움에서 새 알림을 확인해주세요.');
-  assert.equal(payload.notification.image, 'https://seum-nu.vercel.app/push-icon.png');
+  assert.equal('image' in payload.notification, false);
+  assert.equal('imageUrl' in payload.data, false);
   await fixture.sender.sendNativePush(registration, { id: notificationId, recipientId: userId, title: '새 공지' });
   assert.equal(fixture.requests.filter((request) => request.url.includes('oauth2')).length, 1);
 });
@@ -162,6 +165,21 @@ test('provider errors invalidate only truly expired tokens and preserve tokens o
   assert.equal(sender.classifyApns(410, 'Unregistered').outcome, 'invalid');
   assert.equal(sender.classifyApns(400, 'BadDeviceToken').outcome, 'failed');
   assert.equal(sender.classifyApns(503, 'ServiceUnavailable').outcome, 'retry');
+});
+
+test('FCM includes the first post image only when it is a valid HTTPS attachment', async () => {
+  for (const imageUrl of ['https://images.example/first.jpg', undefined, '', 'data:image/png;base64,dGVzdA==']) {
+    const fixture = senderFixture();
+    await fixture.sender.sendNativePush(registration, { id: notificationId, recipientId: userId, title: '공지', imageUrl });
+    const message = JSON.parse(fixture.requests[1].options.body).message;
+    if (imageUrl?.startsWith('https:')) {
+      assert.equal(message.notification.image, imageUrl);
+      assert.equal(message.data.imageUrl, imageUrl);
+    } else {
+      assert.equal('image' in message.notification, false);
+      assert.equal('imageUrl' in message.data, false);
+    }
+  }
 });
 
 test('private key normalization handles real newlines, env escaping and copied JSON quotes without logging keys', () => {
@@ -185,6 +203,7 @@ test('APNs uses the correct environment, topic, visible alert and notification I
   }
   const sender = load('src\\lib\\push-senders.ts', {
     '@/lib/notification-preview': previews,
+    '@/lib/push-image': images,
     jose: { SignJWT, importPKCS8: async () => 'test-key' },
     'node:http2': { connect: (host) => {
       const client = new EventEmitter();
@@ -233,7 +252,7 @@ test('worker cancels stale bindings and records send results using the claimed l
     const notification = {
       id: notificationId, recipient_id: userId, department_id: 'dept', title: '공지', is_read: false,
       recipient: { is_approved: true, department_id: 'dept', role: 'cell_member', village_id: null },
-      post: { department_id: 'dept', author_id: userId, visibility: 'all', village_id: null },
+      post: { department_id: 'dept', author_id: userId, visibility: 'all', village_id: null, thumbnail: 'https://images.example/first.jpg' },
     };
     const device = { ...registration, id: 'device', user_id: userId, enabled: true,
       token_version: eligible ? 'version' : 'new-version',
@@ -253,7 +272,10 @@ test('worker cancels stale bindings and records send results using the claimed l
     };
     const worker = load('src\\lib\\push-worker.ts', {
       '@/lib/supabase': { createClient: () => supabase },
-      '@/lib/push-senders': { sendNativePush: async () => { sends++; return { outcome: 'sent' }; } },
+      '@/lib/push-senders': { sendNativePush: async (_destination, message) => {
+        assert.equal(message.imageUrl, 'https://images.example/first.jpg');
+        sends++; return { outcome: 'sent' };
+      } },
     });
     const result = await worker.dispatchPushJobs();
     assert.equal(sends, eligible ? 1 : 0);

@@ -8,6 +8,7 @@ import { Preferences } from '@capacitor/preferences';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { useAuth } from '@/hooks/use-auth';
 import { parsePushReference, type PushReference } from '@/lib/push-validation';
+import { pushImageUrl } from '@/lib/push-image';
 import {
   allowNativeRegistration, finishNativeLogout, nativePushAvailable,
   persistNativeToken, prepareNativeLogout, PUSH_DISABLED_KEY, PUSH_PENDING_KEY,
@@ -38,7 +39,7 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState('알림 권한을 확인해주세요.');
   const [error, setError] = useState<string | null>(null);
-  const [incoming, setIncoming] = useState<(PushReference & { title: string; body?: string }) | null>(null);
+  const [incoming, setIncoming] = useState<(PushReference & { title: string; body?: string; imageUrl?: string }) | null>(null);
   const [openedNotificationId, setOpenedNotificationId] = useState<string | null>(null);
 
   const report = useCallback((cause: unknown) => {
@@ -164,7 +165,10 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
       await listen(PushNotifications.addListener('pushNotificationReceived', (notification) => {
         const reference = parsePushReference(notification.data);
         if (!reference || reference.recipientId !== userRef.current?.userId) return;
-        setIncoming({ ...reference, title: notification.title || '새 알림', body: notification.body });
+        const data: unknown = notification.data;
+        const image = typeof data === 'object' && data !== null && 'imageUrl' in data
+          ? pushImageUrl(data.imageUrl) : undefined;
+        setIncoming({ ...reference, title: notification.title || '새 알림', body: notification.body, imageUrl: image });
         window.dispatchEvent(new Event('seum-notifications-changed'));
       }));
       await listen(PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
@@ -223,7 +227,10 @@ export function NativePushProvider({ children }: { children: ReactNode }) {
       {native && incoming && (
         <div className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+1rem)] z-[60] rounded-xl warm-surface border border-primary-200 p-4 shadow-lg">
           <div className="flex gap-3 items-start">
-            <Image src="/push-icon.png" alt="세움" width={44} height={44} unoptimized className="rounded-xl shrink-0" />
+            {incoming.imageUrl && <Image src={incoming.imageUrl} alt="게시글 첫 이미지" width={56} height={56} unoptimized
+              className="rounded-lg shrink-0 object-cover" onError={() => {
+                setIncoming((current) => current ? { ...current, imageUrl: undefined } : null);
+              }} />}
             <div className="min-w-0">
               <p className="text-xs text-primary-700 mb-1">세움 알림</p>
               <p className="text-sm font-semibold line-clamp-2">{incoming.title}</p>

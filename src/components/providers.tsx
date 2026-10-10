@@ -10,6 +10,7 @@ import { NativePushProvider } from '@/components/notifications/native-push-provi
 import { NativeSystemBars } from '@/components/theme/native-system-bars';
 import { NavigationProvider } from '@/components/layout/navigation-provider';
 import { BoardCacheInvalidator } from '@/components/board/board-cache-invalidator';
+import { NativePullRefresh } from '@/components/layout/native-pull-refresh';
 
 const swrFetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -89,6 +90,7 @@ export function Providers({
         <NativeSystemBars />
         <AuthProvider initialUser={initialUser}>
           <BoardCacheInvalidator />
+          <NativePullRefresh />
           <NavigationProvider><NativePushProvider>{children}</NativePushProvider></NavigationProvider>
         </AuthProvider>
       </ThemeProvider>

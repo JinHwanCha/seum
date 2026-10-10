@@ -44,6 +44,7 @@ test('SWR starts empty on server and client; persisted data restoration only run
     '@/components/theme/native-system-bars': { NativeSystemBars: 'NativeSystemBars' },
     '@/components/layout/navigation-provider': { NavigationProvider: 'NavigationProvider' },
     '@/components/board/board-cache-invalidator': { BoardCacheInvalidator: 'BoardCacheInvalidator' },
+    '@/components/layout/native-pull-refresh': { NativePullRefresh: 'NativePullRefresh' },
   }, {}, {
     localStorage: { getItem: () => { storageReads++; return JSON.stringify([['cached-key', { data: { posts: ['stored'] }, _k: ['original'] }]]); } },
     window: { addEventListener: () => {}, removeEventListener: () => {} },

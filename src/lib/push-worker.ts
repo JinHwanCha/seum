@@ -14,7 +14,7 @@ export async function dispatchPushJobs() {
       const [deviceResult, notificationResult] = await Promise.all([
         supabase.from('push_devices').select('*').eq('id', job.device_id).maybeSingle(),
         supabase.from('notifications')
-          .select('id, recipient_id, department_id, title, body, is_read, post:posts(department_id, author_id, visibility, village_id), recipient:users!notifications_recipient_id_fkey(is_approved, department_id, role, village_id)')
+          .select('id, recipient_id, department_id, title, body, is_read, post:posts(department_id, author_id, visibility, village_id, thumbnail), recipient:users!notifications_recipient_id_fkey(is_approved, department_id, role, village_id)')
           .eq('id', job.notification_id).maybeSingle(),
       ]);
       if (deviceResult.error || notificationResult.error) throw new Error('Push queue context lookup failed');
@@ -35,6 +35,7 @@ export async function dispatchPushJobs() {
       } else {
         result = await sendNativePush(device, {
           id: notification.id, recipientId: notification.recipient_id, title: notification.title, body: notification.body,
+          imageUrl: post?.thumbnail,
         });
       }
     } catch (error) {
